@@ -15,7 +15,9 @@ model Task {
   area        String
   responsible String
   description String?
-  status      String   @default("open")
+  priority    String   @default("Orta")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  ownerEmail  String?
+  status      String   @default("Yap�lacak")
 }

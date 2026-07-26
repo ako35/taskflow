@@ -3,7 +3,7 @@ Frontend scaffold with Vite + React + TypeScript.
 Quick start:
 
 ```bash
-cd rental-app/frontend
+cd TaskFlow/frontend
 npm install
 npm run dev
 ```
