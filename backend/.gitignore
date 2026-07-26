@@ -1,0 +1,16 @@
+# Node.js
+node_modules/
+
+# Environment variables
+.env
+frontend/.env
+
+# Build files
+dist/
+frontend/dist/
+
+# Logs
+*.log
+
+# VS Code (isteğe bağlı)
+.vscode/
