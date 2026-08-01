@@ -1,0 +1,17 @@
+# Node.js
+**/node_modules/
+
+# Vite build
+**/dist/
+
+# Vite cache
+**/.vite/
+
+# Environment dosyaları
+**/.env
+
+# SQLite veritabanı
+backend/prisma/dev.db
+
+# VS Code
+.vscode/

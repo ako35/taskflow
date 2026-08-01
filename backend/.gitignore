@@ -14,3 +14,30 @@ frontend/dist/
 
 # VS Code (isteğe bağlı)
 .vscode/
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+node_modules/
+frontend/node_modules/
+
+.env
+frontend/.env
+
+dist/
+frontend/dist/
+
+*.log
