@@ -1298,6 +1298,7 @@ button[disabled] {
 
 .tasks-table-wrapper {
   overflow-x: hidden;
+  padding-right: 1px;
 }
 
 .tasks-table {
@@ -1314,7 +1315,9 @@ button[disabled] {
   padding: 0;
   border: none;
   background: transparent;
-  width: auto;
+  width: 0 !important;
+  min-width: 0;
+  max-width: 0;
 }
 
 .table-spacer-head {
@@ -1560,10 +1563,22 @@ button[disabled] {
 
 .task-row td:nth-last-child(2) {
   border-radius: 0 8px 8px 0;
+  border-right-width: 1px;
+  overflow: hidden;
+}
+
+.tasks-table thead th:nth-last-child(2),
+.status-columns-row th:nth-last-child(2) {
+  border-right-width: 1px;
+  overflow: hidden;
 }
 
 .task-row td:not(.table-spacer-cell) {
   border-left-width: 0;
+}
+
+.task-row td {
+  height: 70px;
 }
 
 .task-row td:first-child,
@@ -1597,7 +1612,8 @@ button[disabled] {
 
 .description-cell {
   position: relative;
-  padding-right: 13rem;
+  padding-right: 0.82rem;
+  transition: padding-right 0.16s ease;
 }
 
 .description-text {
@@ -1607,8 +1623,8 @@ button[disabled] {
 .task-title-stack,
 .task-description-stack {
   display: flex;
-  align-items: center;
-  min-height: 2rem;
+  align-items: flex-start;
+  min-height: 2.6rem;
 }
 
 .task-actions {
@@ -1933,8 +1949,13 @@ button[disabled] {
   display: block;
   min-width: 0;
   overflow: hidden;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   text-overflow: ellipsis;
+  line-clamp: 2;
 }
 
 .task-title-text {
@@ -2051,15 +2072,20 @@ button[disabled] {
 
 .inline-options-menu {
   position: absolute;
-  top: calc(100% + 0.42rem);
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   display: grid;
   gap: 0.46rem;
   justify-items: center;
-  padding: 0.2rem 0;
+  padding: 0.45rem;
   width: max-content;
   min-width: 120px;
+  border: 1px solid rgba(91, 140, 255, 0.3);
+  border-radius: 12px;
+  background: rgba(8, 13, 29, 0.96);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
   z-index: 16;
 }
 

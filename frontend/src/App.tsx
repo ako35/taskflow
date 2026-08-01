@@ -166,47 +166,6 @@ function fitColumnWidthsToContainer(
     return acc;
   }, {});
 
-  const totalWidth = tableColumns.reduce(
-    (sum, column) => sum + next[column.field],
-    0,
-  );
-
-  if (totalWidth > containerWidth) {
-    const adjustableColumns = tableColumns.filter(
-      (column) => column.field !== "index",
-    );
-    let overflow = totalWidth - containerWidth;
-    let remaining = adjustableColumns.map((column) => column.field);
-
-    while (overflow > 0 && remaining.length > 0) {
-      const shrinkPerColumn = overflow / remaining.length;
-      const nextRemaining: string[] = [];
-
-      for (const field of remaining) {
-        const column = tableColumns.find((item) => item.field === field);
-        if (!column) continue;
-
-        const currentWidth = next[field];
-        const availableShrink = currentWidth - column.minWidth;
-        const appliedShrink = Math.min(availableShrink, shrinkPerColumn);
-        next[field] = currentWidth - appliedShrink;
-        overflow -= appliedShrink;
-
-        if (next[field] - column.minWidth > 0.5) {
-          nextRemaining.push(field);
-        }
-      }
-
-      if (nextRemaining.length === remaining.length) {
-        break;
-      }
-
-      remaining = nextRemaining;
-    }
-  } else if (totalWidth < containerWidth) {
-    next.description += containerWidth - totalWidth;
-  }
-
   return next;
 }
 
@@ -218,6 +177,14 @@ function parseJwt(token: string) {
   } catch {
     return null;
   }
+}
+
+function hasTokenExpired(token: string) {
+  const payload = parseJwt(token);
+  if (!payload || typeof payload.exp !== "number") {
+    return true;
+  }
+  return Date.now() >= payload.exp * 1000;
 }
 
 function normalizeQuery(value: string) {
@@ -462,6 +429,13 @@ function UiGlyph({
 
 export default function App() {
   const [user, setUser] = useState<User | null>(() => {
+    const storedToken = localStorage.getItem("taskflow_id_token");
+    if (!storedToken || hasTokenExpired(storedToken)) {
+      localStorage.removeItem("taskflow_user");
+      localStorage.removeItem("taskflow_id_token");
+      return null;
+    }
+
     const stored = localStorage.getItem("taskflow_user");
     if (!stored) return null;
     try {
@@ -472,7 +446,13 @@ export default function App() {
   });
 
   const [idToken, setIdToken] = useState<string | null>(() => {
-    return localStorage.getItem("taskflow_id_token");
+    const stored = localStorage.getItem("taskflow_id_token");
+    if (!stored || hasTokenExpired(stored)) {
+      localStorage.removeItem("taskflow_user");
+      localStorage.removeItem("taskflow_id_token");
+      return null;
+    }
+    return stored;
   });
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -592,6 +572,27 @@ export default function App() {
     );
   }, [activeWorkspaces, selectedWorkspaceId]);
 
+  const handleSignOut = useCallback(() => {
+    setUser(null);
+    setIdToken(null);
+    setShowForm(false);
+    setQuery("");
+    setTasks([]);
+    setWorkspaceMenuOpenId(null);
+    setEditingWorkspaceId(null);
+    setEditingWorkspaceName("");
+    setProfileMenuOpen(false);
+    setViewMode("workspaces");
+    localStorage.removeItem("taskflow_user");
+    localStorage.removeItem("taskflow_id_token");
+  }, []);
+
+  const handleUnauthorized = useCallback(() => {
+    setError("Oturumunuzun süresi dolmuş olabilir. Lütfen tekrar giriş yapın.");
+    handleSignOut();
+    setGuestView("login");
+  }, [handleSignOut]);
+
   const startEditingCell = useCallback((task: Task, field: string) => {
     if (field === "index" || field === "__spacer") return;
     setEditingCell({ id: task.id, field });
@@ -658,6 +659,11 @@ export default function App() {
           body: JSON.stringify(data),
         });
 
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
         if (!response.ok) {
           const text = await response.text();
           throw new Error(text || response.statusText);
@@ -676,7 +682,14 @@ export default function App() {
         setLoading(false);
       }
     },
-    [cancelCellEdit, editingCell, editingValue, idToken, tasks],
+    [
+      cancelCellEdit,
+      editingCell,
+      editingValue,
+      handleUnauthorized,
+      idToken,
+      tasks,
+    ],
   );
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
     () => {
@@ -714,31 +727,19 @@ export default function App() {
     startWidth: number;
   } | null>(null);
 
-  const handleColumnMouseMove = useCallback(
-    (event: MouseEvent) => {
-      const current = resizeState.current;
-      if (!current) return;
+  const handleColumnMouseMove = useCallback((event: MouseEvent) => {
+    const current = resizeState.current;
+    if (!current) return;
 
-      const delta = event.clientX - current.startX;
-      const minWidth =
-        tableColumns.find((column) => column.field === current.field)
-          ?.minWidth ?? 80;
-      const tableWidth = tasksTableWrapperRef.current?.clientWidth ?? Infinity;
-      const otherColumnsWidth = tableColumns.reduce((sum, column) => {
-        if (column.field === current.field) return sum;
-        return sum + (columnWidths[column.field] ?? column.minWidth);
-      }, 0);
-      const maxWidth = Math.max(minWidth, tableWidth - otherColumnsWidth);
-      setColumnWidths((prev) => ({
-        ...prev,
-        [current.field]: Math.min(
-          maxWidth,
-          Math.max(minWidth, current.startWidth + delta),
-        ),
-      }));
-    },
-    [columnWidths],
-  );
+    const delta = event.clientX - current.startX;
+    const minWidth =
+      tableColumns.find((column) => column.field === current.field)?.minWidth ??
+      80;
+    setColumnWidths((prev) => ({
+      ...prev,
+      [current.field]: Math.max(minWidth, current.startWidth + delta),
+    }));
+  }, []);
 
   const handleColumnMouseUp = useCallback(() => {
     if (!resizeState.current) return;
@@ -763,19 +764,6 @@ export default function App() {
     },
     [columnWidths, handleColumnMouseMove, handleColumnMouseUp],
   );
-
-  const resetColumnWidth = useCallback((field: string) => {
-    const containerWidth = tasksTableWrapperRef.current?.clientWidth;
-    setColumnWidths((prev) => {
-      const next = {
-        ...prev,
-        [field]: DEFAULT_COLUMN_WIDTHS[field] ?? prev[field],
-      };
-      return containerWidth
-        ? fitColumnWidthsToContainer(next, containerWidth)
-        : next;
-    });
-  }, []);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -838,6 +826,105 @@ export default function App() {
     [sortedArchivedTasks, sortedTasks, viewMode],
   );
 
+  const fitColumnToContent = useCallback(
+    (field: string) => {
+      if (field === "__spacer") return;
+
+      const column = tableColumns.find((item) => item.field === field);
+      if (!column) return;
+
+      if (field === "status" || field === "priority") {
+        const selector =
+          field === "status" ? ".task-status-badge" : ".task-priority-badge";
+        const nodes = Array.from(
+          tasksTableWrapperRef.current?.querySelectorAll(selector) ?? [],
+        ) as HTMLElement[];
+
+        const frameWidth = nodes.reduce((max, node) => {
+          const width = node.getBoundingClientRect().width;
+          return Number.isFinite(width) ? Math.max(max, width) : max;
+        }, 0);
+
+        const fallbackWidth =
+          field === "status"
+            ? DEFAULT_COLUMN_WIDTHS.status
+            : DEFAULT_COLUMN_WIDTHS.priority;
+        // Add td padding + border allowance so the badge frame never clips.
+        const nextWidth = Math.max(
+          fallbackWidth,
+          Math.ceil((frameWidth || 0) + 30),
+        );
+
+        setColumnWidths((prev) => ({
+          ...prev,
+          [field]: nextWidth,
+        }));
+        return;
+      }
+
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      const baseFont =
+        field === "title"
+          ? "700 16px Manrope, Segoe UI, sans-serif"
+          : "600 14px Manrope, Segoe UI, sans-serif";
+      context.font = baseFont;
+
+      const candidates: string[] = [column.label];
+      if (field === "index") {
+        candidates.push(String(Math.max(visibleTasks.length, 1)));
+      } else if (field === "status") {
+        for (const task of visibleTasks) {
+          candidates.push(task.status ?? "Yapılacak");
+        }
+      } else if (field === "priority") {
+        for (const task of visibleTasks) {
+          candidates.push(task.priority ?? "Orta");
+        }
+      } else if (field === "title") {
+        for (const task of visibleTasks) {
+          candidates.push(task.title ?? "");
+        }
+      } else if (field === "description") {
+        for (const task of visibleTasks) {
+          candidates.push(task.description ?? "");
+        }
+      }
+
+      const widestText = candidates.reduce((max, value) => {
+        const text = String(value ?? "").trim();
+        if (!text) return max;
+        const measured = context.measureText(text).width;
+        return Math.max(max, measured);
+      }, 0);
+
+      const extraPadding =
+        field === "index"
+          ? 36
+          : field === "status"
+            ? 52
+            : field === "priority"
+              ? 56
+              : 72;
+      const hardMinimum =
+        field === "status" ? 108 : field === "priority" ? 120 : column.minWidth;
+      const hardMaximum = field === "description" ? 1400 : 900;
+
+      const nextWidth = Math.min(
+        hardMaximum,
+        Math.max(hardMinimum, Math.ceil(widestText + extraPadding)),
+      );
+
+      setColumnWidths((prev) => ({
+        ...prev,
+        [field]: nextWidth,
+      }));
+    },
+    [visibleTasks],
+  );
+
   const statusGroupCounts = useMemo(() => {
     return visibleTasks.reduce<Record<string, number>>((acc, task) => {
       const status = task.status ?? "Yapılacak";
@@ -869,6 +956,12 @@ export default function App() {
             Authorization: `Bearer ${idToken}`,
           },
         });
+
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
         if (!response.ok) throw new Error("Görevler yüklenemedi.");
         const data = (await response.json()) as Task[];
         setTasks(
@@ -887,7 +980,7 @@ export default function App() {
     if (user && idToken) {
       loadTasks();
     }
-  }, [idToken, user]);
+  }, [handleUnauthorized, idToken, user]);
 
   useEffect(() => {
     localStorage.setItem("taskflow_workspaces", JSON.stringify(workspaces));
@@ -1108,21 +1201,6 @@ export default function App() {
     localStorage.setItem("taskflow_id_token", response.credential);
   }, []);
 
-  const handleSignOut = useCallback(() => {
-    setUser(null);
-    setIdToken(null);
-    setShowForm(false);
-    setQuery("");
-    setTasks([]);
-    setWorkspaceMenuOpenId(null);
-    setEditingWorkspaceId(null);
-    setEditingWorkspaceName("");
-    setProfileMenuOpen(false);
-    setViewMode("workspaces");
-    localStorage.removeItem("taskflow_user");
-    localStorage.removeItem("taskflow_id_token");
-  }, []);
-
   const handleCreateWorkspace = useCallback(() => {
     const name = newWorkspaceName.trim();
     if (!name) return;
@@ -1276,6 +1354,11 @@ export default function App() {
           },
         });
 
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
         if (!response.ok) {
           const text = await response.text();
           throw new Error(text || response.statusText);
@@ -1295,7 +1378,7 @@ export default function App() {
         setLoading(false);
       }
     },
-    [idToken],
+    [handleUnauthorized, idToken],
   );
 
   const handleChange = useCallback(
@@ -1352,10 +1435,7 @@ export default function App() {
           `Hata ${response.status}: ${response.statusText}`;
 
         if (response.status === 401) {
-          setError(
-            "Oturumunuzun süresi dolmuş olabilir. Lütfen tekrar giriş yapın.",
-          );
-          handleSignOut();
+          handleUnauthorized();
           return;
         }
 
@@ -1383,7 +1463,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [form, handleSignOut, idToken, isFormValid, selectedWorkspace.id]);
+  }, [form, handleUnauthorized, idToken, isFormValid, selectedWorkspace.id]);
 
   const summary = useMemo(
     () => ({
@@ -1992,7 +2072,7 @@ export default function App() {
                       style={{
                         width:
                           column.field === "__spacer"
-                            ? undefined
+                            ? "0px"
                             : `${columnWidths[column.field]}px`,
                       }}
                     />
@@ -2013,7 +2093,7 @@ export default function App() {
                             style={{
                               width:
                                 column.field === "__spacer"
-                                  ? undefined
+                                  ? 0
                                   : columnWidths[column.field],
                             }}
                           >
@@ -2172,7 +2252,7 @@ export default function App() {
                                     style={{
                                       width:
                                         column.field === "__spacer"
-                                          ? undefined
+                                          ? 0
                                           : columnWidths[column.field],
                                     }}
                                   >
@@ -2187,16 +2267,26 @@ export default function App() {
                                           }`}
                                           onMouseDown={(event) =>
                                             startColumnResize(
-                                              column.field,
+                                              column.field === "description"
+                                                ? "priority"
+                                                : column.field,
                                               event,
                                             )
                                           }
                                           onDoubleClick={(event) => {
                                             event.stopPropagation();
-                                            resetColumnWidth(column.field);
+                                            fitColumnToContent(
+                                              column.field === "description"
+                                                ? "priority"
+                                                : column.field,
+                                            );
                                           }}
-                                          aria-label={`Resize ${column.label} column`}
-                                          title="Sürükleyerek genişliği ayarlayın. Çift tıklama varsayılana döndürür."
+                                          aria-label={`Autofit ${
+                                            column.field === "description"
+                                              ? "Önem"
+                                              : column.label
+                                          } column`}
+                                          title="Sürükleyerek genişliği ayarlayın. Çift tıklama içeriğe göre otomatik sığdırır."
                                         />
                                       </div>
                                     )}
@@ -2237,7 +2327,7 @@ export default function App() {
                                       style={{
                                         width:
                                           column.field === "__spacer"
-                                            ? undefined
+                                            ? 0
                                             : columnWidths[column.field],
                                       }}
                                       onClick={() => {
@@ -2249,6 +2339,12 @@ export default function App() {
                                             task.id,
                                             "description",
                                           );
+                                        }
+                                        if (
+                                          column.field === "status" ||
+                                          column.field === "priority"
+                                        ) {
+                                          startEditingCell(task, column.field);
                                         }
                                       }}
                                       onDoubleClick={() =>
@@ -2344,7 +2440,9 @@ export default function App() {
                                                 event.target.value,
                                               )
                                             }
-                                            onBlur={saveCellEdit}
+                                            onBlur={() => {
+                                              void saveCellEdit();
+                                            }}
                                             onKeyDown={(event) => {
                                               if (event.key === "Enter") {
                                                 saveCellEdit();
