@@ -1,6 +1,6 @@
 import type { TaskForm, Workspace, WorkspaceIcon } from "./types";
 
-export const API_URL = "http://localhost:4000";
+export const API_URL = import.meta.env.VITE_API_URL || "/api";
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 export const isClientIdPlaceholder =
   !GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes("your-google-client-id");

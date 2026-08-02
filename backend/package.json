@@ -4,7 +4,10 @@
     "private": true,
     "scripts": {
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-        "start": "node dist/index.js"
+        "start": "node dist/index.js",
+        "postinstall": "prisma generate",
+        "typecheck": "tsc --noEmit -p tsconfig.json",
+        "typecheck:vercel": "tsc --noEmit -p tsconfig.vercel.json"
     },
     "dependencies": {
         "@prisma/client": "^4.16.0",

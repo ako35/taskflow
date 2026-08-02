@@ -2121,11 +2121,6 @@ button[disabled] {
   display: block;
 }
 
-.preview-cell:hover .cell-preview,
-.preview-cell:focus-within .cell-preview {
-  display: block;
-}
-
 .preview-cell .cell-preview::before {
   content: "";
   position: absolute;
