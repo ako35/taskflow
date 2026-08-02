@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -19,5 +19,5 @@ model Task {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   ownerEmail  String?
-  status      String   @default("Yap�lacak")
+  status      String   @default("Yapılacak")
 }

@@ -19,11 +19,16 @@
             "dest": "backend/api/index.ts"
         },
         {
-            "handle": "filesystem"
+            "src": "/assets/(.*)",
+            "dest": "/frontend/assets/$1"
+        },
+        {
+            "src": "/(favicon.ico|vite.svg|manifest.json|robots.txt)",
+            "dest": "/frontend/$1"
         },
         {
             "src": "/(.*)",
-            "dest": "/index.html"
+            "dest": "/frontend/index.html"
         }
     ]
 }

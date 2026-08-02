@@ -13,9 +13,8 @@ This project is configured as a monorepo deployment:
 
 Important:
 
-- Current Prisma schema uses SQLite for local development.
-- Vercel serverless runtime is not suitable for persistent SQLite writes.
-- For production, switch to PostgreSQL and set `DATABASE_URL` accordingly.
+- Prisma datasource is configured for PostgreSQL.
+- Set `DATABASE_URL` to a reachable PostgreSQL instance in production.
 
 ## 2) Environment Variables (Vercel Project Settings)
 
@@ -64,4 +63,4 @@ If prompted, complete login and project linking.
 
 ## 7) Database Migration Note
 
-If moving to PostgreSQL, update Prisma schema provider and run migrations against the new database before production use.
+Run Prisma migration commands against your PostgreSQL database before production use.

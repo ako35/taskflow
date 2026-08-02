@@ -257,6 +257,17 @@ app.get("/api/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
+app.get("/api/db-health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    const taskCount = await prisma.task.count();
+    res.status(200).json({ status: "ok", db: "connected", taskCount });
+  } catch (error) {
+    console.error("DB health check failed", error);
+    res.status(500).json({ status: "error", db: "unavailable" });
+  }
+});
+
 app.use(
   (
     error: any,
