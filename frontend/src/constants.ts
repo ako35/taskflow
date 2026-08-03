@@ -1,7 +1,9 @@
 import type { TaskForm, Workspace, WorkspaceIcon } from "./types";
 
 export const API_URL = import.meta.env.VITE_API_URL || "/api";
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const DEFAULT_GOOGLE_CLIENT_ID =
+  "625073924200-4lfk3mfgpokq2j41h5aa2l32m2e4u4qs.apps.googleusercontent.com";
+export const GOOGLE_CLIENT_ID = DEFAULT_GOOGLE_CLIENT_ID;
 export const isClientIdPlaceholder =
   !GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes("your-google-client-id");
 export const DEFAULT_WORKSPACE_ID = "workspace-inbox";

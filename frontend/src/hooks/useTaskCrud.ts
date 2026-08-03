@@ -196,13 +196,35 @@ export default function useTaskCrud({
           },
         });
 
+        const text = await response.text();
+        let responseBody: any = null;
+        try {
+          responseBody = text ? JSON.parse(text) : null;
+        } catch {
+          responseBody = null;
+        }
+
         if (response.status === 401) {
           handleUnauthorized();
           return;
         }
 
-        if (!response.ok) throw new Error("Görevler yüklenemedi.");
-        const data = (await response.json()) as Task[];
+        if (!response.ok) {
+          const message =
+            responseBody?.error ||
+            responseBody?.message ||
+            text ||
+            "Görevler yüklenemedi.";
+          throw new Error(message);
+        }
+
+        if (!Array.isArray(responseBody)) {
+          throw new Error(
+            "Sunucudan beklenmeyen yanıt alındı. API adresini kontrol edin.",
+          );
+        }
+
+        const data = responseBody as Task[];
         setTasks(
           data.map((task) => ({
             ...task,

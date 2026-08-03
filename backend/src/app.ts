@@ -6,11 +6,15 @@ import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
 
-if (!process.env.GOOGLE_CLIENT_ID) {
+const DEFAULT_GOOGLE_CLIENT_ID =
+  "625073924200-4lfk3mfgpokq2j41h5aa2l32m2e4u4qs.apps.googleusercontent.com";
+const effectiveGoogleClientId = DEFAULT_GOOGLE_CLIENT_ID;
+
+if (!effectiveGoogleClientId) {
   throw new Error("Missing GOOGLE_CLIENT_ID in backend .env");
 }
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(effectiveGoogleClientId);
 const prisma = new PrismaClient();
 const app = express();
 
@@ -50,7 +54,7 @@ declare global {
 async function verifyGoogleToken(idToken: string) {
   const ticket = await googleClient.verifyIdToken({
     idToken,
-    audience: process.env.GOOGLE_CLIENT_ID,
+    audience: effectiveGoogleClientId,
   });
   const payload = ticket.getPayload();
   if (!payload?.email || payload.email_verified !== true) {

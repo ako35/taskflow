@@ -219,17 +219,35 @@ export default function useTaskTableInteractions({
           body: JSON.stringify(data),
         });
 
+        const text = await response.text();
+        let responseBody: any = null;
+        try {
+          responseBody = text ? JSON.parse(text) : null;
+        } catch {
+          responseBody = null;
+        }
+
         if (response.status === 401) {
           handleUnauthorized();
           return;
         }
 
         if (!response.ok) {
-          const text = await response.text();
-          throw new Error(text || response.statusText);
+          const message =
+            responseBody?.error ||
+            responseBody?.message ||
+            text ||
+            response.statusText;
+          throw new Error(message);
         }
 
-        const updatedTask = (await response.json()) as Task;
+        if (!responseBody || typeof responseBody.id !== "number") {
+          throw new Error(
+            "Sunucudan beklenmeyen yanıt alındı. API adresini kontrol edin.",
+          );
+        }
+
+        const updatedTask = responseBody as Task;
         setTasks((prev) =>
           prev.map((item) => (item.id === updatedTask.id ? updatedTask : item)),
         );
