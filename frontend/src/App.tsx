@@ -32,9 +32,16 @@ export default function App() {
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 860);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const tasksTableWrapperRef = useRef<HTMLDivElement | null>(null);
+
+  const collapseSidebarOnMobile = useCallback(() => {
+    if (window.innerWidth <= 860) {
+      setSidebarOpen(false);
+    }
+  }, []);
 
   const handleUnauthorized = useCallback(() => {
     setError("Oturumunuzun süresi dolmuş olabilir. Lütfen tekrar giriş yapın.");
@@ -184,6 +191,10 @@ export default function App() {
     setProfileMenuOpen((current) => !current);
   }, []);
 
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarOpen((current) => !current);
+  }, []);
+
   const handleToggleWorkspaceInput = useCallback(() => {
     setShowWorkspaceInput((current) => !current);
   }, [setShowWorkspaceInput]);
@@ -197,8 +208,9 @@ export default function App() {
     (workspaceId: string) => {
       setSelectedWorkspaceId(workspaceId);
       setViewMode("workspaces");
+      collapseSidebarOnMobile();
     },
-    [setSelectedWorkspaceId, setViewMode],
+    [collapseSidebarOnMobile, setSelectedWorkspaceId, setViewMode],
   );
 
   const handleToggleWorkspaceMenu = useCallback(
@@ -212,7 +224,8 @@ export default function App() {
 
   const handleSetArchiveView = useCallback(() => {
     setViewMode("archive");
-  }, [setViewMode]);
+    collapseSidebarOnMobile();
+  }, [collapseSidebarOnMobile, setViewMode]);
 
   const handleToggleSettingsMenu = useCallback(() => {
     setSettingsMenuOpen((current) => !current);
@@ -297,6 +310,7 @@ export default function App() {
 
   const sidebarProps = useMemo(
     () => ({
+      sidebarOpen,
       activeWorkspaces,
       selectedWorkspace,
       editingWorkspaceId,
@@ -322,6 +336,7 @@ export default function App() {
       onArchiveWorkspace: handleArchiveWorkspace,
       onDeleteWorkspace: handleDeleteWorkspace,
       onSetArchiveView: handleSetArchiveView,
+      onToggleSidebar: handleToggleSidebar,
       onToggleSettingsMenu: handleToggleSettingsMenu,
       onToggleThemeMenu: handleToggleThemeMenu,
       onSetThemeMode: handleSetThemeMode,
@@ -340,11 +355,13 @@ export default function App() {
       handleSetArchiveView,
       handleSetThemeMode,
       handleSignOut,
+      handleToggleSidebar,
       handleToggleSettingsMenu,
       handleToggleThemeMenu,
       handleToggleWorkspaceInput,
       handleToggleWorkspaceMenu,
       newWorkspaceName,
+      sidebarOpen,
       selectedWorkspace,
       settingsMenuOpen,
       showWorkspaceInput,
@@ -409,11 +426,22 @@ export default function App() {
     <div className="app-layout">
       <AppTopBar {...topBarProps} />
 
-      <div className="app-shell">
+      <div
+        className={`app-shell ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}
+      >
         <AppSidebar {...sidebarProps} />
 
         <WorkspacePanel {...workspacePanelProps} />
       </div>
+
+      {sidebarOpen ? (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Menüyü kapat"
+          onClick={() => setSidebarOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

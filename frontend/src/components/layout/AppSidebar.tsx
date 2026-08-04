@@ -6,6 +6,7 @@ import WorkspaceList from "./sidebar/WorkspaceList";
 import type { ThemeMode, ViewMode, Workspace } from "../../types";
 
 type AppSidebarProps = {
+  sidebarOpen: boolean;
   activeWorkspaces: Workspace[];
   selectedWorkspace: Workspace;
   editingWorkspaceId: string | null;
@@ -31,6 +32,7 @@ type AppSidebarProps = {
   onArchiveWorkspace: (workspaceId: string) => void;
   onDeleteWorkspace: (workspaceId: string) => void;
   onSetArchiveView: () => void;
+  onToggleSidebar: () => void;
   onToggleSettingsMenu: () => void;
   onToggleThemeMenu: () => void;
   onSetThemeMode: (mode: ThemeMode) => void;
@@ -38,6 +40,7 @@ type AppSidebarProps = {
 };
 
 export default function AppSidebar({
+  sidebarOpen,
   activeWorkspaces,
   selectedWorkspace,
   editingWorkspaceId,
@@ -63,16 +66,29 @@ export default function AppSidebar({
   onArchiveWorkspace,
   onDeleteWorkspace,
   onSetArchiveView,
+  onToggleSidebar,
   onToggleSettingsMenu,
   onToggleThemeMenu,
   onSetThemeMode,
   onSignOut,
 }: AppSidebarProps) {
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <strong>TaskFlow</strong>
-        <span>Çalışma akışları</span>
+    <aside className="sidebar" id="app-sidebar">
+      <div className="sidebar-header">
+        <div className="sidebar-brand">
+          <strong>TaskFlow</strong>
+          <span>Çalışma akışları</span>
+        </div>
+        <button
+          type="button"
+          className={`sidebar-toggle sidebar-toggle-inline ${sidebarOpen ? "open" : ""}`}
+          aria-label={sidebarOpen ? "Menüyü kapat" : "Menüyü aç"}
+          aria-expanded={sidebarOpen}
+          aria-controls="app-sidebar"
+          onClick={onToggleSidebar}
+        >
+          <UiGlyph icon={sidebarOpen ? "chevron-left" : "chevron-right"} />
+        </button>
       </div>
 
       <div className="workspace-switcher">

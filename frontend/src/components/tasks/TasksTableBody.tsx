@@ -114,9 +114,7 @@ export default function TasksTableBody({
                             className="status-group-chevron"
                             aria-hidden="true"
                           >
-                            <svg viewBox="0 0 24 24">
-                              <path d="m6 9 6 6 6-6" />
-                            </svg>
+                            <UiGlyph icon="chevron-down" />
                           </span>
                           <span className="status-group-count">
                             {statusGroupCounts[status] ?? 0}

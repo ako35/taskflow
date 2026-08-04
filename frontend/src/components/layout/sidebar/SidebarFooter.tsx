@@ -63,9 +63,7 @@ export default function SidebarFooter({
                   className={`settings-popover-chevron ${themeMenuOpen ? "open" : ""}`}
                   aria-hidden="true"
                 >
-                  <svg viewBox="0 0 24 24">
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
+                  <UiGlyph icon="chevron-down" />
                 </span>
               </button>
               {themeMenuOpen && (
