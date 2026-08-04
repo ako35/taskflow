@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import nodemailer from "nodemailer";
 import { PrismaClient } from "@prisma/client";
 import { OAuth2Client } from "google-auth-library";
 
@@ -17,6 +18,14 @@ if (!effectiveGoogleClientId) {
 const googleClient = new OAuth2Client(effectiveGoogleClientId);
 const prisma = new PrismaClient();
 const app = express();
+
+const CONTACT_RECIPIENT_EMAIL = "alikcn35@gmail.com";
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_SECURE = process.env.SMTP_SECURE === "true";
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER || "no-reply@taskflow.local";
 
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:5173",
@@ -165,6 +174,67 @@ function validateTaskUpdatePayload(body: Record<string, unknown>) {
   return { updateData, errors };
 }
 
+type ContactRequestPayload = {
+  fullName: string;
+  email: string;
+  phone: string;
+  requestType: string;
+  company: string;
+  message: string;
+};
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function sanitizeLine(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function validateContactPayload(body: Record<string, unknown>) {
+  const fullName = sanitizeLine(body.fullName);
+  const email = sanitizeLine(body.email);
+  const phone = sanitizeLine(body.phone);
+  const requestType = sanitizeLine(body.requestType);
+  const company = sanitizeLine(body.company);
+  const message = sanitizeLine(body.message);
+  const errors: string[] = [];
+
+  if (!fullName) errors.push("fullName is required");
+  if (!email) errors.push("email is required");
+  if (email && !isValidEmail(email)) errors.push("email is invalid");
+  if (!phone) errors.push("phone is required");
+  if (!requestType) errors.push("requestType is required");
+  if (!message) errors.push("message is required");
+
+  return {
+    payload: {
+      fullName,
+      email,
+      phone,
+      requestType,
+      company,
+      message,
+    } as ContactRequestPayload,
+    errors,
+  };
+}
+
+function mapRequestTypeLabel(requestType: string) {
+  switch (requestType) {
+    case "guncelleme":
+      return "Guncelleme talebi";
+    case "yenilik":
+      return "Yenilik talebi";
+    case "istek":
+      return "Istek";
+    case "sikayet":
+      return "Sikayet";
+    default:
+      return requestType;
+  }
+}
+
 const tasksRouter = express.Router();
 
 tasksRouter.get("/", async (req, res) => {
@@ -252,6 +322,62 @@ tasksRouter.delete("/:id", async (req, res) => {
 
 app.use("/tasks", authenticate, tasksRouter);
 app.use("/api/tasks", authenticate, tasksRouter);
+
+app.post(["/contact-requests", "/api/contact-requests"], async (req, res) => {
+  const { payload, errors } = validateContactPayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !Number.isFinite(SMTP_PORT)) {
+    return res.status(503).json({
+      error:
+        "Mail servisi hazir degil. SMTP ayarlarini backend ortam degiskenlerinde tanimlayin.",
+    });
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+      },
+    });
+
+    const requestTypeLabel = mapRequestTypeLabel(payload.requestType);
+    const subject = `TaskFlow talep formu - ${requestTypeLabel} - ${payload.fullName}`;
+    const companyLabel = payload.company || "Belirtilmedi";
+
+    const text = [
+      "TaskFlow iletisim formundan yeni bir talep geldi.",
+      "",
+      `Ad Soyad: ${payload.fullName}`,
+      `E-posta: ${payload.email}`,
+      `Telefon: ${payload.phone}`,
+      `Talep Turu: ${requestTypeLabel}`,
+      `Sirket: ${companyLabel}`,
+      "",
+      "Mesaj:",
+      payload.message,
+    ].join("\n");
+
+    await transporter.sendMail({
+      from: SMTP_FROM,
+      to: CONTACT_RECIPIENT_EMAIL,
+      replyTo: payload.email,
+      subject,
+      text,
+    });
+
+    res.status(202).json({ success: true });
+  } catch (error) {
+    console.error("Contact request email failed", error);
+    res.status(500).json({ error: "Talep iletilemedi. Lutfen tekrar deneyin." });
+  }
+});
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });

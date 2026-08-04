@@ -23,3 +23,4 @@ Model fields (Türkçe): `gorev adı` -> `title`, `arac` -> `vehicle`, `musteri`
 Environment:
 
 - `DATABASE_URL` should point to PostgreSQL, e.g. `postgresql://postgres:postgres@localhost:5432/taskflow?schema=public`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` should be configured to send contact form emails.

@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
+import ContactView from "./components/auth/ContactView";
 import LandingPage from "./components/auth/LandingPage";
 import LoginView from "./components/auth/LoginView";
 import AppSidebar from "./components/layout/AppSidebar";
@@ -410,7 +411,21 @@ export default function App() {
       );
     }
 
-    return <LandingPage onGoToLogin={() => setGuestView("login")} />;
+    if (guestView === "contact") {
+      return (
+        <ContactView
+          onBackToLanding={() => setGuestView("landing")}
+          onGoToLogin={() => setGuestView("login")}
+        />
+      );
+    }
+
+    return (
+      <LandingPage
+        onGoToContact={() => setGuestView("contact")}
+        onGoToLogin={() => setGuestView("login")}
+      />
+    );
   }
 
   const topBarProps = {

@@ -24,6 +24,12 @@ Add these variables in Vercel:
 - `GOOGLE_CLIENT_ID`: same client id for backend token verification
 - `FRONTEND_URL`: your Vercel production URL (for CORS), e.g. `https://your-project.vercel.app`
 - `DATABASE_URL`: production database connection string
+- `SMTP_HOST`: SMTP host, e.g. `smtp.gmail.com`
+- `SMTP_PORT`: SMTP port, e.g. `587`
+- `SMTP_SECURE`: `true` for SSL (typically port 465), otherwise `false`
+- `SMTP_USER`: SMTP username/email
+- `SMTP_PASS`: SMTP password or app password
+- `SMTP_FROM`: sender email shown in contact request mails
 
 Optional:
 

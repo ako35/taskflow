@@ -15,7 +15,7 @@ export default function LoginView({
         <button
           type="button"
           className="auth-brand auth-brand-button"
-          aria-label="TaskFlow ana sayfaya dön"
+          aria-label="TaskFlow ana sayfasına dön"
           onClick={onBackToLanding}
         >
           <span className="topbar-logo" aria-hidden="true">
@@ -29,7 +29,7 @@ export default function LoginView({
       <main className="auth-content">
         <section className="auth-form-shell" aria-label="Giriş formu">
           <h1>Oturum Aç</h1>
-          <p className="auth-user-hint">TaskFlow hesabınızla devam edin</p>
+          <p className="auth-user-hint">TaskFlow uygulamasına devam edin</p>
 
           <label htmlFor="email">E-posta adresiniz</label>
           <input id="email" type="email" placeholder="E-posta" />
@@ -97,7 +97,7 @@ export default function LoginView({
             className="auth-back-link"
             onClick={onBackToLanding}
           >
-            Başka bir hesaba giriş yapın
+            TaskFlow'a farklı bir hesapla giriş yapın
           </button>
 
           <p className="auth-support-note">

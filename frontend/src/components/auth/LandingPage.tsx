@@ -1,10 +1,14 @@
 import React from "react";
 
 type LandingPageProps = {
+  onGoToContact: () => void;
   onGoToLogin: () => void;
 };
 
-export default function LandingPage({ onGoToLogin }: LandingPageProps) {
+export default function LandingPage({
+  onGoToContact,
+  onGoToLogin,
+}: LandingPageProps) {
   return (
     <div className="landing-site">
       <header className="landing-nav">
@@ -22,6 +26,13 @@ export default function LandingPage({ onGoToLogin }: LandingPageProps) {
           <a href="#">Kaynaklar</a>
         </nav>
         <div className="landing-actions">
+          <button
+            type="button"
+            className="btn-secondary landing-contact-btn"
+            onClick={onGoToContact}
+          >
+            İletişime geçin
+          </button>
           <button
             type="button"
             className="landing-link-btn"
@@ -56,7 +67,7 @@ export default function LandingPage({ onGoToLogin }: LandingPageProps) {
               className="btn-secondary landing-outline-btn"
               onClick={onGoToLogin}
             >
-              Giriş ekranına git
+              TaskFlow'a giriş yap
             </button>
           </div>
           <small>Kredi kartı bilgisi gerekmez</small>
