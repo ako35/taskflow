@@ -16,3 +16,6 @@ backend/prisma/dev.db
 # VS Code
 .vscode/
 .vercel
+
+.env
+backend/.env
