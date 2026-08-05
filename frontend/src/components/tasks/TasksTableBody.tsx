@@ -19,6 +19,7 @@ type TasksTableBodyProps = {
   editingCell: { id: number; field: string } | null;
   editingValue: string;
   activePreviewCell: { id: number; field: "title" | "description" } | null;
+  aiImprovingCell: { id: number; field: "title" | "description" } | null;
   archivedTaskIds: number[];
   onToggleStatusGroup: (status: string) => void;
   onStartColumnResize: (
@@ -27,6 +28,11 @@ type TasksTableBodyProps = {
   ) => void;
   onFitColumnToContent: (field: string) => void;
   onTogglePreviewCell: (id: number, field: "title" | "description") => void;
+  onAiImproveTaskField: (
+    taskId: number,
+    field: "title" | "description",
+  ) => Promise<void>;
+  onAiImproveEditingCell: () => Promise<void>;
   onStartEditingCell: (task: Task, field: string) => void;
   onSetEditingValue: (value: string) => void;
   onSaveCellEdit: (nextValue?: string) => void | Promise<void>;
@@ -47,11 +53,14 @@ export default function TasksTableBody({
   editingCell,
   editingValue,
   activePreviewCell,
+  aiImprovingCell,
   archivedTaskIds,
   onToggleStatusGroup,
   onStartColumnResize,
   onFitColumnToContent,
   onTogglePreviewCell,
+  onAiImproveTaskField,
+  onAiImproveEditingCell,
   onStartEditingCell,
   onSetEditingValue,
   onSaveCellEdit,
@@ -282,34 +291,111 @@ export default function TasksTableBody({
                                 }}
                                 onCancel={onCancelCellEdit}
                               />
-                            ) : column.field === "description" ? (
-                              <textarea
-                                className="inline-cell-input inline-cell-textarea"
-                                autoFocus
-                                value={editingValue}
-                                rows={Math.max(
-                                  2,
-                                  editingValue.split("\n").length,
-                                )}
-                                onChange={(event) =>
-                                  onSetEditingValue(event.target.value)
-                                }
-                                onBlur={() => {
-                                  void onSaveCellEdit();
-                                }}
-                                onKeyDown={(event) => {
-                                  if (event.key === "Escape") {
-                                    onCancelCellEdit();
+                            ) : column.field === "title" ? (
+                              <div
+                                className="inline-edit-stack"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <input
+                                  className="inline-cell-input"
+                                  autoFocus
+                                  type="text"
+                                  value={editingValue}
+                                  onChange={(event) =>
+                                    onSetEditingValue(event.target.value)
                                   }
-                                  if (
-                                    event.key === "Enter" &&
-                                    (event.ctrlKey || event.metaKey)
-                                  ) {
-                                    event.preventDefault();
+                                  onBlur={() => {
                                     void onSaveCellEdit();
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                      void onSaveCellEdit();
+                                    }
+                                    if (event.key === "Escape") {
+                                      onCancelCellEdit();
+                                    }
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className="task-action-btn task-action-ai-btn"
+                                  onMouseDown={(event) =>
+                                    event.preventDefault()
                                   }
-                                }}
-                              />
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    void onAiImproveEditingCell();
+                                  }}
+                                  disabled={
+                                    aiImprovingCell?.id === task.id &&
+                                    aiImprovingCell.field === "title"
+                                  }
+                                >
+                                  <span aria-hidden="true">
+                                    <UiGlyph icon="spark" />
+                                  </span>
+                                  {aiImprovingCell?.id === task.id &&
+                                  aiImprovingCell.field === "title"
+                                    ? "AI iyilestiriyor..."
+                                    : "AI ile metni iyilestir"}
+                                </button>
+                              </div>
+                            ) : column.field === "description" ? (
+                              <div
+                                className="inline-edit-stack"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <textarea
+                                  className="inline-cell-input inline-cell-textarea"
+                                  autoFocus
+                                  value={editingValue}
+                                  rows={Math.max(
+                                    2,
+                                    editingValue.split("\n").length,
+                                  )}
+                                  onChange={(event) =>
+                                    onSetEditingValue(event.target.value)
+                                  }
+                                  onBlur={() => {
+                                    void onSaveCellEdit();
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Escape") {
+                                      onCancelCellEdit();
+                                    }
+                                    if (
+                                      event.key === "Enter" &&
+                                      (event.ctrlKey || event.metaKey)
+                                    ) {
+                                      event.preventDefault();
+                                      void onSaveCellEdit();
+                                    }
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className="task-action-btn task-action-ai-btn"
+                                  onMouseDown={(event) =>
+                                    event.preventDefault()
+                                  }
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    void onAiImproveEditingCell();
+                                  }}
+                                  disabled={
+                                    aiImprovingCell?.id === task.id &&
+                                    aiImprovingCell.field === "description"
+                                  }
+                                >
+                                  <span aria-hidden="true">
+                                    <UiGlyph icon="spark" />
+                                  </span>
+                                  {aiImprovingCell?.id === task.id &&
+                                  aiImprovingCell.field === "description"
+                                    ? "AI iyilestiriyor..."
+                                    : "AI ile metni iyilestir"}
+                                </button>
+                              </div>
                             ) : (
                               <input
                                 className="inline-cell-input"
@@ -339,7 +425,36 @@ export default function TasksTableBody({
                                   {task.title}
                                 </span>
                               </div>
-                              <div className="cell-preview">{task.title}</div>
+                              <div className="cell-preview">
+                                <div className="cell-preview-body">
+                                  {task.title}
+                                </div>
+                                <div className="cell-preview-actions">
+                                  <button
+                                    type="button"
+                                    className="task-action-btn task-action-ai-btn"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      void onAiImproveTaskField(
+                                        task.id,
+                                        "title",
+                                      );
+                                    }}
+                                    disabled={
+                                      aiImprovingCell?.id === task.id &&
+                                      aiImprovingCell.field === "title"
+                                    }
+                                  >
+                                    <span aria-hidden="true">
+                                      <UiGlyph icon="spark" />
+                                    </span>
+                                    {aiImprovingCell?.id === task.id &&
+                                    aiImprovingCell.field === "title"
+                                      ? "AI iyilestiriyor..."
+                                      : "AI ile metni iyilestir"}
+                                  </button>
+                                </div>
+                              </div>
                             </>
                           ) : column.field === "status" ? (
                             <span
@@ -366,7 +481,34 @@ export default function TasksTableBody({
                                 </span>
                               </div>
                               <div className="cell-preview">
-                                {task.description || "-"}
+                                <div className="cell-preview-body">
+                                  {task.description || "-"}
+                                </div>
+                                <div className="cell-preview-actions">
+                                  <button
+                                    type="button"
+                                    className="task-action-btn task-action-ai-btn"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      void onAiImproveTaskField(
+                                        task.id,
+                                        "description",
+                                      );
+                                    }}
+                                    disabled={
+                                      aiImprovingCell?.id === task.id &&
+                                      aiImprovingCell.field === "description"
+                                    }
+                                  >
+                                    <span aria-hidden="true">
+                                      <UiGlyph icon="spark" />
+                                    </span>
+                                    {aiImprovingCell?.id === task.id &&
+                                    aiImprovingCell.field === "description"
+                                      ? "AI iyilestiriyor..."
+                                      : "AI ile metni iyilestir"}
+                                  </button>
+                                </div>
                               </div>
                               <div
                                 className="task-actions"

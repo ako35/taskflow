@@ -39,5 +39,6 @@ export type Workspace = {
 };
 
 export type ThemeMode = "dark" | "light";
+export type TableDensity = "normal" | "dense";
 export type ViewMode = "workspaces" | "archive";
 export type GuestView = "landing" | "login" | "contact";

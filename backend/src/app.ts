@@ -9,7 +9,8 @@ dotenv.config();
 
 const DEFAULT_GOOGLE_CLIENT_ID =
   "625073924200-4lfk3mfgpokq2j41h5aa2l32m2e4u4qs.apps.googleusercontent.com";
-const effectiveGoogleClientId = DEFAULT_GOOGLE_CLIENT_ID;
+const effectiveGoogleClientId =
+  process.env.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID;
 
 if (!effectiveGoogleClientId) {
   throw new Error("Missing GOOGLE_CLIENT_ID in backend .env");
@@ -26,6 +27,12 @@ const SMTP_SECURE = process.env.SMTP_SECURE === "true";
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER || "no-reply@taskflow.local";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL;
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com";
+
+const GEMINI_API_VERSIONS = ["v1beta", "v1"] as const;
+const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:5173",
@@ -235,6 +242,140 @@ function mapRequestTypeLabel(requestType: string) {
   }
 }
 
+type AiRefineField = "title" | "description";
+
+function buildAiPrompt(field: AiRefineField, text: string) {
+  const goal =
+    field === "title"
+      ? "Bu gorev basligini daha net, kisa ve profesyonel hale getir."
+      : "Bu gorev aciklamasini daha anlasilir, duzenli ve profesyonel hale getir.";
+
+  return [
+    "Sen bir Turkce is yazimi duzenleyicisisin.",
+    goal,
+    "Anlami koru, yeni bilgi ekleme.",
+    "Sadece duzenlenmis metni don. Aciklama veya etiket ekleme.",
+    "",
+    "Metin:",
+    text,
+  ].join("\n");
+}
+
+async function refineTextWithGemini(text: string, field: AiRefineField) {
+  if (!GEMINI_API_KEY) {
+    throw new Error("AI servisi aktif degil. GEMINI_API_KEY tanimlayin.");
+  }
+
+  const normalizeModelName = (modelName: string) =>
+    modelName.replace(/^models\//, "").trim();
+
+  const preferredModels = [
+    GEMINI_MODEL ? normalizeModelName(GEMINI_MODEL) : "",
+    ...GEMINI_FALLBACK_MODELS,
+  ].filter((modelName, index, arr) => modelName && arr.indexOf(modelName) === index);
+
+  const getAvailableModelNames = async (apiVersion: "v1beta" | "v1") => {
+    try {
+      const listResponse = await fetch(
+        `${GEMINI_API_BASE}/${apiVersion}/models?key=${GEMINI_API_KEY}`,
+      );
+      const listPayload = (await listResponse.json().catch(() => null)) as
+        | {
+            models?: Array<{
+              name?: string;
+              supportedGenerationMethods?: string[];
+            }>;
+          }
+        | null;
+
+      if (!listResponse.ok || !listPayload?.models?.length) {
+        return [] as string[];
+      }
+
+      return listPayload.models
+        .filter((model) =>
+          (model.supportedGenerationMethods || []).includes("generateContent"),
+        )
+        .map((model) => normalizeModelName(model.name || ""))
+        .filter(Boolean);
+    } catch {
+      return [] as string[];
+    }
+  };
+
+  let lastErrorMessage = "AI duzenleme servisine erisilemedi.";
+
+  for (const apiVersion of GEMINI_API_VERSIONS) {
+    const availableModels = await getAvailableModelNames(apiVersion);
+    const candidateModels =
+      availableModels.length > 0
+        ? [
+            ...preferredModels.filter((modelName) => availableModels.includes(modelName)),
+            ...availableModels.filter((modelName) =>
+              /flash/i.test(modelName),
+            ),
+            ...availableModels,
+          ].filter((modelName, index, arr) => arr.indexOf(modelName) === index)
+        : preferredModels;
+
+    for (const modelName of candidateModels) {
+      const response = await fetch(
+        `${GEMINI_API_BASE}/${apiVersion}/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: buildAiPrompt(field, text) }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.35,
+              maxOutputTokens: 220,
+            },
+          }),
+        },
+      );
+
+      const payload = (await response.json().catch(() => null)) as any;
+
+      if (response.ok) {
+        const refined = payload?.candidates?.[0]?.content?.parts
+          ?.map((part: { text?: string }) => part?.text || "")
+          .join("\n")
+          .trim();
+
+        if (!refined) {
+          throw new Error("AI duzenleme sonucu alinamadi.");
+        }
+
+        return refined.replace(/^"|"$/g, "").trim();
+      }
+
+      const message = payload?.error?.message || "AI duzenleme servisine erisilemedi.";
+      lastErrorMessage = message;
+
+      const isModelUnavailable =
+        response.status === 404 ||
+        /not found|not supported|unsupported|unknown model/i.test(String(message));
+
+      if (isModelUnavailable) {
+        continue;
+      }
+
+      throw new Error(message);
+    }
+  }
+
+  throw new Error(
+    `Uygun Gemini modeli bulunamadi. Son hata: ${lastErrorMessage}. GEMINI_MODEL degerini guncel bir modelle ayarlayin (ornek: gemini-2.5-flash).`,
+  );
+}
+
 const tasksRouter = express.Router();
 
 tasksRouter.get("/", async (req, res) => {
@@ -322,6 +463,33 @@ tasksRouter.delete("/:id", async (req, res) => {
 
 app.use("/tasks", authenticate, tasksRouter);
 app.use("/api/tasks", authenticate, tasksRouter);
+
+app.post(["/ai/refine-text", "/api/ai/refine-text"], authenticate, async (req, res) => {
+  const rawText = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+  const field = req.body?.field as AiRefineField;
+
+  if (!rawText) {
+    return res.status(400).json({ error: "text is required" });
+  }
+
+  if (field !== "title" && field !== "description") {
+    return res.status(400).json({ error: "field must be title or description" });
+  }
+
+  if (rawText.length > 4000) {
+    return res.status(400).json({ error: "text is too long" });
+  }
+
+  try {
+    const refinedText = await refineTextWithGemini(rawText, field);
+    res.status(200).json({ text: refinedText });
+  } catch (error) {
+    console.error("AI refine failed", error);
+    const message = error instanceof Error ? error.message : "AI duzenleme hatasi";
+    const status = /GEMINI_API_KEY/.test(message) ? 503 : 500;
+    res.status(status).json({ error: message });
+  }
+});
 
 app.post(["/contact-requests", "/api/contact-requests"], async (req, res) => {
   const { payload, errors } = validateContactPayload(req.body || {});

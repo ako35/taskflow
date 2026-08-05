@@ -24,3 +24,4 @@ Environment:
 
 - `DATABASE_URL` should point to PostgreSQL, e.g. `postgresql://postgres:postgres@localhost:5432/taskflow?schema=public`
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` should be configured to send contact form emails.
+- `GEMINI_API_KEY` should be configured to enable `/api/ai/refine-text` in local and Vercel environments.

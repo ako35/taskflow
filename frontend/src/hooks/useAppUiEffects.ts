@@ -5,10 +5,11 @@ import {
   type SetStateAction,
 } from "react";
 import { DEFAULT_WORKSPACE_ID } from "../constants";
-import type { Task, ThemeMode } from "../types";
+import type { TableDensity, Task, ThemeMode } from "../types";
 
 type UseAppUiEffectsArgs = {
   themeMode: ThemeMode;
+  tableDensity: TableDensity;
   tasks: Task[];
   settingsMenuRef: MutableRefObject<HTMLDivElement | null>;
   profileMenuRef: MutableRefObject<HTMLDivElement | null>;
@@ -27,6 +28,7 @@ type UseAppUiEffectsArgs = {
 
 export default function useAppUiEffects({
   themeMode,
+  tableDensity,
   tasks,
   settingsMenuRef,
   profileMenuRef,
@@ -44,6 +46,11 @@ export default function useAppUiEffects({
     document.documentElement.setAttribute("data-theme", themeMode);
     localStorage.setItem("taskflow_theme", themeMode);
   }, [themeMode]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-table-density", tableDensity);
+    localStorage.setItem("taskflow_table_density", tableDensity);
+  }, [tableDensity]);
 
   useEffect(() => {
     if (tasks.length === 0) return;

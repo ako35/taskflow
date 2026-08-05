@@ -30,6 +30,8 @@ Add these variables in Vercel:
 - `SMTP_USER`: SMTP username/email
 - `SMTP_PASS`: SMTP password or app password
 - `SMTP_FROM`: sender email shown in contact request mails
+- `GEMINI_API_KEY`: Gemini API key for AI text improvement endpoint
+- `GEMINI_MODEL`: optional, recommended `gemini-2.5-flash`
 
 Optional:
 
@@ -50,6 +52,10 @@ This repository already includes `vercel.json` at root:
 3. Add environment variables listed above.
 4. Deploy.
 
+Important for env changes:
+
+- If you add/change `GEMINI_API_KEY` (or any env var) after initial deploy, trigger a redeploy so serverless functions pick up the new value.
+
 ## 5) Deploy from CLI
 
 From repository root:
@@ -66,6 +72,25 @@ If prompted, complete login and project linking.
 - Open `https://your-project.vercel.app/health` (should return app page unless routed)
 - Open `https://your-project.vercel.app/api/health` (should return `{ "status": "ok" }`)
 - Login with Google and create/read/update/delete a task
+- Open a task title/description AI improvement action and confirm response is successful (no `GEMINI_API_KEY` error)
+
+## 8) One-time Vercel CLI env setup (optional)
+
+From repository root, you can set env vars with CLI:
+
+```bash
+vercel env add GEMINI_API_KEY production
+vercel env add GEMINI_API_KEY preview
+vercel env add GOOGLE_CLIENT_ID production
+vercel env add VITE_GOOGLE_CLIENT_ID production
+vercel env add FRONTEND_URL production
+```
+
+Then redeploy:
+
+```bash
+npx vercel --prod
+```
 
 ## 7) Database Migration Note
 

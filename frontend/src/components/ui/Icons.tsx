@@ -66,6 +66,7 @@ export function UiGlyph({
     | "search"
     | "check"
     | "spark"
+    | "layers"
     | "archive"
     | "restore"
     | "trash";
@@ -78,6 +79,7 @@ export function UiGlyph({
     | "search"
     | "check"
     | "spark"
+    | "layers"
     | "archive"
     | "restore"
     | "trash",
@@ -91,6 +93,7 @@ export function UiGlyph({
     search: Search,
     check: Check,
     spark: Sparkles,
+    layers: Layers3,
     archive: Archive,
     restore: RotateCcw,
     trash: Trash2,

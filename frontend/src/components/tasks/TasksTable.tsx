@@ -20,6 +20,12 @@ type TasksTableProps = {
   activePreviewCell: { id: number; field: "title" | "description" } | null;
   archivedTaskIds: number[];
   isFormValid: boolean;
+  aiImprovingCell: { id: number; field: "title" | "description" } | null;
+  onAiImproveTaskField: (
+    taskId: number,
+    field: "title" | "description",
+  ) => Promise<void>;
+  onAiImproveEditingCell: () => Promise<void>;
   onChangeForm: (
     field: keyof TaskForm,
   ) => (
@@ -61,6 +67,9 @@ export default function TasksTable({
   activePreviewCell,
   archivedTaskIds,
   isFormValid,
+  aiImprovingCell,
+  onAiImproveTaskField,
+  onAiImproveEditingCell,
   onChangeForm,
   onSubmit,
   onHideForm,
@@ -113,6 +122,7 @@ export default function TasksTable({
           editingCell={editingCell}
           editingValue={editingValue}
           activePreviewCell={activePreviewCell}
+          aiImprovingCell={aiImprovingCell}
           archivedTaskIds={archivedTaskIds}
           onToggleStatusGroup={onToggleStatusGroup}
           onStartColumnResize={onStartColumnResize}
@@ -121,6 +131,8 @@ export default function TasksTable({
           onStartEditingCell={onStartEditingCell}
           onSetEditingValue={onSetEditingValue}
           onSaveCellEdit={onSaveCellEdit}
+          onAiImproveTaskField={onAiImproveTaskField}
+          onAiImproveEditingCell={onAiImproveEditingCell}
           onCancelCellEdit={onCancelCellEdit}
           onRestoreTask={onRestoreTask}
           onArchiveTask={onArchiveTask}

@@ -67,6 +67,10 @@ export default function useTaskTableInteractions({
     id: number;
     field: "title" | "description";
   } | null>(null);
+  const [aiImprovingCell, setAiImprovingCell] = useState<{
+    id: number;
+    field: "title" | "description";
+  } | null>(null);
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
     const stored = safeParseJson<Record<string, number>>(
@@ -438,6 +442,173 @@ export default function useTaskTableInteractions({
     [],
   );
 
+  const handleAiImproveTaskField = useCallback(
+    async (taskId: number, field: "title" | "description") => {
+      if (!idToken) {
+        setError("Oturumunuzun süresi dolmuş olabilir. Lütfen tekrar giriş yapın.");
+        return;
+      }
+
+      const task = tasks.find((item) => item.id === taskId);
+      if (!task) return;
+
+      const sourceText = String(task[field] ?? "").trim();
+      if (!sourceText) {
+        setError("AI iyilestirme icin once metin olusturun.");
+        return;
+      }
+
+      setAiImprovingCell({ id: taskId, field });
+      setError(null);
+
+      try {
+        const refineResponse = await fetch(`${API_URL}/ai/refine-text`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            field,
+            text: sourceText,
+          }),
+        });
+
+        const refinePayload = (await refineResponse
+          .json()
+          .catch(() => null)) as { text?: string; error?: string } | null;
+
+        if (refineResponse.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        if (!refineResponse.ok || !refinePayload?.text) {
+          throw new Error(
+            refinePayload?.error || "AI metin iyilestirme basarisiz oldu.",
+          );
+        }
+
+        const refinedText = refinePayload.text.trim();
+        if (!refinedText) {
+          throw new Error("AI duzenleme sonucu bos dondu.");
+        }
+
+        if (refinedText === sourceText) {
+          return;
+        }
+
+        const updateResponse = await fetch(`${API_URL}/tasks/${taskId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            [field]: refinedText,
+          }),
+        });
+
+        const updatePayload = (await updateResponse
+          .json()
+          .catch(() => null)) as Task | { error?: string } | null;
+
+        if (updateResponse.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        if (!updateResponse.ok || !updatePayload || !("id" in updatePayload)) {
+          const message =
+            (updatePayload as { error?: string } | null)?.error ||
+            "AI iyilestirilen metin kaydedilemedi.";
+          throw new Error(message);
+        }
+
+        const updatedTask = updatePayload as Task;
+        setTasks((prev) =>
+          prev.map((item) => (item.id === updatedTask.id ? updatedTask : item)),
+        );
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "AI metin iyilestirme sirasinda bir hata olustu.",
+        );
+      } finally {
+        setAiImprovingCell(null);
+      }
+    },
+    [handleUnauthorized, idToken, setError, setTasks, tasks],
+  );
+
+  const handleAiImproveEditingCell = useCallback(async () => {
+    if (!editingCell) return;
+
+    const field = editingCell.field;
+    if (field !== "title" && field !== "description") {
+      return;
+    }
+
+    if (!idToken) {
+      setError("Oturumunuzun süresi dolmuş olabilir. Lütfen tekrar giriş yapın.");
+      return;
+    }
+
+    const sourceText = editingValue.trim();
+    if (!sourceText) {
+      setError("AI iyilestirme icin once metin olusturun.");
+      return;
+    }
+
+    setAiImprovingCell({ id: editingCell.id, field });
+    setError(null);
+
+    try {
+      const refineResponse = await fetch(`${API_URL}/ai/refine-text`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          field,
+          text: sourceText,
+        }),
+      });
+
+      const refinePayload = (await refineResponse
+        .json()
+        .catch(() => null)) as { text?: string; error?: string } | null;
+
+      if (refineResponse.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!refineResponse.ok || !refinePayload?.text) {
+        throw new Error(
+          refinePayload?.error || "AI metin iyilestirme basarisiz oldu.",
+        );
+      }
+
+      const refinedText = refinePayload.text.trim();
+      if (!refinedText) {
+        throw new Error("AI duzenleme sonucu bos dondu.");
+      }
+
+      setEditingValue(refinedText);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "AI metin iyilestirme sirasinda bir hata olustu.",
+      );
+    } finally {
+      setAiImprovingCell(null);
+    }
+  }, [editingCell, editingValue, handleUnauthorized, idToken, setError]);
+
   useEffect(() => {
     localStorage.setItem(COLUMN_WIDTHS_STORAGE_KEY, JSON.stringify(columnWidths));
   }, [columnWidths]);
@@ -465,6 +636,7 @@ export default function useTaskTableInteractions({
     setEditingValue,
     collapsedStatusGroups,
     activePreviewCell,
+    aiImprovingCell,
     setActivePreviewCell,
     columnWidths,
     visibleTasks,
@@ -476,5 +648,7 @@ export default function useTaskTableInteractions({
     fitColumnToContent,
     toggleStatusGroup,
     togglePreviewCell,
+    handleAiImproveTaskField,
+    handleAiImproveEditingCell,
   };
 }

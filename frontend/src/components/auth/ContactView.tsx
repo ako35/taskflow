@@ -121,6 +121,7 @@ export default function ContactView({
       </header>
 
       <main className="contact-shell">
+        <p className="contact-eyebrow">TaskFlow Destek Merkezi</p>
         <h1 className="contact-heading">Satış ekibiyle iletişime geçin</h1>
 
         <section
@@ -135,8 +136,7 @@ export default function ContactView({
               çözümü birlikte planlayalım.
             </p>
             <p className="contact-callout">
-              Acil durumlar için:{" "}
-              <a href="tel:+908504802780">+90 850 480 2780</a>
+              Acil durumlar için: <a href="tel:+905073503135">507 350 31 35</a>
             </p>
             <ul className="contact-feature-list">
               <li>Güncelleme talepleri</li>

@@ -11,7 +11,7 @@ import useTaskCrud from "./hooks/useTaskCrud";
 import useTaskTableInteractions from "./hooks/useTaskTableInteractions";
 import useWorkspaceManager from "./hooks/useWorkspaceManager";
 import { DEFAULT_WORKSPACE_ID } from "./constants";
-import type { ThemeMode } from "./types";
+import type { TableDensity, ThemeMode } from "./types";
 import { getUserInitials } from "./utils";
 
 export default function App() {
@@ -33,6 +33,10 @@ export default function App() {
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [tableDensity, setTableDensity] = useState<TableDensity>(() => {
+    const stored = localStorage.getItem("taskflow_table_density");
+    return stored === "dense" ? "dense" : "normal";
+  });
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 860);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -145,9 +149,12 @@ export default function App() {
     columnWidths,
     visibleTasks,
     statusGroupCounts,
+    aiImprovingCell,
     startEditingCell,
     cancelCellEdit,
     saveCellEdit,
+    handleAiImproveTaskField,
+    handleAiImproveEditingCell,
     startColumnResize,
     fitColumnToContent,
     toggleStatusGroup,
@@ -170,6 +177,7 @@ export default function App() {
 
   useAppUiEffects({
     themeMode,
+    tableDensity,
     tasks,
     settingsMenuRef,
     profileMenuRef,
@@ -245,6 +253,10 @@ export default function App() {
     setShowForm((current) => !current);
   }, [setShowForm]);
 
+  const handleSetTableDensity = useCallback((density: TableDensity) => {
+    setTableDensity(density);
+  }, []);
+
   const tasksTableProps = useMemo(
     () => ({
       tableWrapperRef: tasksTableWrapperRef,
@@ -262,6 +274,9 @@ export default function App() {
       activePreviewCell,
       archivedTaskIds,
       isFormValid,
+      aiImprovingCell,
+      onAiImproveTaskField: handleAiImproveTaskField,
+      onAiImproveEditingCell: handleAiImproveEditingCell,
       onChangeForm: handleChange,
       onSubmit: handleSubmit,
       onHideForm: handleHideForm,
@@ -288,6 +303,8 @@ export default function App() {
       fitColumnToContent,
       form,
       handleArchiveTask,
+      handleAiImproveTaskField,
+      handleAiImproveEditingCell,
       handleChange,
       handleDeleteTask,
       handleHideForm,
@@ -295,6 +312,7 @@ export default function App() {
       handleSubmit,
       isFormValid,
       loading,
+      aiImprovingCell,
       saveCellEdit,
       setEditingValue,
       showForm,
@@ -384,6 +402,8 @@ export default function App() {
       archivedWorkspaces,
       error,
       showForm,
+      tableDensity,
+      onSetTableDensity: handleSetTableDensity,
       onToggleShowForm: handleToggleShowForm,
       onRestoreWorkspace: handleRestoreWorkspace,
       tasksTableProps,
@@ -392,10 +412,12 @@ export default function App() {
       archivedWorkspaces,
       error,
       handleRestoreWorkspace,
+      handleSetTableDensity,
       handleToggleShowForm,
       query,
       selectedWorkspace,
       showForm,
+      tableDensity,
       tasksTableProps,
       viewMode,
     ],

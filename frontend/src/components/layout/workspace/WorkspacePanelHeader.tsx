@@ -1,41 +1,33 @@
 import React from "react";
 import { UiGlyph } from "../../ui/Icons";
-import type { ViewMode, Workspace } from "../../../types";
 
 type WorkspacePanelHeaderProps = {
-  viewMode: ViewMode;
-  selectedWorkspace: Workspace;
   query: string;
+  showForm: boolean;
+  showAddButton: boolean;
+  onToggleShowForm: () => void;
   onQueryChange: (value: string) => void;
 };
 
 export default function WorkspacePanelHeader({
-  viewMode,
-  selectedWorkspace,
   query,
+  showForm,
+  showAddButton,
+  onToggleShowForm,
   onQueryChange,
 }: WorkspacePanelHeaderProps) {
   return (
-    <div className="panel-header compact">
-      <div>
-        <div className="panel-kicker">
-          <span className="inline-glyph" aria-hidden="true">
-            <UiGlyph icon="spark" />
-          </span>
-          Canlı pano
-        </div>
-        <h2>
-          {viewMode === "archive"
-            ? "Arşiv Görevleri"
-            : `${selectedWorkspace.name} Görevleri`}
-        </h2>
-        <p>
-          {viewMode === "archive"
-            ? "Arşivlenen çalışma alanları ve görevler burada listelenir."
-            : "Bu çalışma alanı içindeki görevleri görüntülüyorsunuz."}
-        </p>
-      </div>
+    <div className="panel-header compact panel-header-toolbar-only">
       <div className="panel-actions">
+        {showAddButton ? (
+          <button
+            type="button"
+            className="btn-primary toolbar-add-task-btn"
+            onClick={onToggleShowForm}
+          >
+            {showForm ? "Formu Gizle" : "Görev Ekle"}
+          </button>
+        ) : null}
         <label className="search-shell" aria-label="Görev ara">
           <span className="search-icon" aria-hidden="true">
             <UiGlyph icon="search" />

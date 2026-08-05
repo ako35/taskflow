@@ -3,7 +3,7 @@ import TasksTable from "../tasks/TasksTable";
 import ArchivedWorkspacesSection from "./workspace/ArchivedWorkspacesSection";
 import WorkspaceContextBar from "./workspace/WorkspaceContextBar";
 import WorkspacePanelHeader from "./workspace/WorkspacePanelHeader";
-import type { ViewMode, Workspace } from "../../types";
+import type { TableDensity, ViewMode, Workspace } from "../../types";
 
 type WorkspacePanelProps = {
   viewMode: ViewMode;
@@ -13,6 +13,8 @@ type WorkspacePanelProps = {
   archivedWorkspaces: Workspace[];
   error: string | null;
   showForm: boolean;
+  tableDensity: TableDensity;
+  onSetTableDensity: (density: TableDensity) => void;
   onToggleShowForm: () => void;
   onRestoreWorkspace: (workspaceId: string) => void;
   tasksTableProps: React.ComponentProps<typeof TasksTable>;
@@ -26,6 +28,8 @@ export default function WorkspacePanel({
   archivedWorkspaces,
   error,
   showForm,
+  tableDensity,
+  onSetTableDensity,
   onToggleShowForm,
   onRestoreWorkspace,
   tasksTableProps,
@@ -35,13 +39,16 @@ export default function WorkspacePanel({
       <WorkspaceContextBar
         viewMode={viewMode}
         selectedWorkspace={selectedWorkspace}
+        tableDensity={tableDensity}
+        onSetTableDensity={onSetTableDensity}
       />
 
       <section className="tasks-panel compact">
         <WorkspacePanelHeader
-          viewMode={viewMode}
-          selectedWorkspace={selectedWorkspace}
           query={query}
+          showForm={showForm}
+          showAddButton={viewMode === "workspaces"}
+          onToggleShowForm={onToggleShowForm}
           onQueryChange={onQueryChange}
         />
 
@@ -53,14 +60,6 @@ export default function WorkspacePanel({
         ) : null}
 
         {error && <div className="toast-error">{error}</div>}
-
-        {viewMode === "workspaces" && (
-          <div className="table-action-frame">
-            <button className="btn-primary" onClick={onToggleShowForm}>
-              {showForm ? "Formu Gizle" : "Görev Ekle"}
-            </button>
-          </div>
-        )}
 
         <TasksTable {...tasksTableProps} />
       </section>
