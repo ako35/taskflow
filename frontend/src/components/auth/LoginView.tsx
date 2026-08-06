@@ -85,13 +85,6 @@ export default function LoginView({
             <div className="toast-error">{googleError}</div>
           ) : null}
 
-          <div className="login-help auth-help">
-            <p>
-              Eğer giriş butonu görünmüyorsa <code>frontend/.env</code>{" "}
-              dosyanıza <code>VITE_GOOGLE_CLIENT_ID</code> ekleyin.
-            </p>
-          </div>
-
           <button
             type="button"
             className="auth-back-link"

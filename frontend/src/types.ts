@@ -18,8 +18,12 @@ export type TaskForm = {
 };
 
 export type User = {
+  authEmail: string;
+  firstName: string;
+  lastName?: string;
   name: string;
   email: string;
+  phone?: string;
   picture?: string;
 };
 

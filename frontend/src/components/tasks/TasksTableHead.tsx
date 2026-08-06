@@ -72,9 +72,7 @@ export default function TasksTableHead({
                 ) : (
                   <input
                     type="text"
-                    placeholder={
-                      column.field === "title" ? "Görev başlığı" : "Açıklama"
-                    }
+                    placeholder="Görev başlığı"
                     value={form[column.field as keyof TaskForm]}
                     onChange={onChangeForm(column.field as keyof TaskForm)}
                   />

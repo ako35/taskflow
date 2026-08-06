@@ -65,11 +65,11 @@ export default function useTaskTableInteractions({
   >({});
   const [activePreviewCell, setActivePreviewCell] = useState<{
     id: number;
-    field: "title" | "description";
+    field: "title";
   } | null>(null);
   const [aiImprovingCell, setAiImprovingCell] = useState<{
     id: number;
-    field: "title" | "description";
+    field: "title";
   } | null>(null);
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
@@ -380,10 +380,6 @@ export default function useTaskTableInteractions({
         for (const task of visibleTasks) {
           candidates.push(task.title ?? "");
         }
-      } else if (field === "description") {
-        for (const task of visibleTasks) {
-          candidates.push(task.description ?? "");
-        }
       }
 
       const widestText = candidates.reduce((max, value) => {
@@ -403,7 +399,7 @@ export default function useTaskTableInteractions({
               : 72;
       const hardMinimum =
         field === "status" ? 108 : field === "priority" ? 120 : column.minWidth;
-      const hardMaximum = field === "description" ? 1400 : 900;
+      const hardMaximum = 900;
 
       const nextWidth = Math.min(
         hardMaximum,
@@ -432,7 +428,7 @@ export default function useTaskTableInteractions({
   );
 
   const togglePreviewCell = useCallback(
-    (taskId: number, field: "title" | "description") => {
+    (taskId: number, field: "title") => {
       setActivePreviewCell((current) =>
         current?.id === taskId && current.field === field
           ? null
@@ -443,7 +439,7 @@ export default function useTaskTableInteractions({
   );
 
   const handleAiImproveTaskField = useCallback(
-    async (taskId: number, field: "title" | "description") => {
+    async (taskId: number, field: "title") => {
       if (!idToken) {
         setError("Oturumunuzun süresi dolmuş olabilir. Lütfen tekrar giriş yapın.");
         return;
@@ -546,7 +542,7 @@ export default function useTaskTableInteractions({
     if (!editingCell) return;
 
     const field = editingCell.field;
-    if (field !== "title" && field !== "description") {
+    if (field !== "title") {
       return;
     }
 

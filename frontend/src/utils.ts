@@ -38,6 +38,43 @@ export function parseJwt(token: string) {
   }
 }
 
+export function splitPersonName(fullName?: string) {
+  const normalized = (fullName || "").trim().replace(/\s+/g, " ");
+
+  if (!normalized) {
+    return {
+      firstName: "",
+      lastName: "",
+    };
+  }
+
+  const parts = normalized.split(" ");
+  if (parts.length === 1) {
+    return {
+      firstName: parts[0],
+      lastName: "",
+    };
+  }
+
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts[parts.length - 1],
+  };
+}
+
+export function buildUserDisplayName(
+  firstName?: string,
+  lastName?: string,
+  fallbackEmail?: string,
+) {
+  const displayName = [firstName, lastName]
+    .map((value) => value?.trim() || "")
+    .filter(Boolean)
+    .join(" ");
+
+  return displayName || fallbackEmail || "Kullanici";
+}
+
 export function hasTokenExpired(token: string) {
   const payload = parseJwt(token);
   if (!payload || typeof payload.exp !== "number") {

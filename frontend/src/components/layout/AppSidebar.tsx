@@ -1,7 +1,6 @@
 import React from "react";
 import { UiGlyph } from "../ui/Icons";
 import SidebarFooter from "./sidebar/SidebarFooter";
-import WorkspaceCreateForm from "./sidebar/WorkspaceCreateForm";
 import WorkspaceList from "./sidebar/WorkspaceList";
 import type { ThemeMode, ViewMode, Workspace } from "../../types";
 
@@ -12,17 +11,12 @@ type AppSidebarProps = {
   editingWorkspaceId: string | null;
   editingWorkspaceName: string;
   workspaceMenuOpenId: string | null;
-  showWorkspaceInput: boolean;
-  newWorkspaceName: string;
   viewMode: ViewMode;
   settingsMenuOpen: boolean;
   themeMenuOpen: boolean;
   themeMode: ThemeMode;
   settingsMenuRef: React.RefObject<HTMLDivElement | null>;
   onToggleWorkspaceInput: () => void;
-  onNewWorkspaceNameChange: (value: string) => void;
-  onCreateWorkspace: () => void;
-  onCancelWorkspaceCreate: () => void;
   onStartWorkspaceRename: (workspaceId: string) => void;
   onEditingWorkspaceNameChange: (value: string) => void;
   onSubmitWorkspaceRename: () => void;
@@ -46,17 +40,12 @@ export default function AppSidebar({
   editingWorkspaceId,
   editingWorkspaceName,
   workspaceMenuOpenId,
-  showWorkspaceInput,
-  newWorkspaceName,
   viewMode,
   settingsMenuOpen,
   themeMenuOpen,
   themeMode,
   settingsMenuRef,
   onToggleWorkspaceInput,
-  onNewWorkspaceNameChange,
-  onCreateWorkspace,
-  onCancelWorkspaceCreate,
   onStartWorkspaceRename,
   onEditingWorkspaceNameChange,
   onSubmitWorkspaceRename,
@@ -108,15 +97,6 @@ export default function AppSidebar({
             <UiGlyph icon="plus" />
           </button>
         </div>
-
-        {showWorkspaceInput ? (
-          <WorkspaceCreateForm
-            value={newWorkspaceName}
-            onValueChange={onNewWorkspaceNameChange}
-            onCreate={onCreateWorkspace}
-            onCancel={onCancelWorkspaceCreate}
-          />
-        ) : null}
 
         <WorkspaceList
           workspaces={activeWorkspaces}

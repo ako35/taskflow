@@ -1,5 +1,28 @@
 import React from "react";
 
+const previewTasks = [
+  {
+    status: "Yapılacak",
+    title: "Mobil onboarding akışını yayına al",
+    priority: "Acil",
+  },
+  {
+    status: "Yapılacak",
+    title: "Satış paneli KPI kartlarını güncelle",
+    priority: "Yüksek",
+  },
+  {
+    status: "Tamamlandı",
+    title: "Müşteri geri bildirim etiketlerini temizle",
+    priority: "Orta",
+  },
+  {
+    status: "Tamamlandı",
+    title: "Sprint planı ve teslim tarihlerini eşitle",
+    priority: "Düşük",
+  },
+];
+
 type LandingPageProps = {
   onGoToContact: () => void;
   onGoToLogin: () => void;
@@ -10,7 +33,7 @@ export default function LandingPage({
   onGoToLogin,
 }: LandingPageProps) {
   return (
-    <div className="landing-site">
+    <div className="landing-site landing-site-force-dark">
       <header className="landing-nav">
         <div className="landing-brand" aria-label="TaskFlow">
           <span className="topbar-logo" aria-hidden="true">
@@ -70,7 +93,6 @@ export default function LandingPage({
               TaskFlow'a giriş yap
             </button>
           </div>
-          <small>Kredi kartı bilgisi gerekmez</small>
         </section>
 
         <section className="landing-preview" aria-label="Uygulama önizleme">
@@ -80,7 +102,41 @@ export default function LandingPage({
               <span />
               <span />
             </div>
-            <div className="preview-grid" />
+            <div className="preview-table-shell">
+              <div className="preview-table-toolbar">
+                <div>
+                  <strong>Görev görünümü</strong>
+                  <p>Ekibinizin önceliklerini tek ekranda yönetin.</p>
+                </div>
+                <span className="preview-chip">Canlı iş akışı</span>
+              </div>
+
+              <div className="preview-table">
+                <div className="preview-table-header">
+                  <span>Durum</span>
+                  <span>Görev</span>
+                  <span>Öncelik</span>
+                </div>
+
+                <div className="preview-table-body">
+                  {previewTasks.map((task) => (
+                    <div className="preview-row" key={task.title}>
+                      <span
+                        className={`preview-badge preview-status preview-status-${task.status.toLowerCase()}`}
+                      >
+                        {task.status}
+                      </span>
+                      <strong>{task.title}</strong>
+                      <span
+                        className={`preview-badge preview-priority preview-priority-${task.priority.toLowerCase()}`}
+                      >
+                        {task.priority}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </main>

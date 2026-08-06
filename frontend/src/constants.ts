@@ -72,7 +72,6 @@ export const tableColumns = [
   { field: "status", label: "Durum", minWidth: 144 },
   { field: "title", label: "Görev", minWidth: 240 },
   { field: "priority", label: "Önem", minWidth: 150 },
-  { field: "description", label: "Açıklama", minWidth: 640 },
 ];
 
 export const tableDisplayColumns = [
@@ -86,5 +85,4 @@ export const DEFAULT_COLUMN_WIDTHS: Record<string, number> = {
   title: 260,
   status: 150,
   priority: 160,
-  description: 700,
 };

@@ -34,7 +34,7 @@ export default function WorkspacePanelHeader({
           </span>
           <input
             className="search"
-            placeholder="Bul: başlık, açıklama..."
+            placeholder="Bul: görev başlığı..."
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
           />

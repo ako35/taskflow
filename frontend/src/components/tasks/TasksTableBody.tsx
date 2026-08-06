@@ -18,8 +18,8 @@ type TasksTableBodyProps = {
   statusGroupCounts: Record<string, number>;
   editingCell: { id: number; field: string } | null;
   editingValue: string;
-  activePreviewCell: { id: number; field: "title" | "description" } | null;
-  aiImprovingCell: { id: number; field: "title" | "description" } | null;
+  activePreviewCell: { id: number; field: "title" } | null;
+  aiImprovingCell: { id: number; field: "title" } | null;
   archivedTaskIds: number[];
   onToggleStatusGroup: (status: string) => void;
   onStartColumnResize: (
@@ -27,11 +27,8 @@ type TasksTableBodyProps = {
     event: React.MouseEvent<HTMLDivElement>,
   ) => void;
   onFitColumnToContent: (field: string) => void;
-  onTogglePreviewCell: (id: number, field: "title" | "description") => void;
-  onAiImproveTaskField: (
-    taskId: number,
-    field: "title" | "description",
-  ) => Promise<void>;
+  onTogglePreviewCell: (id: number, field: "title") => void;
+  onAiImproveTaskField: (taskId: number, field: "title") => Promise<void>;
   onAiImproveEditingCell: () => Promise<void>;
   onStartEditingCell: (task: Task, field: string) => void;
   onSetEditingValue: (value: string) => void;
@@ -159,32 +156,15 @@ export default function TasksTableBody({
                           <div className="header-cell">
                             <span>{column.label}</span>
                             <div
-                              className={`resize-handle ${
-                                column.field === "description"
-                                  ? "resize-handle-left"
-                                  : "resize-handle-right"
-                              }`}
+                              className="resize-handle resize-handle-right"
                               onMouseDown={(event) =>
-                                onStartColumnResize(
-                                  column.field === "description"
-                                    ? "priority"
-                                    : column.field,
-                                  event,
-                                )
+                                onStartColumnResize(column.field, event)
                               }
                               onDoubleClick={(event) => {
                                 event.stopPropagation();
-                                onFitColumnToContent(
-                                  column.field === "description"
-                                    ? "priority"
-                                    : column.field,
-                                );
+                                onFitColumnToContent(column.field);
                               }}
-                              aria-label={`Autofit ${
-                                column.field === "description"
-                                  ? "Önem"
-                                  : column.label
-                              } column`}
+                              aria-label={`Autofit ${column.label} column`}
                               title="Sürükleyerek genişliği ayarlayın. Çift tıklama içeriğe göre otomatik sığdırır."
                             />
                           </div>
@@ -209,15 +189,13 @@ export default function TasksTableBody({
                           className={
                             column.field === "__spacer"
                               ? "table-spacer-cell"
-                              : column.field === "description"
-                                ? "description-cell"
-                                : column.field === "status"
-                                  ? "status-cell"
-                                  : column.field === "priority"
-                                    ? "priority-cell"
-                                    : column.field === "title"
-                                      ? "preview-cell"
-                                      : undefined
+                              : column.field === "status"
+                                ? "status-cell"
+                                : column.field === "priority"
+                                  ? "priority-cell"
+                                  : column.field === "title"
+                                    ? "preview-cell"
+                                    : undefined
                           }
                           data-preview-open={
                             activePreviewCell?.id === task.id &&
@@ -241,9 +219,6 @@ export default function TasksTableBody({
                           onClick={() => {
                             if (column.field === "title") {
                               onTogglePreviewCell(task.id, "title");
-                            }
-                            if (column.field === "description") {
-                              onTogglePreviewCell(task.id, "description");
                             }
                             if (
                               column.field === "status" ||
@@ -293,32 +268,12 @@ export default function TasksTableBody({
                               />
                             ) : column.field === "title" ? (
                               <div
-                                className="inline-edit-stack"
+                                className="inline-edit-shell"
                                 onClick={(event) => event.stopPropagation()}
                               >
-                                <input
-                                  className="inline-cell-input"
-                                  autoFocus
-                                  type="text"
-                                  value={editingValue}
-                                  onChange={(event) =>
-                                    onSetEditingValue(event.target.value)
-                                  }
-                                  onBlur={() => {
-                                    void onSaveCellEdit();
-                                  }}
-                                  onKeyDown={(event) => {
-                                    if (event.key === "Enter") {
-                                      void onSaveCellEdit();
-                                    }
-                                    if (event.key === "Escape") {
-                                      onCancelCellEdit();
-                                    }
-                                  }}
-                                />
                                 <button
                                   type="button"
-                                  className="task-action-btn task-action-ai-btn"
+                                  className="task-action-btn task-action-ai-btn inline-edit-floating-action"
                                   onMouseDown={(event) =>
                                     event.preventDefault()
                                   }
@@ -339,20 +294,11 @@ export default function TasksTableBody({
                                     ? "AI iyilestiriyor..."
                                     : "AI ile metni iyilestir"}
                                 </button>
-                              </div>
-                            ) : column.field === "description" ? (
-                              <div
-                                className="inline-edit-stack"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                <textarea
-                                  className="inline-cell-input inline-cell-textarea"
+                                <input
+                                  className="inline-cell-input"
                                   autoFocus
+                                  type="text"
                                   value={editingValue}
-                                  rows={Math.max(
-                                    2,
-                                    editingValue.split("\n").length,
-                                  )}
                                   onChange={(event) =>
                                     onSetEditingValue(event.target.value)
                                   }
@@ -360,41 +306,14 @@ export default function TasksTableBody({
                                     void onSaveCellEdit();
                                   }}
                                   onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                      void onSaveCellEdit();
+                                    }
                                     if (event.key === "Escape") {
                                       onCancelCellEdit();
                                     }
-                                    if (
-                                      event.key === "Enter" &&
-                                      (event.ctrlKey || event.metaKey)
-                                    ) {
-                                      event.preventDefault();
-                                      void onSaveCellEdit();
-                                    }
                                   }}
                                 />
-                                <button
-                                  type="button"
-                                  className="task-action-btn task-action-ai-btn"
-                                  onMouseDown={(event) =>
-                                    event.preventDefault()
-                                  }
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    void onAiImproveEditingCell();
-                                  }}
-                                  disabled={
-                                    aiImprovingCell?.id === task.id &&
-                                    aiImprovingCell.field === "description"
-                                  }
-                                >
-                                  <span aria-hidden="true">
-                                    <UiGlyph icon="spark" />
-                                  </span>
-                                  {aiImprovingCell?.id === task.id &&
-                                  aiImprovingCell.field === "description"
-                                    ? "AI iyilestiriyor..."
-                                    : "AI ile metni iyilestir"}
-                                </button>
                               </div>
                             ) : (
                               <input
@@ -421,7 +340,10 @@ export default function TasksTableBody({
                           ) : column.field === "title" ? (
                             <>
                               <div className="task-title-stack">
-                                <span className="task-title-text">
+                                <span
+                                  className="task-title-text"
+                                  title={task.title}
+                                >
                                   {task.title}
                                 </span>
                               </div>
@@ -453,6 +375,58 @@ export default function TasksTableBody({
                                       ? "AI iyilestiriyor..."
                                       : "AI ile metni iyilestir"}
                                   </button>
+                                  {viewMode === "archive" ? (
+                                    archivedTaskIds.includes(task.id) ? (
+                                      <button
+                                        type="button"
+                                        className="task-action-btn"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          onRestoreTask(task.id);
+                                        }}
+                                      >
+                                        <span aria-hidden="true">
+                                          <UiGlyph icon="restore" />
+                                        </span>
+                                        Geri Getir
+                                      </button>
+                                    ) : (
+                                      <span className="task-action-note">
+                                        <span aria-hidden="true">
+                                          <UiGlyph icon="archive" />
+                                        </span>
+                                        Çalışmayı geri getir
+                                      </span>
+                                    )
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="task-action-btn"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        onArchiveTask(task.id);
+                                      }}
+                                    >
+                                      <span aria-hidden="true">
+                                        <UiGlyph icon="archive" />
+                                      </span>
+                                      Arşivle
+                                    </button>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    className="task-action-btn danger"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      onDeleteTask(task.id);
+                                    }}
+                                  >
+                                    <span aria-hidden="true">
+                                      <UiGlyph icon="trash" />
+                                    </span>
+                                    Sil
+                                  </button>
                                 </div>
                               </div>
                             </>
@@ -473,92 +447,6 @@ export default function TasksTableBody({
                             >
                               {task.priority}
                             </span>
-                          ) : column.field === "description" ? (
-                            <>
-                              <div className="task-description-stack">
-                                <span className="description-text">
-                                  {task.description || "-"}
-                                </span>
-                              </div>
-                              <div className="cell-preview">
-                                <div className="cell-preview-body">
-                                  {task.description || "-"}
-                                </div>
-                                <div className="cell-preview-actions">
-                                  <button
-                                    type="button"
-                                    className="task-action-btn task-action-ai-btn"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      void onAiImproveTaskField(
-                                        task.id,
-                                        "description",
-                                      );
-                                    }}
-                                    disabled={
-                                      aiImprovingCell?.id === task.id &&
-                                      aiImprovingCell.field === "description"
-                                    }
-                                  >
-                                    <span aria-hidden="true">
-                                      <UiGlyph icon="spark" />
-                                    </span>
-                                    {aiImprovingCell?.id === task.id &&
-                                    aiImprovingCell.field === "description"
-                                      ? "AI iyilestiriyor..."
-                                      : "AI ile metni iyilestir"}
-                                  </button>
-                                </div>
-                              </div>
-                              <div
-                                className="task-actions"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                {viewMode === "archive" ? (
-                                  archivedTaskIds.includes(task.id) ? (
-                                    <button
-                                      type="button"
-                                      className="task-action-btn"
-                                      onClick={() => onRestoreTask(task.id)}
-                                    >
-                                      <span aria-hidden="true">
-                                        <UiGlyph icon="restore" />
-                                      </span>
-                                      Geri Getir
-                                    </button>
-                                  ) : (
-                                    <span className="task-action-note">
-                                      <span aria-hidden="true">
-                                        <UiGlyph icon="archive" />
-                                      </span>
-                                      Çalışmayı geri getir
-                                    </span>
-                                  )
-                                ) : (
-                                  <button
-                                    type="button"
-                                    className="task-action-btn"
-                                    onClick={() => onArchiveTask(task.id)}
-                                  >
-                                    <span aria-hidden="true">
-                                      <UiGlyph icon="archive" />
-                                    </span>
-                                    Arşivle
-                                  </button>
-                                )}
-
-                                <button
-                                  type="button"
-                                  className="task-action-btn danger"
-                                  onClick={() => onDeleteTask(task.id)}
-                                >
-                                  <span aria-hidden="true">
-                                    <UiGlyph icon="trash" />
-                                  </span>
-                                  Sil
-                                </button>
-                              </div>
-                            </>
                           ) : (
                             task[column.field as keyof Task]
                           )}

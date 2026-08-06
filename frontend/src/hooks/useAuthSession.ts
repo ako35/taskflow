@@ -6,9 +6,14 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { GOOGLE_CLIENT_ID, isClientIdPlaceholder } from "../constants";
+import { API_URL, GOOGLE_CLIENT_ID, isClientIdPlaceholder } from "../constants";
 import type { GuestView, User } from "../types";
-import { hasTokenExpired, parseJwt } from "../utils";
+import {
+  buildUserDisplayName,
+  hasTokenExpired,
+  parseJwt,
+  splitPersonName,
+} from "../utils";
 
 type UseAuthSessionResult = {
   user: User | null;
@@ -63,9 +68,15 @@ export default function useAuthSession(): UseAuthSessionResult {
       return;
     }
 
+    const { firstName, lastName } = splitPersonName(profile.name || profile.email);
+
     const nextUser: User = {
-      name: profile.name || profile.email,
+      authEmail: profile.email,
+      firstName: firstName || profile.email,
+      lastName: lastName || undefined,
+      name: buildUserDisplayName(firstName, lastName, profile.email),
       email: profile.email,
+      phone: "",
       picture: profile.picture,
     };
 
@@ -131,6 +142,79 @@ export default function useAuthSession(): UseAuthSessionResult {
 
     initializeGoogle();
   }, [guestView, handleCredentialResponse, user]);
+
+  useEffect(() => {
+    if (!user?.authEmail || !idToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadUserProfile() {
+      try {
+        const response = await fetch(`${API_URL}/profile`, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+
+        if (response.status === 401) {
+          if (cancelled) {
+            return;
+          }
+
+          setUser(null);
+          setIdToken(null);
+          setGuestView("login");
+          localStorage.removeItem("taskflow_user");
+          localStorage.removeItem("taskflow_id_token");
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error("Profil bilgileri yuklenemedi.");
+        }
+
+        const profile = (await response.json()) as {
+          authEmail: string;
+          firstName: string;
+          lastName: string | null;
+          email: string;
+          phone: string | null;
+          picture?: string | null;
+        };
+
+        if (cancelled) {
+          return;
+        }
+
+        const nextUser: User = {
+          authEmail: profile.authEmail,
+          firstName: profile.firstName,
+          lastName: profile.lastName || undefined,
+          name: buildUserDisplayName(
+            profile.firstName,
+            profile.lastName || undefined,
+            profile.email,
+          ),
+          email: profile.email,
+          phone: profile.phone || undefined,
+          picture: profile.picture || undefined,
+        };
+
+        setUser(nextUser);
+        localStorage.setItem("taskflow_user", JSON.stringify(nextUser));
+      } catch (error) {
+        console.error("Profil bilgileri yuklenemedi", error);
+      }
+    }
+
+    loadUserProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [idToken, user?.authEmail]);
 
   return {
     user,

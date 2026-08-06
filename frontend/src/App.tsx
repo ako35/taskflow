@@ -1,18 +1,33 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ContactView from "./components/auth/ContactView";
 import LandingPage from "./components/auth/LandingPage";
 import LoginView from "./components/auth/LoginView";
 import AppSidebar from "./components/layout/AppSidebar";
+import ProfileDetailsModal from "./components/layout/ProfileDetailsModal";
 import AppTopBar from "./components/layout/AppTopBar";
 import WorkspacePanel from "./components/layout/WorkspacePanel";
+import WorkspaceCreateModal from "./components/layout/sidebar/WorkspaceCreateModal";
+import { API_URL, DEFAULT_WORKSPACE_ID } from "./constants";
 import useAppUiEffects from "./hooks/useAppUiEffects";
 import useAuthSession from "./hooks/useAuthSession";
 import useTaskCrud from "./hooks/useTaskCrud";
 import useTaskTableInteractions from "./hooks/useTaskTableInteractions";
 import useWorkspaceManager from "./hooks/useWorkspaceManager";
-import { DEFAULT_WORKSPACE_ID } from "./constants";
 import type { TableDensity, ThemeMode } from "./types";
-import { getUserInitials } from "./utils";
+import { buildUserDisplayName, getUserInitials, safeParseJson } from "./utils";
+
+type ProfileFormState = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+};
 
 export default function App() {
   const {
@@ -33,6 +48,14 @@ export default function App() {
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileForm, setProfileForm] = useState<ProfileFormState>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  });
   const [tableDensity, setTableDensity] = useState<TableDensity>(() => {
     const stored = localStorage.getItem("taskflow_table_density");
     return stored === "dense" ? "dense" : "normal";
@@ -53,9 +76,29 @@ export default function App() {
     setUser(null);
     setIdToken(null);
     setGuestView("login");
+    setProfileDetailsOpen(false);
     localStorage.removeItem("taskflow_user");
     localStorage.removeItem("taskflow_id_token");
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setProfileForm({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+      });
+      return;
+    }
+
+    setProfileForm({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email || user.authEmail,
+      phone: user.phone || "",
+    });
+  }, [user]);
 
   const {
     selectedWorkspaceId,
@@ -134,6 +177,7 @@ export default function App() {
     setEditingWorkspaceId(null);
     setEditingWorkspaceName("");
     setProfileMenuOpen(false);
+    setProfileDetailsOpen(false);
     setViewMode("workspaces");
     localStorage.removeItem("taskflow_user");
     localStorage.removeItem("taskflow_id_token");
@@ -199,6 +243,100 @@ export default function App() {
   const handleToggleProfileMenu = useCallback(() => {
     setProfileMenuOpen((current) => !current);
   }, []);
+
+  const handleOpenProfileDetails = useCallback(() => {
+    setProfileMenuOpen(false);
+    setProfileDetailsOpen(true);
+  }, []);
+
+  const handleCloseProfileDetails = useCallback(() => {
+    setProfileDetailsOpen(false);
+  }, []);
+
+  const handleProfileFieldChange = useCallback(
+    (field: keyof ProfileFormState, value: string) => {
+      setProfileForm((current) => ({
+        ...current,
+        [field]: value,
+      }));
+    },
+    [],
+  );
+
+  const handleSaveProfile = useCallback(async () => {
+    if (!idToken || !user) {
+      handleUnauthorized();
+      return;
+    }
+
+    if (!profileForm.firstName.trim() || !profileForm.email.trim()) {
+      setError("Ad ve e-posta alanlari zorunludur.");
+      return;
+    }
+
+    setProfileSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          firstName: profileForm.firstName,
+          lastName: profileForm.lastName,
+          email: profileForm.email,
+          phone: profileForm.phone,
+        }),
+      });
+
+      const text = await response.text();
+      const responseBody = safeParseJson<Record<string, any> | null>(
+        text,
+        null,
+      );
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          responseBody?.error || text || "Profil guncellenemedi.",
+        );
+      }
+
+      if (!responseBody) {
+        throw new Error("Profil guncelleme yaniti okunamadi.");
+      }
+
+      const nextUser = {
+        ...user,
+        authEmail: responseBody.authEmail,
+        firstName: responseBody.firstName,
+        lastName: responseBody.lastName || undefined,
+        name: buildUserDisplayName(
+          responseBody.firstName,
+          responseBody.lastName || undefined,
+          responseBody.email,
+        ),
+        email: responseBody.email,
+        phone: responseBody.phone || undefined,
+        picture: responseBody.picture || user.picture,
+      };
+
+      setUser(nextUser);
+      localStorage.setItem("taskflow_user", JSON.stringify(nextUser));
+      setProfileDetailsOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Profil guncellenemedi.");
+    } finally {
+      setProfileSaving(false);
+    }
+  }, [handleUnauthorized, idToken, profileForm, setUser, user]);
 
   const handleToggleSidebar = useCallback(() => {
     setSidebarOpen((current) => !current);
@@ -335,17 +473,12 @@ export default function App() {
       editingWorkspaceId,
       editingWorkspaceName,
       workspaceMenuOpenId,
-      showWorkspaceInput,
-      newWorkspaceName,
       viewMode,
       settingsMenuOpen,
       themeMenuOpen,
       themeMode,
       settingsMenuRef,
       onToggleWorkspaceInput: handleToggleWorkspaceInput,
-      onNewWorkspaceNameChange: setNewWorkspaceName,
-      onCreateWorkspace: handleCreateWorkspace,
-      onCancelWorkspaceCreate: handleCancelWorkspaceCreate,
       onStartWorkspaceRename: startWorkspaceRename,
       onEditingWorkspaceNameChange: setEditingWorkspaceName,
       onSubmitWorkspaceRename: submitWorkspaceRename,
@@ -383,7 +516,6 @@ export default function App() {
       sidebarOpen,
       selectedWorkspace,
       settingsMenuOpen,
-      showWorkspaceInput,
       startWorkspaceRename,
       submitWorkspaceRename,
       themeMenuOpen,
@@ -455,7 +587,10 @@ export default function App() {
     userInitials: getUserInitials(user.name),
     profileMenuOpen,
     profileMenuRef,
+    themeMode,
     onToggleProfileMenu: handleToggleProfileMenu,
+    onOpenProfileDetails: handleOpenProfileDetails,
+    onSetThemeMode: handleSetThemeMode,
     onSignOut: handleSignOut,
   };
 
@@ -479,6 +614,23 @@ export default function App() {
           onClick={() => setSidebarOpen(false)}
         />
       ) : null}
+
+      <WorkspaceCreateModal
+        open={showWorkspaceInput}
+        value={newWorkspaceName}
+        onValueChange={setNewWorkspaceName}
+        onCreate={handleCreateWorkspace}
+        onClose={handleCancelWorkspaceCreate}
+      />
+
+      <ProfileDetailsModal
+        open={profileDetailsOpen}
+        form={profileForm}
+        saving={profileSaving}
+        onFieldChange={handleProfileFieldChange}
+        onSave={handleSaveProfile}
+        onClose={handleCloseProfileDetails}
+      />
     </div>
   );
 }

@@ -17,14 +17,11 @@ type TasksTableProps = {
   statusGroupCounts: Record<string, number>;
   editingCell: { id: number; field: string } | null;
   editingValue: string;
-  activePreviewCell: { id: number; field: "title" | "description" } | null;
+  activePreviewCell: { id: number; field: "title" } | null;
   archivedTaskIds: number[];
   isFormValid: boolean;
-  aiImprovingCell: { id: number; field: "title" | "description" } | null;
-  onAiImproveTaskField: (
-    taskId: number,
-    field: "title" | "description",
-  ) => Promise<void>;
+  aiImprovingCell: { id: number; field: "title" } | null;
+  onAiImproveTaskField: (taskId: number, field: "title") => Promise<void>;
   onAiImproveEditingCell: () => Promise<void>;
   onChangeForm: (
     field: keyof TaskForm,
@@ -41,7 +38,7 @@ type TasksTableProps = {
     event: React.MouseEvent<HTMLDivElement>,
   ) => void;
   onFitColumnToContent: (field: string) => void;
-  onTogglePreviewCell: (id: number, field: "title" | "description") => void;
+  onTogglePreviewCell: (id: number, field: "title") => void;
   onStartEditingCell: (task: Task, field: string) => void;
   onSetEditingValue: (value: string) => void;
   onSaveCellEdit: (nextValue?: string) => void | Promise<void>;
@@ -85,9 +82,17 @@ export default function TasksTable({
   onArchiveTask,
   onDeleteTask,
 }: TasksTableProps) {
+  const tableWidth = tableDisplayColumns.reduce((total, column) => {
+    if (column.field === "__spacer") {
+      return total;
+    }
+
+    return total + (columnWidths[column.field] ?? 0);
+  }, 0);
+
   return (
     <div className="tasks-table-wrapper" ref={tableWrapperRef}>
-      <table className="tasks-table">
+      <table className="tasks-table" style={{ width: `${tableWidth}px` }}>
         <colgroup>
           {tableDisplayColumns.map((column) => (
             <col

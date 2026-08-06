@@ -21,3 +21,15 @@ model Task {
   ownerEmail  String?
   status      String   @default("Yapılacak")
 }
+
+model UserProfile {
+  id         Int      @id @default(autoincrement())
+  authEmail  String   @unique
+  firstName  String
+  lastName   String?
+  email      String
+  phone      String?
+  picture    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

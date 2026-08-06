@@ -15,9 +15,12 @@ import {
   Search,
   Settings,
   Shield,
+  Sun,
   Sparkles,
   Target,
   Trash2,
+  User,
+  MoonStar,
   type LucideIcon,
 } from "lucide-react";
 import type { WorkspaceIcon } from "../../types";
@@ -69,9 +72,13 @@ export function UiGlyph({
     | "layers"
     | "archive"
     | "restore"
-    | "trash";
+    | "trash"
+    | "user"
+    | "sun"
+    | "moon";
 }) {
   const iconMap: Record<
+    | "chevron-down"
     | "chevron-left"
     | "chevron-right"
     | "plus"
@@ -82,7 +89,10 @@ export function UiGlyph({
     | "layers"
     | "archive"
     | "restore"
-    | "trash",
+    | "trash"
+    | "user"
+    | "sun"
+    | "moon",
     LucideIcon
   > = {
     "chevron-down": ChevronDown,
@@ -97,6 +107,9 @@ export function UiGlyph({
     archive: Archive,
     restore: RotateCcw,
     trash: Trash2,
+    user: User,
+    sun: Sun,
+    moon: MoonStar,
   };
 
   return <Glyph icon={iconMap[icon]} />;

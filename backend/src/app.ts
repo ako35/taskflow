@@ -181,6 +181,92 @@ function validateTaskUpdatePayload(body: Record<string, unknown>) {
   return { updateData, errors };
 }
 
+function splitFullName(fullName?: string) {
+  const normalized = (fullName || "").trim().replace(/\s+/g, " ");
+  if (!normalized) {
+    return {
+      firstName: "Kullanici",
+      lastName: null as string | null,
+    };
+  }
+
+  const parts = normalized.split(" ");
+  if (parts.length === 1) {
+    return {
+      firstName: parts[0],
+      lastName: null as string | null,
+    };
+  }
+
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts[parts.length - 1],
+  };
+}
+
+function validateProfilePayload(body: Record<string, unknown>) {
+  const errors: string[] = [];
+  const firstName = sanitizeLine(body.firstName);
+  const lastName = sanitizeLine(body.lastName);
+  const email = sanitizeLine(body.email);
+  const phone = sanitizeLine(body.phone);
+
+  if (!firstName) {
+    errors.push("firstName is required");
+  }
+
+  if (!email) {
+    errors.push("email is required");
+  } else if (!isValidEmail(email)) {
+    errors.push("email is invalid");
+  }
+
+  return {
+    payload: {
+      firstName,
+      lastName: lastName || null,
+      email,
+      phone: phone || null,
+    },
+    errors,
+  };
+}
+
+async function upsertUserProfile(authUser: NonNullable<express.Request["authUser"]>) {
+  const existingProfile = await prisma.userProfile.findUnique({
+    where: {
+      authEmail: authUser.email,
+    },
+  });
+
+  if (existingProfile) {
+    if (authUser.picture && authUser.picture !== existingProfile.picture) {
+      return prisma.userProfile.update({
+        where: {
+          id: existingProfile.id,
+        },
+        data: {
+          picture: authUser.picture,
+        },
+      });
+    }
+
+    return existingProfile;
+  }
+
+  const { firstName, lastName } = splitFullName(authUser.name);
+
+  return prisma.userProfile.create({
+    data: {
+      authEmail: authUser.email,
+      firstName,
+      lastName,
+      email: authUser.email,
+      picture: authUser.picture,
+    },
+  });
+}
+
 type ContactRequestPayload = {
   fullName: string;
   email: string;
@@ -378,6 +464,30 @@ async function refineTextWithGemini(text: string, field: AiRefineField) {
 
 const tasksRouter = express.Router();
 
+const profileRouter = express.Router();
+
+profileRouter.get("/", async (req, res) => {
+  const profile = await upsertUserProfile(req.authUser!);
+  res.json(profile);
+});
+
+profileRouter.put("/", async (req, res) => {
+  const { payload, errors } = validateProfilePayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  const existingProfile = await upsertUserProfile(req.authUser!);
+  const profile = await prisma.userProfile.update({
+    where: {
+      id: existingProfile.id,
+    },
+    data: payload,
+  });
+
+  res.json(profile);
+});
+
 tasksRouter.get("/", async (req, res) => {
   const tasks = await prisma.task.findMany({
     where: { ownerEmail: req.authUser!.email } as any,
@@ -463,6 +573,8 @@ tasksRouter.delete("/:id", async (req, res) => {
 
 app.use("/tasks", authenticate, tasksRouter);
 app.use("/api/tasks", authenticate, tasksRouter);
+app.use("/profile", authenticate, profileRouter);
+app.use("/api/profile", authenticate, profileRouter);
 
 app.post(["/ai/refine-text", "/api/ai/refine-text"], authenticate, async (req, res) => {
   const rawText = typeof req.body?.text === "string" ? req.body.text.trim() : "";

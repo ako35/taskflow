@@ -22,7 +22,7 @@ type UseAppUiEffectsArgs = {
   setThemeMenuOpen: Dispatch<SetStateAction<boolean>>;
   setProfileMenuOpen: Dispatch<SetStateAction<boolean>>;
   setActivePreviewCell: Dispatch<
-    SetStateAction<{ id: number; field: "title" | "description" } | null>
+    SetStateAction<{ id: number; field: "title" } | null>
   >;
 };
 
