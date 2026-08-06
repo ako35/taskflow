@@ -68,7 +68,7 @@ export default function MembersPanelModal({
       >
         <div className="modal-title-row">
           <div>
-            <h2 id="members-panel-title">Uyeler</h2>
+            <h2 id="members-panel-title">Üyeler</h2>
             <p>
               <strong>{workspaceName}</strong> calisma alanindaki davet ve uye
               bilgilerini yonetin.
@@ -120,7 +120,7 @@ export default function MembersPanelModal({
           </div>
 
           <div className="settings-invitations members-panel-section">
-            <div className="settings-popover-title">Davetli Uyeler</div>
+            <div className="settings-popover-title">Davetli Üyeler</div>
             {invitationsLoading ? (
               <p className="settings-members-note">Davetler yukleniyor...</p>
             ) : invitationsError ? (
@@ -155,11 +155,17 @@ export default function MembersPanelModal({
                         const isMainUser =
                           normalizeEmail(invite.email) ===
                           normalizeEmail(currentUserEmail);
+                        const memberRole = isMainUser ? "Yonetici" : "Uye";
 
                         return (
                           <div key={invite.id} className="settings-member-item">
                             <div className="settings-member-head">
-                              <strong>{renderInviteName(invite)}</strong>
+                              <div className="settings-member-identity">
+                                <strong>{renderInviteName(invite)}</strong>
+                                <span className="settings-member-role">
+                                  {memberRole}
+                                </span>
+                              </div>
                               {invite.userProfileId && !isMainUser ? (
                                 <button
                                   type="button"

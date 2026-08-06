@@ -86,11 +86,11 @@ export default function TaskDetailsPanel({
     setDraftPriority(task.priority || "Orta");
   }, [task]);
 
-  if (!open || !task) {
-    return null;
-  }
-
   const canSaveTaskDetails = useMemo(() => {
+    if (!task) {
+      return false;
+    }
+
     const nextTitle = draftTitle.trim();
     const baseTitle = task.title.trim();
     const baseStatus = task.status ?? "Yapılacak";
@@ -103,6 +103,10 @@ export default function TaskDetailsPanel({
 
     return Boolean(nextTitle) && hasChanges && !taskUpdating;
   }, [draftPriority, draftStatus, draftTitle, task, taskUpdating]);
+
+  if (!open || !task) {
+    return null;
+  }
 
   return (
     <aside className="task-details-panel" aria-label="Görev detay paneli">

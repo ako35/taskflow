@@ -208,7 +208,7 @@ export default function useAuthSession(): UseAuthSessionResult {
               type: "icon",
               theme: "outline",
               size: "large",
-              shape: "circle",
+              shape: "square",
               logo_alignment: "left",
               locale: "tr",
             });

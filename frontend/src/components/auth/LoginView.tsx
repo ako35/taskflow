@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 
 type LoginViewProps = {
   googleError: string | null;
@@ -9,6 +9,13 @@ export default function LoginView({
   googleError,
   onBackToLanding,
 }: LoginViewProps) {
+  const triggerGoogleLogin = useCallback(() => {
+    const googleButton = document.querySelector(
+      "#google-signin-button div[role='button']",
+    ) as HTMLElement | null;
+    googleButton?.click();
+  }, []);
+
   return (
     <div className="auth-page">
       <header className="auth-topbar">
@@ -48,7 +55,19 @@ export default function LoginView({
           <div className="auth-separator">Veya şununla oturum açın</div>
 
           <div className="google-button">
-            <div className="auth-google-compact">
+            <div
+              className="auth-google-compact"
+              role="button"
+              tabIndex={0}
+              aria-label="Google ile oturum aç"
+              onClick={triggerGoogleLogin}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  triggerGoogleLogin();
+                }
+              }}
+            >
               <div id="google-signin-button" className="auth-google-button" />
               <span className="auth-google-label">Google</span>
             </div>

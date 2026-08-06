@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type InlineSelectMenuProps = {
   value: string;
@@ -40,7 +41,10 @@ export default function InlineSelectMenu({
         return;
       }
 
-      if (containerRef.current?.contains(target)) {
+      if (
+        containerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
         return;
       }
 
@@ -120,6 +124,37 @@ export default function InlineSelectMenu({
     };
   }, [options, value, fallbackValue]);
 
+  const menu = (
+    <div ref={menuRef} className="inline-options-menu" style={menuStyle}>
+      <div className="inline-option-stack">
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            className={`inline-option-chip task-badge ${badgeClassName} ${
+              getOptionClassName(option) || ""
+            } ${currentValue === option ? "active" : ""}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (option === currentValue) {
+                onCancel();
+                return;
+              }
+              onSelect(option);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                onCancel();
+              }
+            }}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="inline-dropdown" ref={containerRef}>
       <div className="inline-current-value" ref={triggerRef}>
@@ -136,34 +171,9 @@ export default function InlineSelectMenu({
           {currentValue}
         </button>
       </div>
-      <div ref={menuRef} className="inline-options-menu" style={menuStyle}>
-        <div className="inline-option-stack">
-          {options.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={`inline-option-chip task-badge ${badgeClassName} ${
-                getOptionClassName(option) || ""
-              } ${currentValue === option ? "active" : ""}`}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (option === currentValue) {
-                  onCancel();
-                  return;
-                }
-                onSelect(option);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  onCancel();
-                }
-              }}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      </div>
+      {typeof document !== "undefined"
+        ? createPortal(menu, document.body)
+        : menu}
     </div>
   );
 }

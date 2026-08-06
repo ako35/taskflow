@@ -108,13 +108,12 @@ export default function SidebarFooter({
               </div>
 
               <div className="settings-members-entry">
-                <div className="settings-popover-title">Uyeler</div>
                 <button
                   type="button"
-                  className="settings-members-open-btn"
+                  className="settings-members-trigger"
                   onClick={onOpenMembersPanel}
                 >
-                  Uyeleri Ac
+                  Üyeler
                 </button>
               </div>
             </div>
