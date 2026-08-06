@@ -39,6 +39,7 @@ type TasksTableProps = {
   ) => void;
   onFitColumnToContent: (field: string) => void;
   onTogglePreviewCell: (id: number, field: "title") => void;
+  onOpenTaskDetails: (task: Task) => void;
   onStartEditingCell: (task: Task, field: string) => void;
   onSetEditingValue: (value: string) => void;
   onSaveCellEdit: (nextValue?: string) => void | Promise<void>;
@@ -74,6 +75,7 @@ export default function TasksTable({
   onStartColumnResize,
   onFitColumnToContent,
   onTogglePreviewCell,
+  onOpenTaskDetails,
   onStartEditingCell,
   onSetEditingValue,
   onSaveCellEdit,
@@ -133,6 +135,7 @@ export default function TasksTable({
           onStartColumnResize={onStartColumnResize}
           onFitColumnToContent={onFitColumnToContent}
           onTogglePreviewCell={onTogglePreviewCell}
+          onOpenTaskDetails={onOpenTaskDetails}
           onStartEditingCell={onStartEditingCell}
           onSetEditingValue={onSetEditingValue}
           onSaveCellEdit={onSaveCellEdit}

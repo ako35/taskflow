@@ -24,7 +24,13 @@ export default function InlineSelectMenu({
   const triggerRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({
+    position: "fixed",
+    top: -9999,
+    left: -9999,
+    transform: "translateX(-50%)",
     opacity: 0,
+    visibility: "hidden",
+    pointerEvents: "none",
   });
 
   useEffect(() => {
@@ -63,7 +69,7 @@ export default function InlineSelectMenu({
       const viewportWidth =
         window.innerWidth || document.documentElement.clientWidth;
       const viewportPadding = 8;
-      const menuWidth = Math.max(triggerRect.width, 144);
+      const menuWidth = Math.ceil(Math.max(triggerRect.width, 144));
       const maxMenuHeight = Math.max(140, viewportHeight - viewportPadding * 2);
       const measuredMenuHeight = Math.ceil(menuRect.height);
       const effectiveMenuHeight = Math.min(measuredMenuHeight, maxMenuHeight);
@@ -91,14 +97,16 @@ export default function InlineSelectMenu({
 
       setMenuStyle({
         position: "fixed",
-        top,
-        left,
+        top: Math.round(top),
+        left: Math.round(left),
         width: menuWidth,
         maxHeight: maxMenuHeight,
         overflowY: "auto",
         transform: "translateX(-50%)",
         zIndex: 2600,
         opacity: 1,
+        visibility: "visible",
+        pointerEvents: "auto",
       });
     };
 

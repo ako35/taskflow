@@ -192,6 +192,10 @@ export default function useAuthSession(): UseAuthSessionResult {
             callback: handleCredentialResponse,
             ux_mode: "popup",
             itp_support: true,
+            auto_select: false,
+            use_fedcm_for_prompt: false,
+            use_fedcm_for_button: false,
+            button_auto_select: false,
           });
           googleInitialized.current = true;
         }

@@ -1,9 +1,17 @@
 import React from "react";
 import TasksTable from "../tasks/TasksTable";
 import ArchivedWorkspacesSection from "./workspace/ArchivedWorkspacesSection";
+import TaskDetailsPanel from "./workspace/TaskDetailsPanel";
 import WorkspaceContextBar from "./workspace/WorkspaceContextBar";
 import WorkspacePanelHeader from "./workspace/WorkspacePanelHeader";
-import type { TableDensity, ViewMode, Workspace } from "../../types";
+import type {
+  TableDensity,
+  Task,
+  TaskComment,
+  User,
+  ViewMode,
+  Workspace,
+} from "../../types";
 
 type WorkspacePanelProps = {
   viewMode: ViewMode;
@@ -18,6 +26,16 @@ type WorkspacePanelProps = {
   onToggleShowForm: () => void;
   onRestoreWorkspace: (workspaceId: string) => void;
   tasksTableProps: React.ComponentProps<typeof TasksTable>;
+  selectedTask: Task | null;
+  taskDetailsOpen: boolean;
+  comments: TaskComment[];
+  commentsLoading: boolean;
+  commentDraft: string;
+  commentSubmitting: boolean;
+  currentUser: User | null;
+  onCloseTaskDetails: () => void;
+  onCommentDraftChange: (value: string) => void;
+  onSubmitComment: () => void;
 };
 
 export default function WorkspacePanel({
@@ -33,6 +51,16 @@ export default function WorkspacePanel({
   onToggleShowForm,
   onRestoreWorkspace,
   tasksTableProps,
+  selectedTask,
+  taskDetailsOpen,
+  comments,
+  commentsLoading,
+  commentDraft,
+  commentSubmitting,
+  currentUser,
+  onCloseTaskDetails,
+  onCommentDraftChange,
+  onSubmitComment,
 }: WorkspacePanelProps) {
   return (
     <main className="workspace">
@@ -43,26 +71,43 @@ export default function WorkspacePanel({
         onSetTableDensity={onSetTableDensity}
       />
 
-      <section className="tasks-panel compact">
-        <WorkspacePanelHeader
-          query={query}
-          showForm={showForm}
-          showAddButton={viewMode === "workspaces"}
-          onToggleShowForm={onToggleShowForm}
-          onQueryChange={onQueryChange}
-        />
+      <div className={`workspace-main ${taskDetailsOpen ? "has-details" : ""}`}>
+        <section className="tasks-panel compact">
+          <WorkspacePanelHeader
+            query={query}
+            showForm={showForm}
+            showAddButton={viewMode === "workspaces"}
+            onToggleShowForm={onToggleShowForm}
+            onQueryChange={onQueryChange}
+          />
 
-        {viewMode === "archive" ? (
-          <ArchivedWorkspacesSection
-            archivedWorkspaces={archivedWorkspaces}
-            onRestoreWorkspace={onRestoreWorkspace}
+          {viewMode === "archive" ? (
+            <ArchivedWorkspacesSection
+              archivedWorkspaces={archivedWorkspaces}
+              onRestoreWorkspace={onRestoreWorkspace}
+            />
+          ) : null}
+
+          {error && <div className="toast-error">{error}</div>}
+
+          <TasksTable {...tasksTableProps} />
+        </section>
+
+        {viewMode === "workspaces" ? (
+          <TaskDetailsPanel
+            open={taskDetailsOpen}
+            task={selectedTask}
+            currentUser={currentUser}
+            comments={comments}
+            commentsLoading={commentsLoading}
+            commentDraft={commentDraft}
+            commentSubmitting={commentSubmitting}
+            onClose={onCloseTaskDetails}
+            onCommentDraftChange={onCommentDraftChange}
+            onSubmitComment={onSubmitComment}
           />
         ) : null}
-
-        {error && <div className="toast-error">{error}</div>}
-
-        <TasksTable {...tasksTableProps} />
-      </section>
+      </div>
     </main>
   );
 }

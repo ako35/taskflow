@@ -11,6 +11,23 @@ export type Task = {
   workspaceId: string;
 };
 
+export type TaskCommentAuthor = {
+  id: number;
+  firstName: string;
+  lastName?: string | null;
+  email: string;
+  picture?: string | null;
+};
+
+export type TaskComment = {
+  id: number;
+  taskId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  author: TaskCommentAuthor;
+};
+
 export type TaskForm = {
   title: string;
   description: string;

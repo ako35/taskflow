@@ -28,6 +28,7 @@ type TasksTableBodyProps = {
   ) => void;
   onFitColumnToContent: (field: string) => void;
   onTogglePreviewCell: (id: number, field: "title") => void;
+  onOpenTaskDetails: (task: Task) => void;
   onAiImproveTaskField: (taskId: number, field: "title") => Promise<void>;
   onAiImproveEditingCell: () => Promise<void>;
   onStartEditingCell: (task: Task, field: string) => void;
@@ -56,6 +57,7 @@ export default function TasksTableBody({
   onStartColumnResize,
   onFitColumnToContent,
   onTogglePreviewCell,
+  onOpenTaskDetails,
   onAiImproveTaskField,
   onAiImproveEditingCell,
   onStartEditingCell,
@@ -218,8 +220,10 @@ export default function TasksTableBody({
                           }}
                           onClick={() => {
                             if (column.field === "title") {
-                              onTogglePreviewCell(task.id, "title");
+                              onOpenTaskDetails(task);
+                              return;
                             }
+
                             if (
                               column.field === "status" ||
                               column.field === "priority"

@@ -22,6 +22,7 @@ model Task {
   status      String   @default("Yapılacak")
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  comments    TaskComment[]
 
   @@index([workspaceId])
 }
@@ -40,6 +41,21 @@ model UserProfile {
   createdWorkspaces Workspace[] @relation("WorkspaceCreator")
   sentInvitations Invitation[] @relation("InvitationSender")
   acceptedInvitations Invitation[] @relation("InvitationAccepter")
+  taskComments TaskComment[]
+}
+
+model TaskComment {
+  id            Int       @id @default(autoincrement())
+  taskId        Int
+  userProfileId Int
+  content       String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userProfile   UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+  @@index([userProfileId])
 }
 
 model Workspace {

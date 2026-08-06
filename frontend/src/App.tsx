@@ -20,7 +20,7 @@ import useAuthSession from "./hooks/useAuthSession";
 import useTaskCrud from "./hooks/useTaskCrud";
 import useTaskTableInteractions from "./hooks/useTaskTableInteractions";
 import useWorkspaceManager from "./hooks/useWorkspaceManager";
-import type { TableDensity, ThemeMode } from "./types";
+import type { TableDensity, Task, TaskComment, ThemeMode } from "./types";
 import { buildUserDisplayName, getUserInitials, safeParseJson } from "./utils";
 
 type ProfileFormState = {
@@ -72,6 +72,11 @@ export default function App() {
     const stored = localStorage.getItem("taskflow_table_density");
     return stored === "dense" ? "dense" : "normal";
   });
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [taskComments, setTaskComments] = useState<TaskComment[]>([]);
+  const [taskCommentsLoading, setTaskCommentsLoading] = useState(false);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 860);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -179,6 +184,159 @@ export default function App() {
       );
     });
   }, [archivedTaskIds, archivedWorkspaces, tasks]);
+
+  const selectedTask = useMemo(() => {
+    if (!selectedTaskId) {
+      return null;
+    }
+
+    return tasks.find((task) => task.id === selectedTaskId) ?? null;
+  }, [selectedTaskId, tasks]);
+
+  const taskDetailsOpen = viewMode === "workspaces" && selectedTask !== null;
+
+  useEffect(() => {
+    if (viewMode !== "workspaces") {
+      setSelectedTaskId(null);
+      setTaskComments([]);
+      setCommentDraft("");
+      return;
+    }
+
+    if (!selectedTaskId) {
+      return;
+    }
+
+    const taskStillVisible = tasks.some(
+      (task) =>
+        task.id === selectedTaskId && task.workspaceId === selectedWorkspace.id,
+    );
+
+    if (!taskStillVisible) {
+      setSelectedTaskId(null);
+      setTaskComments([]);
+      setCommentDraft("");
+    }
+  }, [selectedTaskId, selectedWorkspace.id, tasks, viewMode]);
+
+  useEffect(() => {
+    if (!idToken || !user || !selectedTaskId || viewMode !== "workspaces") {
+      setTaskComments([]);
+      setTaskCommentsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadComments = async () => {
+      setTaskCommentsLoading(true);
+      try {
+        const response = await fetch(
+          `${API_URL}/tasks/${selectedTaskId}/comments`,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          },
+        );
+
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        const text = await response.text();
+        const payload = safeParseJson<TaskComment[] | null>(text, null);
+
+        if (!response.ok) {
+          throw new Error(
+            (payload as any)?.error || text || "Yorumlar yuklenemedi.",
+          );
+        }
+
+        if (!cancelled) {
+          setTaskComments(Array.isArray(payload) ? payload : []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Yorumlar yuklenemedi.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setTaskCommentsLoading(false);
+        }
+      }
+    };
+
+    void loadComments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [handleUnauthorized, idToken, selectedTaskId, user, viewMode]);
+
+  const handleOpenTaskDetails = useCallback((task: Task) => {
+    setSelectedTaskId((current) => {
+      if (current !== task.id) {
+        setCommentDraft("");
+      }
+      return task.id;
+    });
+  }, []);
+
+  const handleCloseTaskDetails = useCallback(() => {
+    setSelectedTaskId(null);
+    setTaskComments([]);
+    setCommentDraft("");
+  }, []);
+
+  const handleSubmitTaskComment = useCallback(async () => {
+    const content = commentDraft.trim();
+
+    if (!content || !selectedTaskId || !idToken || !user) {
+      return;
+    }
+
+    setCommentSubmitting(true);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/tasks/${selectedTaskId}/comments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ content }),
+        },
+      );
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      const text = await response.text();
+      const payload = safeParseJson<TaskComment | Record<string, any> | null>(
+        text,
+        null,
+      );
+
+      if (!response.ok || !payload || Array.isArray(payload)) {
+        throw new Error((payload as any)?.error || text || "Yorum eklenemedi.");
+      }
+
+      setTaskComments((prev) => [payload as TaskComment, ...prev]);
+      setCommentDraft("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Yorum eklenemedi.");
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }, [commentDraft, handleUnauthorized, idToken, selectedTaskId, user]);
 
   const handleSignOut = useCallback(() => {
     setUser(null);
@@ -616,6 +774,7 @@ export default function App() {
       onStartColumnResize: startColumnResize,
       onFitColumnToContent: fitColumnToContent,
       onTogglePreviewCell: togglePreviewCell,
+      onOpenTaskDetails: handleOpenTaskDetails,
       onStartEditingCell: startEditingCell,
       onSetEditingValue: setEditingValue,
       onSaveCellEdit: saveCellEdit,
@@ -653,6 +812,7 @@ export default function App() {
       statusGroupCounts,
       tasks,
       togglePreviewCell,
+      handleOpenTaskDetails,
       toggleStatusGroup,
       viewMode,
       visibleTasks,
@@ -733,6 +893,16 @@ export default function App() {
       onToggleShowForm: handleToggleShowForm,
       onRestoreWorkspace: handleRestoreWorkspace,
       tasksTableProps,
+      selectedTask,
+      taskDetailsOpen,
+      comments: taskComments,
+      commentsLoading: taskCommentsLoading,
+      commentDraft,
+      commentSubmitting,
+      currentUser: user,
+      onCloseTaskDetails: handleCloseTaskDetails,
+      onCommentDraftChange: setCommentDraft,
+      onSubmitComment: handleSubmitTaskComment,
     }),
     [
       archivedWorkspaces,
@@ -744,6 +914,15 @@ export default function App() {
       selectedWorkspace,
       showForm,
       tableDensity,
+      taskComments,
+      taskCommentsLoading,
+      commentDraft,
+      commentSubmitting,
+      taskDetailsOpen,
+      selectedTask,
+      user,
+      handleCloseTaskDetails,
+      handleSubmitTaskComment,
       tasksTableProps,
       viewMode,
     ],

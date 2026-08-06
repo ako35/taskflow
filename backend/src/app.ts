@@ -214,6 +214,26 @@ function validateTaskUpdatePayload(body: Record<string, unknown>) {
   return { updateData, errors };
 }
 
+function validateTaskCommentPayload(body: Record<string, unknown>) {
+  const content = sanitizeMultiline(body.content);
+  const errors: string[] = [];
+
+  if (!content) {
+    errors.push("content is required");
+  }
+
+  if (content.length > 2000) {
+    errors.push("content must be 2000 characters or fewer");
+  }
+
+  return {
+    payload: {
+      content,
+    },
+    errors,
+  };
+}
+
 function splitFullName(fullName?: string) {
   const normalized = (fullName || "").trim().replace(/\s+/g, " ");
   if (!normalized) {
@@ -830,6 +850,140 @@ tasksRouter.get("/:id", async (req, res) => {
   }
 
   res.json(task);
+});
+
+tasksRouter.get("/:id/comments", async (req, res) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: "Invalid task id" });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+
+  const task = await prisma.task.findFirst({
+    where: {
+      id,
+      workspace: {
+        members: {
+          some: {
+            userProfileId: profile.id,
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!task) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
+  const comments = await prisma.taskComment.findMany({
+    where: {
+      taskId: id,
+    },
+    include: {
+      userProfile: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          picture: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  res.json(
+    comments.map((comment) => ({
+      id: comment.id,
+      taskId: comment.taskId,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      author: {
+        id: comment.userProfile.id,
+        firstName: comment.userProfile.firstName,
+        lastName: comment.userProfile.lastName,
+        email: comment.userProfile.email,
+        picture: comment.userProfile.picture,
+      },
+    })),
+  );
+});
+
+tasksRouter.post("/:id/comments", async (req, res) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: "Invalid task id" });
+  }
+
+  const { payload, errors } = validateTaskCommentPayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+
+  const task = await prisma.task.findFirst({
+    where: {
+      id,
+      workspace: {
+        members: {
+          some: {
+            userProfileId: profile.id,
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!task) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
+  const comment = await prisma.taskComment.create({
+    data: {
+      taskId: id,
+      userProfileId: profile.id,
+      content: payload.content,
+    },
+    include: {
+      userProfile: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          picture: true,
+        },
+      },
+    },
+  });
+
+  res.status(201).json({
+    id: comment.id,
+    taskId: comment.taskId,
+    content: comment.content,
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt,
+    author: {
+      id: comment.userProfile.id,
+      firstName: comment.userProfile.firstName,
+      lastName: comment.userProfile.lastName,
+      email: comment.userProfile.email,
+      picture: comment.userProfile.picture,
+    },
+  });
 });
 
 tasksRouter.post("/", async (req, res) => {
