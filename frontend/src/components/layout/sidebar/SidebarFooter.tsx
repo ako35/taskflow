@@ -118,8 +118,8 @@ export default function SidebarFooter({
                 </div>
               </div>
 
-              <div className="settings-invitations">
-                <div className="settings-popover-title">Davetli Uyeler</div>
+              <div className="settings-invite-management">
+                <div className="settings-popover-title">Davet Gonder</div>
                 <div className="settings-invite-actions">
                   <input
                     type="email"
@@ -152,7 +152,10 @@ export default function SidebarFooter({
                     {settingsInviteStatus}
                   </p>
                 ) : null}
+              </div>
 
+              <div className="settings-invitations">
+                <div className="settings-popover-title">Davetli Uyeler</div>
                 {invitationsLoading ? (
                   <p className="settings-members-note">
                     Davetler yukleniyor...

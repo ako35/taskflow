@@ -45,6 +45,8 @@ const allowedOrigins = [
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "",
 ].filter(Boolean);
 
+const notificationsRouter = express.Router();
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -676,6 +678,68 @@ profileRouter.put("/", async (req, res) => {
   res.json(profile);
 });
 
+notificationsRouter.get("/", async (req, res) => {
+  const profile = await upsertUserProfile(req.authUser!);
+  const rawLimit = Number(req.query.limit);
+  const limit = Number.isFinite(rawLimit)
+    ? Math.max(1, Math.min(50, Math.floor(rawLimit)))
+    : 20;
+
+  const [items, unreadCount] = await Promise.all([
+    prisma.notification.findMany({
+      where: {
+        userProfileId: profile.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+      select: {
+        id: true,
+        message: true,
+        isRead: true,
+        createdAt: true,
+        workspaceId: true,
+        taskId: true,
+      },
+    }),
+    prisma.notification.count({
+      where: {
+        userProfileId: profile.id,
+        isRead: false,
+      },
+    }),
+  ]);
+
+  res.json({
+    unreadCount,
+    items: items.map((item) => ({
+      id: item.id,
+      message: item.message,
+      isRead: item.isRead,
+      createdAt: item.createdAt,
+      workspaceId: item.workspaceId,
+      taskId: item.taskId,
+    })),
+  });
+});
+
+notificationsRouter.post("/read-all", async (req, res) => {
+  const profile = await upsertUserProfile(req.authUser!);
+
+  await prisma.notification.updateMany({
+    where: {
+      userProfileId: profile.id,
+      isRead: false,
+    },
+    data: {
+      isRead: true,
+    },
+  });
+
+  res.status(204).end();
+});
+
 workspacesRouter.get("/", async (req, res) => {
   const profile = await upsertUserProfile(req.authUser!);
   await ensureDefaultWorkspaceForUser(profile.id);
@@ -831,28 +895,103 @@ workspacesRouter.get("/:id/invitations", async (req, res) => {
     },
   });
 
+  const acceptedByAccount = new Map<
+    string,
+    {
+      id: string;
+      userProfileId: number | null;
+      email: string;
+      firstName: string | null;
+      lastName: string | null;
+      invitedAt: Date;
+      acceptedAt: Date | null;
+    }
+  >();
+
+  invitations
+    .filter((invite) => invite.status === "ACCEPTED")
+    .forEach((invite) => {
+      const email = invite.acceptedBy?.email || invite.invitedEmail;
+      const accountKey =
+        invite.acceptedBy?.id != null
+          ? `user:${invite.acceptedBy.id}`
+          : `email:${canonicalizeEmailForInvite(email)}`;
+
+      const existing = acceptedByAccount.get(accountKey);
+      const inviteTime = (invite.acceptedAt || invite.createdAt).getTime();
+      const existingTime = existing
+        ? (existing.acceptedAt || existing.invitedAt).getTime()
+        : -1;
+
+      if (!existing || inviteTime > existingTime) {
+        acceptedByAccount.set(accountKey, {
+          id: invite.id,
+          userProfileId: invite.acceptedBy?.id || null,
+          email,
+          firstName: invite.acceptedBy?.firstName || null,
+          lastName: invite.acceptedBy?.lastName || null,
+          invitedAt: invite.createdAt,
+          acceptedAt: invite.acceptedAt || null,
+        });
+      }
+    });
+
+  const acceptedEmailKeys = new Set(
+    Array.from(acceptedByAccount.values()).map((invite) =>
+      canonicalizeEmailForInvite(invite.email),
+    ),
+  );
+
+  const pendingByAccount = new Map<
+    string,
+    {
+      id: string;
+      email: string;
+      firstName: null;
+      lastName: null;
+      invitedAt: Date;
+      acceptedAt: null;
+    }
+  >();
+
+  invitations
+    .filter((invite) => invite.status === "PENDING")
+    .forEach((invite) => {
+      const emailKey = canonicalizeEmailForInvite(invite.invitedEmail);
+
+      // If same account already accepted an invite, do not keep it in pending.
+      if (acceptedEmailKeys.has(emailKey)) {
+        return;
+      }
+
+      const accountKey = `email:${emailKey}`;
+      const existing = pendingByAccount.get(accountKey);
+      const inviteTime = invite.createdAt.getTime();
+      const existingTime = existing ? existing.invitedAt.getTime() : -1;
+
+      if (!existing || inviteTime > existingTime) {
+        pendingByAccount.set(accountKey, {
+          id: invite.id,
+          email: invite.invitedEmail,
+          firstName: null,
+          lastName: null,
+          invitedAt: invite.createdAt,
+          acceptedAt: null,
+        });
+      }
+    });
+
   res.json({
-    pending: invitations
-      .filter((invite) => invite.status === "PENDING")
-      .map((invite) => ({
-        id: invite.id,
-        email: invite.invitedEmail,
-        firstName: null,
-        lastName: null,
-        invitedAt: invite.createdAt,
-        acceptedAt: null,
-      })),
-    accepted: invitations
-      .filter((invite) => invite.status === "ACCEPTED")
-      .map((invite) => ({
-        id: invite.id,
-        userProfileId: invite.acceptedBy?.id || null,
-        email: invite.acceptedBy?.email || invite.invitedEmail,
-        firstName: invite.acceptedBy?.firstName || null,
-        lastName: invite.acceptedBy?.lastName || null,
-        invitedAt: invite.createdAt,
-        acceptedAt: invite.acceptedAt,
-      })),
+    pending: Array.from(pendingByAccount.values()).sort(
+      (a, b) => b.invitedAt.getTime() - a.invitedAt.getTime(),
+    ),
+    accepted: Array.from(acceptedByAccount.values()).sort(
+      (a, b) => {
+        const aTime = (a.acceptedAt || a.invitedAt).getTime();
+        const bTime = (b.acceptedAt || b.invitedAt).getTime();
+        return bTime - aTime;
+      },
+    ),
   });
 });
 
@@ -1026,6 +1165,8 @@ tasksRouter.get("/:id/comments", async (req, res) => {
     },
     select: {
       id: true,
+      title: true,
+      workspaceId: true,
     },
   });
 
@@ -1097,6 +1238,8 @@ tasksRouter.post("/:id/comments", async (req, res) => {
     },
     select: {
       id: true,
+      title: true,
+      workspaceId: true,
     },
   });
 
@@ -1122,6 +1265,36 @@ tasksRouter.post("/:id/comments", async (req, res) => {
       },
     },
   });
+
+  const invitedMembers = await prisma.workspaceMember.findMany({
+    where: {
+      workspaceId: task.workspaceId,
+      role: "MEMBER",
+      userProfileId: {
+        not: profile.id,
+      },
+    },
+    select: {
+      userProfileId: true,
+    },
+  });
+
+  const commenterDisplayName = [profile.firstName, profile.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim() || profile.email || profile.authEmail;
+
+  if (invitedMembers.length > 0) {
+    await prisma.notification.createMany({
+      data: invitedMembers.map((member) => ({
+        userProfileId: member.userProfileId,
+        workspaceId: task.workspaceId,
+        taskId: task.id,
+        commentId: comment.id,
+        message: `${commenterDisplayName} \"${task.title}\" gorevine yorum yapti.`,
+      })),
+    });
+  }
 
   res.status(201).json({
     id: comment.id,
@@ -1247,6 +1420,8 @@ app.use("/profile", authenticate, profileRouter);
 app.use("/api/profile", authenticate, profileRouter);
 app.use("/workspaces", authenticate, workspacesRouter);
 app.use("/api/workspaces", authenticate, workspacesRouter);
+app.use("/notifications", authenticate, notificationsRouter);
+app.use("/api/notifications", authenticate, notificationsRouter);
 
 app.post(["/ai/refine-text", "/api/ai/refine-text"], authenticate, async (req, res) => {
   const rawText = typeof req.body?.text === "string" ? req.body.text.trim() : "";

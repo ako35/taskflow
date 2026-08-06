@@ -48,7 +48,10 @@ export default function LoginView({
           <div className="auth-separator">Veya şununla oturum açın</div>
 
           <div className="google-button">
-            <div id="google-signin-button" className="auth-google-button" />
+            <div className="auth-google-compact">
+              <div id="google-signin-button" className="auth-google-button" />
+              <span className="auth-google-label">Google</span>
+            </div>
           </div>
 
           {googleError ? (

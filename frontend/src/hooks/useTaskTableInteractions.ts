@@ -17,7 +17,6 @@ import {
 } from "../constants";
 import type { Task, ViewMode } from "../types";
 import {
-  fitColumnWidthsToContainer,
   getPriorityRank,
   getStatusRank,
   matchesSearch,
@@ -89,6 +88,84 @@ export default function useTaskTableInteractions({
 
     return next;
   });
+
+  const tableTotalWidthRef = useRef<number | null>(null);
+
+  const getTableTotalWidth = useCallback((widths: Record<string, number>) => {
+    if (tableTotalWidthRef.current && tableTotalWidthRef.current > 0) {
+      return tableTotalWidthRef.current;
+    }
+
+    const total = tableColumns.reduce((sum, column) => {
+      return sum + (widths[column.field] ?? column.minWidth);
+    }, 0);
+
+    tableTotalWidthRef.current = total;
+    return total;
+  }, []);
+
+  const keepTableWidthFixed = useCallback(
+    (prev: Record<string, number>, next: Record<string, number>, changedField: string) => {
+      const minimums = tableColumns.reduce<Record<string, number>>((acc, column) => {
+        acc[column.field] = column.minWidth;
+        return acc;
+      }, {});
+
+      const normalized: Record<string, number> = { ...next };
+      for (const column of tableColumns) {
+        normalized[column.field] = Math.max(
+          minimums[column.field],
+          next[column.field] ?? prev[column.field] ?? minimums[column.field],
+        );
+      }
+
+      const targetTotal = getTableTotalWidth(prev);
+      const currentTotal = tableColumns.reduce(
+        (sum, column) => sum + normalized[column.field],
+        0,
+      );
+
+      let diff = currentTotal - targetTotal;
+      const candidateFields = tableColumns
+        .map((column) => column.field)
+        .filter((field) => field !== changedField)
+        .sort((a, b) => {
+          const priority = (field: string) => {
+            if (field === "title") return 0;
+            if (field === "status") return 1;
+            if (field === "priority") return 2;
+            return 3;
+          };
+          return priority(a) - priority(b);
+        });
+
+      if (diff > 0) {
+        for (const field of candidateFields) {
+          if (diff <= 0) break;
+          const reducible = Math.max(0, normalized[field] - minimums[field]);
+          const amount = Math.min(reducible, diff);
+          normalized[field] -= amount;
+          diff -= amount;
+        }
+
+        if (diff > 0) {
+          const minWidth = minimums[changedField] ?? 80;
+          normalized[changedField] = Math.max(minWidth, normalized[changedField] - diff);
+          diff = 0;
+        }
+      } else if (diff < 0) {
+        const expandableField =
+          candidateFields.find((field) => field === "title") ?? candidateFields[0];
+
+        if (expandableField) {
+          normalized[expandableField] += Math.abs(diff);
+        }
+      }
+
+      return normalized;
+    },
+    [getTableTotalWidth],
+  );
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -276,11 +353,18 @@ export default function useTaskTableInteractions({
   );
 
   const syncColumnWidthsToContainer = useCallback(() => {
-    const containerWidth = tableWrapperRef.current?.clientWidth;
-    if (!containerWidth) return;
+    setColumnWidths((prev) => {
+      const next = tableColumns.reduce<Record<string, number>>((acc, column) => {
+        acc[column.field] = Math.max(
+          column.minWidth,
+          prev[column.field] ?? DEFAULT_COLUMN_WIDTHS[column.field] ?? column.minWidth,
+        );
+        return acc;
+      }, {});
 
-    setColumnWidths((prev) => fitColumnWidthsToContainer(prev, containerWidth));
-  }, [tableWrapperRef]);
+      return keepTableWidthFixed(prev, next, "title");
+    });
+  }, [keepTableWidthFixed]);
 
   const resizeState = useRef<{
     field: string;
@@ -295,11 +379,15 @@ export default function useTaskTableInteractions({
     const delta = event.clientX - current.startX;
     const minWidth =
       tableColumns.find((column) => column.field === current.field)?.minWidth ?? 80;
-    setColumnWidths((prev) => ({
-      ...prev,
-      [current.field]: Math.max(minWidth, current.startWidth + delta),
-    }));
-  }, []);
+    setColumnWidths((prev) => {
+      const requested = {
+        ...prev,
+        [current.field]: Math.max(minWidth, current.startWidth + delta),
+      };
+
+      return keepTableWidthFixed(prev, requested, current.field);
+    });
+  }, [keepTableWidthFixed]);
 
   const handleColumnMouseUp = useCallback(() => {
     if (!resizeState.current) return;
@@ -348,10 +436,14 @@ export default function useTaskTableInteractions({
             : DEFAULT_COLUMN_WIDTHS.priority;
         const nextWidth = Math.max(fallbackWidth, Math.ceil((frameWidth || 0) + 30));
 
-        setColumnWidths((prev) => ({
-          ...prev,
-          [field]: nextWidth,
-        }));
+          setColumnWidths((prev) => {
+            const requested = {
+              ...prev,
+              [field]: nextWidth,
+            };
+
+            return keepTableWidthFixed(prev, requested, field);
+          });
         return;
       }
 
@@ -406,12 +498,16 @@ export default function useTaskTableInteractions({
         Math.max(hardMinimum, Math.ceil(widestText + extraPadding)),
       );
 
-      setColumnWidths((prev) => ({
-        ...prev,
-        [field]: nextWidth,
-      }));
+      setColumnWidths((prev) => {
+        const requested = {
+          ...prev,
+          [field]: nextWidth,
+        };
+
+        return keepTableWidthFixed(prev, requested, field);
+      });
     },
-    [tableWrapperRef, visibleTasks],
+    [keepTableWidthFixed, tableWrapperRef, visibleTasks],
   );
 
   const toggleStatusGroup = useCallback(

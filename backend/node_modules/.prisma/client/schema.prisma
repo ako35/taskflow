@@ -23,6 +23,7 @@ model Task {
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   comments    TaskComment[]
+  notifications Notification[]
 
   @@index([workspaceId])
 }
@@ -42,6 +43,7 @@ model UserProfile {
   sentInvitations Invitation[] @relation("InvitationSender")
   acceptedInvitations Invitation[] @relation("InvitationAccepter")
   taskComments TaskComment[]
+  notifications Notification[]
 }
 
 model TaskComment {
@@ -53,6 +55,7 @@ model TaskComment {
   updatedAt     DateTime  @updatedAt
   task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
   userProfile   UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+  notifications Notification[]
 
   @@index([taskId, createdAt])
   @@index([userProfileId])
@@ -70,6 +73,26 @@ model Workspace {
   members     WorkspaceMember[]
   tasks       Task[]
   invitations Invitation[]
+  notifications Notification[]
+}
+
+model Notification {
+  id            Int       @id @default(autoincrement())
+  userProfileId Int
+  workspaceId   String
+  taskId        Int
+  commentId     Int
+  message       String
+  isRead        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  userProfile   UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  comment       TaskComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([userProfileId, isRead, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([taskId])
 }
 
 model WorkspaceMember {

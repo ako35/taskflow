@@ -22,6 +22,7 @@ import {
   User,
   MoonStar,
   Mail,
+  Bell,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -79,6 +80,7 @@ export function UiGlyph({
     | "sun"
     | "moon"
     | "mail"
+    | "bell"
     | "close";
 }) {
   const iconMap: Record<
@@ -98,6 +100,7 @@ export function UiGlyph({
     | "sun"
     | "moon"
     | "mail"
+    | "bell"
     | "close",
     LucideIcon
   > = {
@@ -117,6 +120,7 @@ export function UiGlyph({
     sun: Sun,
     moon: MoonStar,
     mail: Mail,
+    bell: Bell,
     close: X,
   };
 

@@ -85,6 +85,20 @@ export type WorkspaceInvitationsOverview = {
   accepted: WorkspaceInvitePerson[];
 };
 
+export type UserNotification = {
+  id: number;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  workspaceId: string;
+  taskId: number;
+};
+
+export type UserNotificationsResponse = {
+  unreadCount: number;
+  items: UserNotification[];
+};
+
 export type ThemeMode = "dark" | "light";
 export type TableDensity = "normal" | "dense";
 export type ViewMode = "workspaces" | "archive";

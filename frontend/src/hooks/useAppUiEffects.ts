@@ -11,6 +11,7 @@ type UseAppUiEffectsArgs = {
   tableDensity: TableDensity;
   settingsMenuRef: MutableRefObject<HTMLDivElement | null>;
   profileMenuRef: MutableRefObject<HTMLDivElement | null>;
+  notificationsMenuRef: MutableRefObject<HTMLDivElement | null>;
   tasksTableWrapperRef: MutableRefObject<HTMLDivElement | null>;
   setWorkspaceMenuOpenId: Dispatch<SetStateAction<string | null>>;
   setEditingWorkspaceId: Dispatch<SetStateAction<string | null>>;
@@ -18,6 +19,7 @@ type UseAppUiEffectsArgs = {
   setSettingsMenuOpen: Dispatch<SetStateAction<boolean>>;
   setThemeMenuOpen: Dispatch<SetStateAction<boolean>>;
   setProfileMenuOpen: Dispatch<SetStateAction<boolean>>;
+  setNotificationsMenuOpen: Dispatch<SetStateAction<boolean>>;
   setActivePreviewCell: Dispatch<
     SetStateAction<{ id: number; field: "title" } | null>
   >;
@@ -28,6 +30,7 @@ export default function useAppUiEffects({
   tableDensity,
   settingsMenuRef,
   profileMenuRef,
+  notificationsMenuRef,
   tasksTableWrapperRef,
   setWorkspaceMenuOpenId,
   setEditingWorkspaceId,
@@ -35,6 +38,7 @@ export default function useAppUiEffects({
   setSettingsMenuOpen,
   setThemeMenuOpen,
   setProfileMenuOpen,
+  setNotificationsMenuOpen,
   setActivePreviewCell,
 }: UseAppUiEffectsArgs) {
   useEffect(() => {
@@ -73,6 +77,13 @@ export default function useAppUiEffects({
       }
 
       if (
+        notificationsMenuRef.current &&
+        !notificationsMenuRef.current.contains(event.target)
+      ) {
+        setNotificationsMenuOpen(false);
+      }
+
+      if (
         tasksTableWrapperRef.current &&
         !tasksTableWrapperRef.current.contains(event.target)
       ) {
@@ -86,9 +97,11 @@ export default function useAppUiEffects({
     };
   }, [
     profileMenuRef,
+    notificationsMenuRef,
     setActivePreviewCell,
     setEditingWorkspaceId,
     setEditingWorkspaceName,
+    setNotificationsMenuOpen,
     setProfileMenuOpen,
     setSettingsMenuOpen,
     setThemeMenuOpen,

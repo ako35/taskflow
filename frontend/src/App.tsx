@@ -25,6 +25,8 @@ import type {
   Task,
   TaskComment,
   ThemeMode,
+  UserNotification,
+  UserNotificationsResponse,
   WorkspaceInvitationsOverview,
 } from "./types";
 import { buildUserDisplayName, getUserInitials, safeParseJson } from "./utils";
@@ -83,6 +85,12 @@ export default function App() {
   const [taskCommentsLoading, setTaskCommentsLoading] = useState(false);
   const [commentDraft, setCommentDraft] = useState("");
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [notificationsMenuOpen, setNotificationsMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsUnreadCount, setNotificationsUnreadCount] = useState(0);
+  const [notificationsMarkingRead, setNotificationsMarkingRead] =
+    useState(false);
   const [invitationsOverview, setInvitationsOverview] =
     useState<WorkspaceInvitationsOverview>({ pending: [], accepted: [] });
   const [invitationsLoading, setInvitationsLoading] = useState(false);
@@ -98,6 +106,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 860);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const notificationsMenuRef = useRef<HTMLDivElement | null>(null);
   const tasksTableWrapperRef = useRef<HTMLDivElement | null>(null);
 
   const collapseSidebarOnMobile = useCallback(() => {
@@ -112,6 +121,7 @@ export default function App() {
     setIdToken(null);
     setGuestView("login");
     setProfileDetailsOpen(false);
+    setNotificationsMenuOpen(false);
     localStorage.removeItem("taskflow_user");
     localStorage.removeItem("taskflow_id_token");
   }, []);
@@ -310,6 +320,91 @@ export default function App() {
     setCommentDraft("");
   }, []);
 
+  const loadNotifications = useCallback(async () => {
+    if (!idToken || !user) {
+      setNotifications([]);
+      setNotificationsUnreadCount(0);
+      setNotificationsLoading(false);
+      return;
+    }
+
+    setNotificationsLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/notifications?limit=20`, {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      const text = await response.text();
+      const payload = safeParseJson<UserNotificationsResponse | null>(
+        text,
+        null,
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          (payload as any)?.error || text || "Bildirimler yuklenemedi.",
+        );
+      }
+
+      setNotifications(Array.isArray(payload?.items) ? payload.items : []);
+      setNotificationsUnreadCount(
+        typeof payload?.unreadCount === "number" ? payload.unreadCount : 0,
+      );
+    } catch (_error) {
+      // Silent fail to avoid interrupting core task workflow with non-critical badge errors.
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [handleUnauthorized, idToken, user]);
+
+  const handleMarkNotificationsRead = useCallback(async () => {
+    if (!idToken || !user || notificationsUnreadCount === 0) {
+      return;
+    }
+
+    setNotificationsMarkingRead(true);
+
+    try {
+      const response = await fetch(`${API_URL}/notifications/read-all`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      const text = await response.text();
+      const payload = safeParseJson<Record<string, any> | null>(text, null);
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.error || text || "Bildirimler guncellenemedi.",
+        );
+      }
+
+      setNotifications((prev) =>
+        prev.map((item) => ({ ...item, isRead: true })),
+      );
+      setNotificationsUnreadCount(0);
+    } catch (_error) {
+      // Do not surface as blocking error.
+    } finally {
+      setNotificationsMarkingRead(false);
+    }
+  }, [handleUnauthorized, idToken, notificationsUnreadCount, user]);
+
   const handleSubmitTaskComment = useCallback(async () => {
     const content = commentDraft.trim();
 
@@ -349,12 +444,20 @@ export default function App() {
 
       setTaskComments((prev) => [payload as TaskComment, ...prev]);
       setCommentDraft("");
+      void loadNotifications();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Yorum eklenemedi.");
     } finally {
       setCommentSubmitting(false);
     }
-  }, [commentDraft, handleUnauthorized, idToken, selectedTaskId, user]);
+  }, [
+    commentDraft,
+    handleUnauthorized,
+    idToken,
+    loadNotifications,
+    selectedTaskId,
+    user,
+  ]);
 
   const handleSignOut = useCallback(() => {
     setUser(null);
@@ -366,6 +469,7 @@ export default function App() {
     setEditingWorkspaceId(null);
     setEditingWorkspaceName("");
     setProfileMenuOpen(false);
+    setNotificationsMenuOpen(false);
     setProfileDetailsOpen(false);
     setViewMode("workspaces");
     localStorage.removeItem("taskflow_user");
@@ -412,6 +516,7 @@ export default function App() {
     tableDensity,
     settingsMenuRef,
     profileMenuRef,
+    notificationsMenuRef,
     tasksTableWrapperRef,
     setWorkspaceMenuOpenId,
     setEditingWorkspaceId,
@@ -419,6 +524,7 @@ export default function App() {
     setSettingsMenuOpen,
     setThemeMenuOpen,
     setProfileMenuOpen,
+    setNotificationsMenuOpen,
     setActivePreviewCell,
   });
 
@@ -427,8 +533,15 @@ export default function App() {
   }, [setShowForm]);
 
   const handleToggleProfileMenu = useCallback(() => {
+    setNotificationsMenuOpen(false);
     setProfileMenuOpen((current) => !current);
   }, []);
+
+  const handleToggleNotificationsMenu = useCallback(() => {
+    setProfileMenuOpen(false);
+    setNotificationsMenuOpen((current) => !current);
+    void loadNotifications();
+  }, [loadNotifications]);
 
   const handleOpenProfileDetails = useCallback(() => {
     setProfileMenuOpen(false);
@@ -936,6 +1049,24 @@ export default function App() {
     void loadInvitationsOverview();
   }, [loadInvitationsOverview, settingsMenuOpen]);
 
+  useEffect(() => {
+    if (!idToken || !user) {
+      setNotifications([]);
+      setNotificationsUnreadCount(0);
+      return;
+    }
+
+    void loadNotifications();
+
+    const intervalId = window.setInterval(() => {
+      void loadNotifications();
+    }, 15000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [idToken, loadNotifications, user]);
+
   const handleToggleThemeMenu = useCallback(() => {
     setThemeMenuOpen((current) => !current);
   }, []);
@@ -1185,8 +1316,15 @@ export default function App() {
     userInitials: getUserInitials(user.name),
     profileMenuOpen,
     profileMenuRef,
+    notificationsMenuRef,
     themeMode,
+    notificationsMenuOpen,
+    notifications,
+    notificationsLoading: notificationsLoading || notificationsMarkingRead,
+    notificationsUnreadCount,
     onToggleProfileMenu: handleToggleProfileMenu,
+    onToggleNotificationsMenu: handleToggleNotificationsMenu,
+    onMarkNotificationsRead: handleMarkNotificationsRead,
     onOpenInviteModal: handleOpenInviteModal,
     onOpenProfileDetails: handleOpenProfileDetails,
     onSetThemeMode: handleSetThemeMode,

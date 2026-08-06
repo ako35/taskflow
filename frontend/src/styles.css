@@ -1168,6 +1168,12 @@ button[disabled] {
   border-top: 1px solid rgba(148, 163, 184, 0.18);
 }
 
+.settings-invite-management {
+  margin-top: 0.25rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
 .settings-invitation-groups {
   margin-top: 0.32rem;
   display: grid;
@@ -1375,6 +1381,8 @@ button[disabled] {
   color: #ffffff;
   width: 28px;
   height: 28px;
+  padding: 0;
+  cursor: pointer;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
@@ -1390,7 +1398,9 @@ button[disabled] {
 .task-details-close svg {
   width: 16px;
   height: 16px;
-  stroke: currentColor;
+  color: #ffffff;
+  stroke: #ffffff;
+  stroke-width: 2.25;
   fill: none;
 }
 
@@ -1527,6 +1537,169 @@ button[disabled] {
 
 .workspace-header {
   display: none;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.notifications-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.notifications-trigger {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(15, 23, 42, 0.7);
+  color: #e2e8f0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.notifications-trigger:hover,
+.notifications-trigger.open {
+  transform: translateY(-1px);
+  border-color: rgba(91, 140, 255, 0.6);
+  background: rgba(30, 41, 59, 0.88);
+}
+
+.notifications-trigger svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+}
+
+.notifications-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  padding: 0 0.28rem;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 1px solid rgba(15, 23, 42, 0.7);
+}
+
+.notifications-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.75rem);
+  width: 320px;
+  max-width: min(92vw, 320px);
+  background: linear-gradient(
+    180deg,
+    rgba(11, 18, 34, 0.98),
+    rgba(8, 14, 27, 0.98)
+  );
+  border: 1px solid transparent;
+  border-radius: 18px;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px) scale(0.985);
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.2s ease;
+  z-index: 85;
+  overflow: hidden;
+}
+
+.notifications-dropdown.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.notifications-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.notifications-head strong {
+  font-size: 0.84rem;
+  letter-spacing: 0.03em;
+  color: var(--text);
+}
+
+.notifications-read-all {
+  border: 1px solid rgba(91, 140, 255, 0.32);
+  background: rgba(91, 140, 255, 0.12);
+  color: #dbeafe;
+  border-radius: 8px;
+  font-size: 0.68rem;
+  padding: 0.28rem 0.42rem;
+  cursor: pointer;
+}
+
+.notifications-read-all:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.notifications-list {
+  max-height: 280px;
+  overflow-y: auto;
+  display: grid;
+}
+
+.notification-item {
+  padding: 0.72rem 0.9rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  display: grid;
+  gap: 0.28rem;
+}
+
+.notification-item.unread {
+  background: rgba(91, 140, 255, 0.12);
+}
+
+.notification-item p {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.notification-item span {
+  font-size: 0.67rem;
+  color: var(--text-muted);
+  justify-self: end;
+}
+
+.notifications-empty {
+  margin: 0;
+  padding: 1rem 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.76rem;
 }
 
 .user-bar {
@@ -3625,6 +3798,10 @@ button[disabled] {
     align-items: stretch;
   }
 
+  .topbar-actions {
+    justify-content: flex-end;
+  }
+
   .search {
     width: 100%;
   }
@@ -4108,6 +4285,10 @@ button[disabled] {
   border-top-color: rgba(15, 23, 42, 0.12);
 }
 
+:root[data-theme="light"] .settings-invite-management {
+  border-top-color: rgba(15, 23, 42, 0.12);
+}
+
 :root[data-theme="light"] .settings-theme-tabs {
   background: rgba(241, 246, 255, 0.98);
   border-color: rgba(15, 23, 42, 0.16);
@@ -4170,6 +4351,51 @@ button[disabled] {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(15, 23, 42, 0.2);
   color: #1e293b;
+}
+
+:root[data-theme="light"] .notifications-trigger {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.2);
+  color: #1e293b;
+}
+
+:root[data-theme="light"] .notifications-trigger:hover,
+:root[data-theme="light"] .notifications-trigger.open {
+  background: rgba(240, 245, 255, 0.98);
+  border-color: rgba(47, 92, 216, 0.45);
+}
+
+:root[data-theme="light"] .notifications-dropdown {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16);
+}
+
+:root[data-theme="light"] .notifications-head {
+  border-bottom-color: rgba(15, 23, 42, 0.14);
+}
+
+:root[data-theme="light"] .notifications-read-all {
+  background: rgba(47, 92, 216, 0.12);
+  border-color: rgba(47, 92, 216, 0.3);
+  color: #1e3a8a;
+}
+
+:root[data-theme="light"] .notification-item {
+  border-bottom-color: rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme="light"] .notification-item.unread {
+  background: rgba(47, 92, 216, 0.08);
+}
+
+:root[data-theme="light"] .notification-item p,
+:root[data-theme="light"] .notifications-head strong {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .notification-item span,
+:root[data-theme="light"] .notifications-empty {
+  color: #516078;
 }
 
 :root[data-theme="light"] .profile-trigger:hover,
@@ -4478,7 +4704,7 @@ button[disabled] {
 }
 
 .auth-google-button {
-  width: 220px;
+  width: 40px;
   min-height: 40px;
   height: 40px;
   overflow: hidden;
@@ -4488,6 +4714,23 @@ button[disabled] {
   width: 100% !important;
   height: 100% !important;
   overflow: hidden;
+}
+
+.auth-google-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 0.34rem 0.6rem 0.34rem 0.34rem;
+}
+
+.auth-google-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1;
 }
 
 .auth-provider-row {
