@@ -1,4 +1,5 @@
 import React from "react";
+import { UiGlyph } from "../ui/Icons";
 
 type InviteStatus = {
   type: "success" | "error";
@@ -46,7 +47,18 @@ export default function InviteTeammateModal({
         className="workspace-create-modal profile-details-modal"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="invite-teammate-title">E-posta ile Davet Et</h2>
+        <div className="modal-title-row">
+          <h2 id="invite-teammate-title">E-posta ile Davet Et</h2>
+          <button
+            type="button"
+            className="modal-close-btn"
+            aria-label="Kapat"
+            onClick={onClose}
+            disabled={sending}
+          >
+            <UiGlyph icon="close" />
+          </button>
+        </div>
         <p>
           Takim arkadasinizi <strong>{workspaceName}</strong> calisma alanina
           davet etmek icin e-posta adresini girin.
