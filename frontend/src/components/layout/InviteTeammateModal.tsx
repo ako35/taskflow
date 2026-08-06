@@ -90,7 +90,6 @@ export default function InviteTeammateModal({
               rows={4}
               value={message}
               maxLength={500}
-              placeholder="Ornek: Pazartesi sprintini TaskFlow uzerinden birlikte takip edelim."
               onChange={(event) => onMessageChange(event.target.value)}
             />
           </label>

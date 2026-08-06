@@ -205,10 +205,13 @@ export default function useAuthSession(): UseAuthSessionResult {
           if (loginButton) {
             loginButton.innerHTML = "";
             google.accounts.id.renderButton(loginButton, {
+              type: "standard",
               theme: "outline",
               size: "large",
-              text: "signin_with",
+              text: "signin",
               shape: "rectangular",
+              logo_alignment: "left",
+              locale: "tr",
               width: 220,
             });
           }

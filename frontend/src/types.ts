@@ -8,6 +8,7 @@ export type Task = {
   description: string;
   priority: string;
   status?: string;
+  createdAt?: string;
   workspaceId: string;
 };
 
@@ -67,6 +68,21 @@ export type WorkspaceMemberInfo = {
   lastName?: string | null;
   email: string;
   role: "OWNER" | "MEMBER";
+};
+
+export type WorkspaceInvitePerson = {
+  id: string;
+  userProfileId?: number | null;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  invitedAt: string;
+  acceptedAt?: string | null;
+};
+
+export type WorkspaceInvitationsOverview = {
+  pending: WorkspaceInvitePerson[];
+  accepted: WorkspaceInvitePerson[];
 };
 
 export type ThemeMode = "dark" | "light";

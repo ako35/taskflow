@@ -6,7 +6,7 @@ import type {
   ThemeMode,
   ViewMode,
   Workspace,
-  WorkspaceMemberInfo,
+  WorkspaceInvitationsOverview,
 } from "../../types";
 
 type AppSidebarProps = {
@@ -20,9 +20,13 @@ type AppSidebarProps = {
   settingsMenuOpen: boolean;
   themeMenuOpen: boolean;
   themeMode: ThemeMode;
-  invitedMembers: WorkspaceMemberInfo[];
-  invitedMembersLoading: boolean;
-  invitedMembersError: string | null;
+  invitationsOverview: WorkspaceInvitationsOverview;
+  invitationsLoading: boolean;
+  invitationsError: string | null;
+  settingsInviteEmail: string;
+  settingsInviteSending: boolean;
+  settingsInviteStatus: string | null;
+  removingMemberUserId: number | null;
   settingsMenuRef: React.RefObject<HTMLDivElement | null>;
   onToggleWorkspaceInput: () => void;
   onStartWorkspaceRename: (workspaceId: string) => void;
@@ -38,6 +42,9 @@ type AppSidebarProps = {
   onToggleSettingsMenu: () => void;
   onToggleThemeMenu: () => void;
   onSetThemeMode: (mode: ThemeMode) => void;
+  onSettingsInviteEmailChange: (value: string) => void;
+  onSendSettingsInvite: () => void;
+  onRemoveWorkspaceMember: (memberUserId: number) => void;
   onSignOut: () => void;
 };
 
@@ -52,9 +59,13 @@ export default function AppSidebar({
   settingsMenuOpen,
   themeMenuOpen,
   themeMode,
-  invitedMembers,
-  invitedMembersLoading,
-  invitedMembersError,
+  invitationsOverview,
+  invitationsLoading,
+  invitationsError,
+  settingsInviteEmail,
+  settingsInviteSending,
+  settingsInviteStatus,
+  removingMemberUserId,
   settingsMenuRef,
   onToggleWorkspaceInput,
   onStartWorkspaceRename,
@@ -70,6 +81,9 @@ export default function AppSidebar({
   onToggleSettingsMenu,
   onToggleThemeMenu,
   onSetThemeMode,
+  onSettingsInviteEmailChange,
+  onSendSettingsInvite,
+  onRemoveWorkspaceMember,
   onSignOut,
 }: AppSidebarProps) {
   return (
@@ -131,14 +145,21 @@ export default function AppSidebar({
         settingsMenuOpen={settingsMenuOpen}
         themeMenuOpen={themeMenuOpen}
         themeMode={themeMode}
-        invitedMembers={invitedMembers}
-        invitedMembersLoading={invitedMembersLoading}
-        invitedMembersError={invitedMembersError}
+        invitationsOverview={invitationsOverview}
+        invitationsLoading={invitationsLoading}
+        invitationsError={invitationsError}
+        settingsInviteEmail={settingsInviteEmail}
+        settingsInviteSending={settingsInviteSending}
+        settingsInviteStatus={settingsInviteStatus}
+        removingMemberUserId={removingMemberUserId}
         settingsMenuRef={settingsMenuRef}
         onSetArchiveView={onSetArchiveView}
         onToggleSettingsMenu={onToggleSettingsMenu}
         onToggleThemeMenu={onToggleThemeMenu}
         onSetThemeMode={onSetThemeMode}
+        onSettingsInviteEmailChange={onSettingsInviteEmailChange}
+        onSendSettingsInvite={onSendSettingsInvite}
+        onRemoveWorkspaceMember={onRemoveWorkspaceMember}
         onSignOut={onSignOut}
       />
     </aside>

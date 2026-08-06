@@ -747,6 +747,115 @@ workspacesRouter.get("/:id/members", async (req, res) => {
   );
 });
 
+workspacesRouter.delete("/:id/members/:memberUserId", async (req, res) => {
+  const workspaceId = sanitizeLine(req.params.id);
+  if (!workspaceId) {
+    return res.status(400).json({ error: "workspace id is required" });
+  }
+
+  const memberUserId = Number(req.params.memberUserId);
+  if (Number.isNaN(memberUserId)) {
+    return res.status(400).json({ error: "member user id is invalid" });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const membership = await getWorkspaceMember(profile.id, workspaceId);
+  if (!membership) {
+    return res.status(403).json({ error: "Bu calisma alanina erisiminiz yok." });
+  }
+
+  if (membership.role !== "OWNER") {
+    return res
+      .status(403)
+      .json({ error: "Uye cikarma islemini sadece calisma alani sahibi yapabilir." });
+  }
+
+  if (memberUserId === profile.id) {
+    return res.status(400).json({ error: "Kendinizi bu alandan cikarmazsiniz." });
+  }
+
+  const targetMembership = await getWorkspaceMember(memberUserId, workspaceId);
+  if (!targetMembership) {
+    return res.status(404).json({ error: "Cikarilacak uye bulunamadi." });
+  }
+
+  if (targetMembership.role === "OWNER") {
+    return res.status(400).json({ error: "Calisma alani sahibi cikarilamaz." });
+  }
+
+  await prisma.workspaceMember.delete({
+    where: {
+      workspaceId_userProfileId: {
+        workspaceId,
+        userProfileId: memberUserId,
+      },
+    },
+  });
+
+  res.status(204).end();
+});
+
+workspacesRouter.get("/:id/invitations", async (req, res) => {
+  const workspaceId = sanitizeLine(req.params.id);
+  if (!workspaceId) {
+    return res.status(400).json({ error: "workspace id is required" });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const membership = await getWorkspaceMember(profile.id, workspaceId);
+  if (!membership) {
+    return res.status(403).json({ error: "Bu calisma alanina erisiminiz yok." });
+  }
+
+  const invitations = await prisma.invitation.findMany({
+    where: {
+      workspaceId,
+    },
+    select: {
+      id: true,
+      invitedEmail: true,
+      status: true,
+      createdAt: true,
+      acceptedAt: true,
+      acceptedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  res.json({
+    pending: invitations
+      .filter((invite) => invite.status === "PENDING")
+      .map((invite) => ({
+        id: invite.id,
+        email: invite.invitedEmail,
+        firstName: null,
+        lastName: null,
+        invitedAt: invite.createdAt,
+        acceptedAt: null,
+      })),
+    accepted: invitations
+      .filter((invite) => invite.status === "ACCEPTED")
+      .map((invite) => ({
+        id: invite.id,
+        userProfileId: invite.acceptedBy?.id || null,
+        email: invite.acceptedBy?.email || invite.invitedEmail,
+        firstName: invite.acceptedBy?.firstName || null,
+        lastName: invite.acceptedBy?.lastName || null,
+        invitedAt: invite.createdAt,
+        acceptedAt: invite.acceptedAt,
+      })),
+  });
+});
+
 workspacesRouter.post("/", async (req, res) => {
   const { payload, errors } = validateWorkspacePayload(req.body || {});
   if (errors.length > 0) {

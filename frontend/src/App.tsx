@@ -25,7 +25,7 @@ import type {
   Task,
   TaskComment,
   ThemeMode,
-  WorkspaceMemberInfo,
+  WorkspaceInvitationsOverview,
 } from "./types";
 import { buildUserDisplayName, getUserInitials, safeParseJson } from "./utils";
 
@@ -83,13 +83,18 @@ export default function App() {
   const [taskCommentsLoading, setTaskCommentsLoading] = useState(false);
   const [commentDraft, setCommentDraft] = useState("");
   const [commentSubmitting, setCommentSubmitting] = useState(false);
-  const [invitedMembers, setInvitedMembers] = useState<WorkspaceMemberInfo[]>(
-    [],
-  );
-  const [invitedMembersLoading, setInvitedMembersLoading] = useState(false);
-  const [invitedMembersError, setInvitedMembersError] = useState<string | null>(
-    null,
-  );
+  const [invitationsOverview, setInvitationsOverview] =
+    useState<WorkspaceInvitationsOverview>({ pending: [], accepted: [] });
+  const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [invitationsError, setInvitationsError] = useState<string | null>(null);
+  const [settingsInviteEmail, setSettingsInviteEmail] = useState("");
+  const [settingsInviteSending, setSettingsInviteSending] = useState(false);
+  const [settingsInviteStatus, setSettingsInviteStatus] = useState<
+    string | null
+  >(null);
+  const [removingMemberUserId, setRemovingMemberUserId] = useState<
+    number | null
+  >(null);
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 860);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -622,6 +627,185 @@ export default function App() {
     user,
   ]);
 
+  const loadInvitationsOverview = useCallback(async () => {
+    if (!idToken || !user || !selectedWorkspace.id) {
+      setInvitationsOverview({ pending: [], accepted: [] });
+      setInvitationsError(null);
+      setInvitationsLoading(false);
+      return;
+    }
+
+    setInvitationsLoading(true);
+    setInvitationsError(null);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/workspaces/${selectedWorkspace.id}/invitations`,
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        },
+      );
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      const text = await response.text();
+      const payload = safeParseJson<WorkspaceInvitationsOverview | null>(
+        text,
+        null,
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          (payload as any)?.error || text || "Davetler yuklenemedi.",
+        );
+      }
+
+      setInvitationsOverview({
+        pending: Array.isArray(payload?.pending) ? payload.pending : [],
+        accepted: Array.isArray(payload?.accepted) ? payload.accepted : [],
+      });
+    } catch (error) {
+      setInvitationsOverview({ pending: [], accepted: [] });
+      setInvitationsError(
+        error instanceof Error ? error.message : "Davetler yuklenemedi.",
+      );
+    } finally {
+      setInvitationsLoading(false);
+    }
+  }, [handleUnauthorized, idToken, selectedWorkspace.id, user]);
+
+  const handleSendSettingsInvite = useCallback(async () => {
+    if (!idToken || !user) {
+      handleUnauthorized();
+      return;
+    }
+
+    const email = settingsInviteEmail.trim();
+    if (!email) {
+      setSettingsInviteStatus("Lutfen davet edilecek e-posta adresini girin.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setSettingsInviteStatus("Lutfen gecerli bir e-posta adresi girin.");
+      return;
+    }
+
+    setSettingsInviteSending(true);
+    setSettingsInviteStatus(null);
+
+    try {
+      const response = await fetch(`${API_URL}/invitations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          inviteeEmail: email,
+          message: "",
+          workspaceId: selectedWorkspace.id,
+        }),
+      });
+
+      const text = await response.text();
+      const responseBody = safeParseJson<Record<string, any> | null>(
+        text,
+        null,
+      );
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          responseBody?.error ||
+            text ||
+            "Davet gonderilemedi. Lutfen tekrar deneyin.",
+        );
+      }
+
+      setSettingsInviteStatus("Davet basariyla gonderildi.");
+      setSettingsInviteEmail("");
+      await loadInvitationsOverview();
+    } catch (err) {
+      setSettingsInviteStatus(
+        err instanceof Error
+          ? err.message
+          : "Davet gonderilemedi. Lutfen tekrar deneyin.",
+      );
+    } finally {
+      setSettingsInviteSending(false);
+    }
+  }, [
+    handleUnauthorized,
+    idToken,
+    loadInvitationsOverview,
+    selectedWorkspace.id,
+    settingsInviteEmail,
+    user,
+  ]);
+
+  const handleRemoveWorkspaceMember = useCallback(
+    async (memberUserId: number) => {
+      if (!idToken || !user) {
+        handleUnauthorized();
+        return;
+      }
+
+      setRemovingMemberUserId(memberUserId);
+      setSettingsInviteStatus(null);
+
+      try {
+        const response = await fetch(
+          `${API_URL}/workspaces/${selectedWorkspace.id}/members/${memberUserId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          },
+        );
+
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        const text = await response.text();
+        const payload = safeParseJson<Record<string, any> | null>(text, null);
+
+        if (!response.ok) {
+          throw new Error(payload?.error || text || "Uye cikarilamadi.");
+        }
+
+        setSettingsInviteStatus("Uye calisma alanindan cikarildi.");
+        await loadInvitationsOverview();
+      } catch (error) {
+        setSettingsInviteStatus(
+          error instanceof Error ? error.message : "Uye cikarilamadi.",
+        );
+      } finally {
+        setRemovingMemberUserId(null);
+      }
+    },
+    [
+      handleUnauthorized,
+      idToken,
+      loadInvitationsOverview,
+      selectedWorkspace.id,
+      user,
+    ],
+  );
+
   useEffect(() => {
     if (!idToken || !user) {
       return;
@@ -748,77 +932,9 @@ export default function App() {
       return;
     }
 
-    if (!idToken || !user || !selectedWorkspace.id) {
-      setInvitedMembers([]);
-      setInvitedMembersError(null);
-      setInvitedMembersLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadInvitedMembers = async () => {
-      setInvitedMembersLoading(true);
-      setInvitedMembersError(null);
-
-      try {
-        const response = await fetch(
-          `${API_URL}/workspaces/${selectedWorkspace.id}/members`,
-          {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-          },
-        );
-
-        if (response.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-
-        const text = await response.text();
-        const payload = safeParseJson<WorkspaceMemberInfo[] | null>(text, null);
-
-        if (!response.ok) {
-          throw new Error(
-            (payload as any)?.error || text || "Uyeler yuklenemedi.",
-          );
-        }
-
-        const members = Array.isArray(payload) ? payload : [];
-        const invitedOnly = members.filter(
-          (member) => member.role === "MEMBER",
-        );
-
-        if (!cancelled) {
-          setInvitedMembers(invitedOnly);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setInvitedMembers([]);
-          setInvitedMembersError(
-            error instanceof Error ? error.message : "Uyeler yuklenemedi.",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setInvitedMembersLoading(false);
-        }
-      }
-    };
-
-    void loadInvitedMembers();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    handleUnauthorized,
-    idToken,
-    selectedWorkspace.id,
-    settingsMenuOpen,
-    user,
-  ]);
+    setSettingsInviteStatus(null);
+    void loadInvitationsOverview();
+  }, [loadInvitationsOverview, settingsMenuOpen]);
 
   const handleToggleThemeMenu = useCallback(() => {
     setThemeMenuOpen((current) => !current);
@@ -921,9 +1037,13 @@ export default function App() {
       settingsMenuOpen,
       themeMenuOpen,
       themeMode,
-      invitedMembers,
-      invitedMembersLoading,
-      invitedMembersError,
+      invitationsOverview,
+      invitationsLoading,
+      invitationsError,
+      settingsInviteEmail,
+      settingsInviteSending,
+      settingsInviteStatus,
+      removingMemberUserId,
       settingsMenuRef,
       onToggleWorkspaceInput: handleToggleWorkspaceInput,
       onStartWorkspaceRename: startWorkspaceRename,
@@ -939,6 +1059,9 @@ export default function App() {
       onToggleSettingsMenu: handleToggleSettingsMenu,
       onToggleThemeMenu: handleToggleThemeMenu,
       onSetThemeMode: handleSetThemeMode,
+      onSettingsInviteEmailChange: setSettingsInviteEmail,
+      onSendSettingsInvite: handleSendSettingsInvite,
+      onRemoveWorkspaceMember: handleRemoveWorkspaceMember,
       onSignOut: handleSignOut,
     }),
     [
@@ -963,15 +1086,21 @@ export default function App() {
       sidebarOpen,
       selectedWorkspace,
       settingsMenuOpen,
-      invitedMembers,
-      invitedMembersLoading,
-      invitedMembersError,
+      invitationsOverview,
+      invitationsLoading,
+      invitationsError,
+      handleRemoveWorkspaceMember,
+      handleSendSettingsInvite,
       startWorkspaceRename,
+      settingsInviteEmail,
+      settingsInviteSending,
+      settingsInviteStatus,
       submitWorkspaceRename,
       themeMenuOpen,
       themeMode,
       viewMode,
       workspaceMenuOpenId,
+      removingMemberUserId,
     ],
   );
 

@@ -37,6 +37,22 @@ function formatCommentDate(value: string) {
   }).format(date);
 }
 
+function formatTaskCreatedAt(value?: string) {
+  if (!value) {
+    return "Olusturma tarihi bilinmiyor";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Olusturma tarihi bilinmiyor";
+  }
+
+  return new Intl.DateTimeFormat("tr-TR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export default function TaskDetailsPanel({
   open,
   task,
@@ -88,8 +104,8 @@ export default function TaskDetailsPanel({
             </span>
           </div>
 
-          <p className="task-details-description">
-            {task.description?.trim() || "Bu gorev icin aciklama girilmemis."}
+          <p className="task-details-created-at">
+            Olusturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
           </p>
         </div>
 
@@ -115,10 +131,13 @@ export default function TaskDetailsPanel({
                     <div className="task-comment-meta">
                       <strong>
                         {isCurrentUser ? "Sen" : authorDisplayName(comment)}
+                        {` (${comment.author.email})`}
                       </strong>
-                      <span>{formatCommentDate(comment.createdAt)}</span>
                     </div>
                     <p>{comment.content}</p>
+                    <span className="task-comment-time">
+                      {formatCommentDate(comment.createdAt)}
+                    </span>
                   </article>
                 );
               })
