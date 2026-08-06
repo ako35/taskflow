@@ -119,6 +119,26 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+function canonicalizeEmailForInvite(value: string) {
+  const normalized = normalizeEmail(value);
+  const atIndex = normalized.lastIndexOf("@");
+
+  if (atIndex <= 0) {
+    return normalized;
+  }
+
+  const localPart = normalized.slice(0, atIndex);
+  const domainPart = normalized.slice(atIndex + 1);
+
+  // Gmail addresses ignore dots and anything after '+'.
+  if (domainPart === "gmail.com" || domainPart === "googlemail.com") {
+    const canonicalLocal = localPart.split("+")[0].replace(/\./g, "");
+    return `${canonicalLocal}@gmail.com`;
+  }
+
+  return normalized;
+}
+
 function validateTaskPayload(body: Record<string, unknown>) {
   const errors: string[] = [];
   const requiredString = (value: unknown, field: string) => {
@@ -1214,11 +1234,9 @@ app.post(["/invitations/accept", "/api/invitations/accept"], authenticate, async
       return res.status(400).json({ error: "Davet suresi dolmus." });
     }
 
-    if (normalizeEmail(invitation.invitedEmail) !== normalizeEmail(profile.authEmail)) {
-      return res.status(403).json({
-        error: "Bu davet farkli bir e-posta adresine gonderilmis.",
-      });
-    }
+    const invitedEmailCanonical = canonicalizeEmailForInvite(invitation.invitedEmail);
+    const profileEmailCanonical = canonicalizeEmailForInvite(profile.authEmail);
+    const acceptedWithEmailMismatch = invitedEmailCanonical !== profileEmailCanonical;
 
     await prisma.workspaceMember.upsert({
       where: {
@@ -1249,6 +1267,7 @@ app.post(["/invitations/accept", "/api/invitations/accept"], authenticate, async
     res.status(200).json({
       success: true,
       workspace: invitation.workspace,
+      acceptedWithEmailMismatch,
     });
   } catch (error) {
     console.error("Invitation accept failed", error);
