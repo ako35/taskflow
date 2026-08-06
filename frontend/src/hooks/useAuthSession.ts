@@ -25,6 +25,74 @@ type UseAuthSessionResult = {
   googleError: string | null;
 };
 
+const GOOGLE_IDENTITY_SCRIPT = "https://accounts.google.com/gsi/client";
+
+function loadGoogleIdentityScript() {
+  return new Promise<void>((resolve, reject) => {
+    const google = (window as any).google;
+    if (google?.accounts?.id) {
+      resolve();
+      return;
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      `script[src="${GOOGLE_IDENTITY_SCRIPT}"]`,
+    );
+
+    if (existingScript) {
+      const onLoad = () => {
+        cleanup();
+        resolve();
+      };
+      const onError = () => {
+        cleanup();
+        reject(new Error("Google kimlik doğrulama scripti yüklenemedi."));
+      };
+      const cleanup = () => {
+        existingScript.removeEventListener("load", onLoad);
+        existingScript.removeEventListener("error", onError);
+      };
+
+      existingScript.addEventListener("load", onLoad);
+      existingScript.addEventListener("error", onError);
+      window.setTimeout(() => {
+        const nextGoogle = (window as any).google;
+        cleanup();
+        if (nextGoogle?.accounts?.id) {
+          resolve();
+          return;
+        }
+        reject(new Error("Google kimlik doğrulama scripti yüklenemedi."));
+      }, 10000);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = GOOGLE_IDENTITY_SCRIPT;
+    script.async = true;
+    script.defer = true;
+
+    const onLoad = () => {
+      cleanup();
+      resolve();
+    };
+
+    const onError = () => {
+      cleanup();
+      reject(new Error("Google kimlik doğrulama scripti yüklenemedi."));
+    };
+
+    const cleanup = () => {
+      script.removeEventListener("load", onLoad);
+      script.removeEventListener("error", onError);
+    };
+
+    script.addEventListener("load", onLoad);
+    script.addEventListener("error", onError);
+    document.head.appendChild(script);
+  });
+}
+
 export default function useAuthSession(): UseAuthSessionResult {
   const [user, setUser] = useState<User | null>(() => {
     const storedToken = localStorage.getItem("taskflow_id_token");
@@ -103,44 +171,56 @@ export default function useAuthSession(): UseAuthSessionResult {
       return;
     }
 
-    let attempts = 0;
-    const initializeGoogle = () => {
-      const google = (window as any).google;
-      if (!google?.accounts?.id) {
-        attempts += 1;
-        if (attempts < 15) {
-          window.setTimeout(initializeGoogle, 150);
-        } else {
-          setGoogleError("Google kimlik doğrulama scripti yüklenemedi.");
+    let cancelled = false;
+
+    const initializeGoogle = async () => {
+      try {
+        await loadGoogleIdentityScript();
+        if (cancelled) {
+          return;
         }
-        return;
-      }
 
-      if (!googleInitialized.current) {
-        google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-          ux_mode: "popup",
-        });
-        googleInitialized.current = true;
-      }
+        const google = (window as any).google;
+        if (!google?.accounts?.id) {
+          setGoogleError("Google kimlik doğrulama scripti yüklenemedi.");
+          return;
+        }
 
-      if (guestView === "login") {
-        const proxyButton = document.getElementById("google-signin-button-proxy");
-        if (proxyButton) {
-          proxyButton.innerHTML = "";
-          google.accounts.id.renderButton(proxyButton, {
-            theme: "outline",
-            size: "large",
-            text: "signin_with",
-            shape: "rectangular",
-            width: 220,
+        if (!googleInitialized.current) {
+          google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleCredentialResponse,
+            ux_mode: "popup",
+            itp_support: true,
           });
+          googleInitialized.current = true;
+        }
+
+        if (guestView === "login") {
+          const loginButton = document.getElementById("google-signin-button");
+          if (loginButton) {
+            loginButton.innerHTML = "";
+            google.accounts.id.renderButton(loginButton, {
+              theme: "outline",
+              size: "large",
+              text: "signin_with",
+              shape: "rectangular",
+              width: 220,
+            });
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setGoogleError("Google kimlik doğrulama scripti yüklenemedi.");
         }
       }
     };
 
     initializeGoogle();
+
+    return () => {
+      cancelled = true;
+    };
   }, [guestView, handleCredentialResponse, user]);
 
   useEffect(() => {
