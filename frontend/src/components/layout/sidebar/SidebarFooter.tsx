@@ -23,6 +23,7 @@ type SidebarFooterProps = {
   onToggleSettingsMenu: () => void;
   onToggleThemeMenu: () => void;
   onSetThemeMode: (mode: ThemeMode) => void;
+  onOpenMembersPanel: () => void;
   onSettingsInviteEmailChange: (value: string) => void;
   onSendSettingsInvite: () => void;
   onRemoveWorkspaceMember: (memberUserId: number) => void;
@@ -46,24 +47,12 @@ export default function SidebarFooter({
   onToggleSettingsMenu,
   onToggleThemeMenu,
   onSetThemeMode,
+  onOpenMembersPanel,
   onSettingsInviteEmailChange,
   onSendSettingsInvite,
   onRemoveWorkspaceMember,
   onSignOut,
 }: SidebarFooterProps) {
-  const renderInviteName = (invite: {
-    firstName?: string | null;
-    lastName?: string | null;
-    email: string;
-  }) => {
-    const fullName = [invite.firstName, invite.lastName]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
-
-    return fullName || invite.email;
-  };
-
   return (
     <div className="sidebar-footer">
       <div className="sidebar-links">
@@ -118,117 +107,15 @@ export default function SidebarFooter({
                 </div>
               </div>
 
-              <div className="settings-invite-management">
-                <div className="settings-popover-title">Davet Gonder</div>
-                <div className="settings-invite-actions">
-                  <input
-                    type="email"
-                    value={settingsInviteEmail}
-                    placeholder="ornek@firma.com"
-                    onChange={(event) =>
-                      onSettingsInviteEmailChange(event.target.value)
-                    }
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        onSendSettingsInvite();
-                      }
-                    }}
-                    disabled={settingsInviteSending}
-                  />
-                  <button
-                    type="button"
-                    className="btn-primary settings-invite-send-btn"
-                    onClick={onSendSettingsInvite}
-                    disabled={settingsInviteSending}
-                  >
-                    {settingsInviteSending ? "Gonderiliyor..." : "Davet Gonder"}
-                  </button>
-                </div>
-                {settingsInviteStatus ? (
-                  <p
-                    className="settings-members-note settings-invite-status"
-                    role="status"
-                  >
-                    {settingsInviteStatus}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="settings-invitations">
-                <div className="settings-popover-title">Davetli Uyeler</div>
-                {invitationsLoading ? (
-                  <p className="settings-members-note">
-                    Davetler yukleniyor...
-                  </p>
-                ) : invitationsError ? (
-                  <p className="settings-members-error">{invitationsError}</p>
-                ) : (
-                  <div className="settings-invitation-groups">
-                    <section className="settings-invitation-group">
-                      <h5>Davet Gonderilen</h5>
-                      {invitationsOverview.pending.length === 0 ? (
-                        <p className="settings-members-note">
-                          Bekleyen davet yok.
-                        </p>
-                      ) : (
-                        <div className="settings-members-list">
-                          {invitationsOverview.pending.map((invite) => (
-                            <div
-                              key={invite.id}
-                              className="settings-member-item"
-                            >
-                              <strong>{renderInviteName(invite)}</strong>
-                              <span>{invite.email}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </section>
-
-                    <section className="settings-invitation-group">
-                      <h5>Daveti Kabul Edenler</h5>
-                      {invitationsOverview.accepted.length === 0 ? (
-                        <p className="settings-members-note">
-                          Kabul edilen davet yok.
-                        </p>
-                      ) : (
-                        <div className="settings-members-list">
-                          {invitationsOverview.accepted.map((invite) => (
-                            <div
-                              key={invite.id}
-                              className="settings-member-item"
-                            >
-                              <div className="settings-member-head">
-                                <strong>{renderInviteName(invite)}</strong>
-                                {invite.userProfileId ? (
-                                  <button
-                                    type="button"
-                                    className="settings-member-remove-btn"
-                                    onClick={() =>
-                                      onRemoveWorkspaceMember(
-                                        invite.userProfileId as number,
-                                      )
-                                    }
-                                    disabled={
-                                      removingMemberUserId ===
-                                      invite.userProfileId
-                                    }
-                                  >
-                                    {removingMemberUserId ===
-                                    invite.userProfileId
-                                      ? "Cikariliyor..."
-                                      : "Uye Cikar"}
-                                  </button>
-                                ) : null}
-                              </div>
-                              <span>{invite.email}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </section>
-                  </div>
-                )}
+              <div className="settings-members-entry">
+                <div className="settings-popover-title">Uyeler</div>
+                <button
+                  type="button"
+                  className="settings-members-open-btn"
+                  onClick={onOpenMembersPanel}
+                >
+                  Uyeleri Ac
+                </button>
               </div>
             </div>
           )}

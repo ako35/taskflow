@@ -42,6 +42,7 @@ type AppSidebarProps = {
   onToggleSettingsMenu: () => void;
   onToggleThemeMenu: () => void;
   onSetThemeMode: (mode: ThemeMode) => void;
+  onOpenMembersPanel: () => void;
   onSettingsInviteEmailChange: (value: string) => void;
   onSendSettingsInvite: () => void;
   onRemoveWorkspaceMember: (memberUserId: number) => void;
@@ -81,6 +82,7 @@ export default function AppSidebar({
   onToggleSettingsMenu,
   onToggleThemeMenu,
   onSetThemeMode,
+  onOpenMembersPanel,
   onSettingsInviteEmailChange,
   onSendSettingsInvite,
   onRemoveWorkspaceMember,
@@ -157,6 +159,7 @@ export default function AppSidebar({
         onToggleSettingsMenu={onToggleSettingsMenu}
         onToggleThemeMenu={onToggleThemeMenu}
         onSetThemeMode={onSetThemeMode}
+        onOpenMembersPanel={onOpenMembersPanel}
         onSettingsInviteEmailChange={onSettingsInviteEmailChange}
         onSendSettingsInvite={onSendSettingsInvite}
         onRemoveWorkspaceMember={onRemoveWorkspaceMember}

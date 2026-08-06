@@ -10,6 +10,7 @@ import LandingPage from "./components/auth/LandingPage";
 import LoginView from "./components/auth/LoginView";
 import AppSidebar from "./components/layout/AppSidebar";
 import InviteTeammateModal from "./components/layout/InviteTeammateModal";
+import MembersPanelModal from "./components/layout/MembersPanelModal";
 import ProfileDetailsModal from "./components/layout/ProfileDetailsModal";
 import AppTopBar from "./components/layout/AppTopBar";
 import WorkspacePanel from "./components/layout/WorkspacePanel";
@@ -85,6 +86,7 @@ export default function App() {
   const [taskCommentsLoading, setTaskCommentsLoading] = useState(false);
   const [commentDraft, setCommentDraft] = useState("");
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [taskUpdating, setTaskUpdating] = useState(false);
   const [notificationsMenuOpen, setNotificationsMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -100,6 +102,7 @@ export default function App() {
   const [settingsInviteStatus, setSettingsInviteStatus] = useState<
     string | null
   >(null);
+  const [membersPanelOpen, setMembersPanelOpen] = useState(false);
   const [removingMemberUserId, setRemovingMemberUserId] = useState<
     number | null
   >(null);
@@ -121,6 +124,7 @@ export default function App() {
     setIdToken(null);
     setGuestView("login");
     setProfileDetailsOpen(false);
+    setMembersPanelOpen(false);
     setNotificationsMenuOpen(false);
     localStorage.removeItem("taskflow_user");
     localStorage.removeItem("taskflow_id_token");
@@ -459,6 +463,62 @@ export default function App() {
     user,
   ]);
 
+  const handleSaveTaskDetails = useCallback(
+    async (payload: { title: string; status: string; priority: string }) => {
+      if (!selectedTaskId || !idToken || !user) {
+        return;
+      }
+
+      setTaskUpdating(true);
+
+      try {
+        const response = await fetch(`${API_URL}/tasks/${selectedTaskId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        const text = await response.text();
+        const responseBody = safeParseJson<Task | Record<string, any> | null>(
+          text,
+          null,
+        );
+
+        if (!response.ok || !responseBody || Array.isArray(responseBody)) {
+          throw new Error(
+            (responseBody as any)?.error || text || "Gorev guncellenemedi.",
+          );
+        }
+
+        const updatedTask = {
+          ...(responseBody as Task),
+          description: (responseBody as Task).description || "",
+          status: (responseBody as Task).status ?? "Yapılacak",
+        };
+
+        setTasks((prev) =>
+          prev.map((task) => (task.id === updatedTask.id ? updatedTask : task)),
+        );
+        setError(null);
+      } catch (error) {
+        setError(
+          error instanceof Error ? error.message : "Gorev guncellenemedi.",
+        );
+      } finally {
+        setTaskUpdating(false);
+      }
+    },
+    [handleUnauthorized, idToken, selectedTaskId, setTasks, user],
+  );
+
   const handleSignOut = useCallback(() => {
     setUser(null);
     setIdToken(null);
@@ -471,6 +531,7 @@ export default function App() {
     setProfileMenuOpen(false);
     setNotificationsMenuOpen(false);
     setProfileDetailsOpen(false);
+    setMembersPanelOpen(false);
     setViewMode("workspaces");
     localStorage.removeItem("taskflow_user");
     localStorage.removeItem("taskflow_id_token");
@@ -1040,6 +1101,17 @@ export default function App() {
     setSettingsMenuOpen((current) => !current);
   }, []);
 
+  const handleOpenMembersPanel = useCallback(() => {
+    setSettingsMenuOpen(false);
+    setMembersPanelOpen(true);
+    setSettingsInviteStatus(null);
+    void loadInvitationsOverview();
+  }, [loadInvitationsOverview]);
+
+  const handleCloseMembersPanel = useCallback(() => {
+    setMembersPanelOpen(false);
+  }, []);
+
   useEffect(() => {
     if (!settingsMenuOpen) {
       return;
@@ -1190,6 +1262,7 @@ export default function App() {
       onToggleSettingsMenu: handleToggleSettingsMenu,
       onToggleThemeMenu: handleToggleThemeMenu,
       onSetThemeMode: handleSetThemeMode,
+      onOpenMembersPanel: handleOpenMembersPanel,
       onSettingsInviteEmailChange: setSettingsInviteEmail,
       onSendSettingsInvite: handleSendSettingsInvite,
       onRemoveWorkspaceMember: handleRemoveWorkspaceMember,
@@ -1207,6 +1280,7 @@ export default function App() {
       handleSelectWorkspace,
       handleSetArchiveView,
       handleSetThemeMode,
+      handleOpenMembersPanel,
       handleSignOut,
       handleToggleSidebar,
       handleToggleSettingsMenu,
@@ -1255,10 +1329,12 @@ export default function App() {
       commentsLoading: taskCommentsLoading,
       commentDraft,
       commentSubmitting,
+      taskUpdating,
       currentUser: user,
       onCloseTaskDetails: handleCloseTaskDetails,
       onCommentDraftChange: setCommentDraft,
       onSubmitComment: handleSubmitTaskComment,
+      onSaveTaskDetails: handleSaveTaskDetails,
     }),
     [
       archivedWorkspaces,
@@ -1274,10 +1350,12 @@ export default function App() {
       taskCommentsLoading,
       commentDraft,
       commentSubmitting,
+      taskUpdating,
       taskDetailsOpen,
       selectedTask,
       user,
       handleCloseTaskDetails,
+      handleSaveTaskDetails,
       handleSubmitTaskComment,
       tasksTableProps,
       viewMode,
@@ -1380,6 +1458,23 @@ export default function App() {
         onMessageChange={setInviteMessage}
         onSend={handleSendInvitation}
         onClose={handleCloseInviteModal}
+      />
+
+      <MembersPanelModal
+        open={membersPanelOpen}
+        workspaceName={selectedWorkspace.name}
+        currentUserEmail={user.email || user.authEmail}
+        invitationsOverview={invitationsOverview}
+        invitationsLoading={invitationsLoading}
+        invitationsError={invitationsError}
+        settingsInviteEmail={settingsInviteEmail}
+        settingsInviteSending={settingsInviteSending}
+        settingsInviteStatus={settingsInviteStatus}
+        removingMemberUserId={removingMemberUserId}
+        onInviteEmailChange={setSettingsInviteEmail}
+        onSendInvite={handleSendSettingsInvite}
+        onRemoveWorkspaceMember={handleRemoveWorkspaceMember}
+        onClose={handleCloseMembersPanel}
       />
     </div>
   );

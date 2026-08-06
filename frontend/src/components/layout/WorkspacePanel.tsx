@@ -32,10 +32,16 @@ type WorkspacePanelProps = {
   commentsLoading: boolean;
   commentDraft: string;
   commentSubmitting: boolean;
+  taskUpdating: boolean;
   currentUser: User | null;
   onCloseTaskDetails: () => void;
   onCommentDraftChange: (value: string) => void;
   onSubmitComment: () => void;
+  onSaveTaskDetails: (payload: {
+    title: string;
+    status: string;
+    priority: string;
+  }) => Promise<void>;
 };
 
 export default function WorkspacePanel({
@@ -57,10 +63,12 @@ export default function WorkspacePanel({
   commentsLoading,
   commentDraft,
   commentSubmitting,
+  taskUpdating,
   currentUser,
   onCloseTaskDetails,
   onCommentDraftChange,
   onSubmitComment,
+  onSaveTaskDetails,
 }: WorkspacePanelProps) {
   return (
     <main className="workspace">
@@ -102,9 +110,11 @@ export default function WorkspacePanel({
             commentsLoading={commentsLoading}
             commentDraft={commentDraft}
             commentSubmitting={commentSubmitting}
+            taskUpdating={taskUpdating}
             onClose={onCloseTaskDetails}
             onCommentDraftChange={onCommentDraftChange}
             onSubmitComment={onSubmitComment}
+            onSaveTaskDetails={onSaveTaskDetails}
           />
         ) : null}
       </div>

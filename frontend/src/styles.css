@@ -1174,6 +1174,39 @@ button[disabled] {
   border-top: 1px solid rgba(148, 163, 184, 0.18);
 }
 
+.settings-members-entry {
+  margin-top: 0.25rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  display: grid;
+  gap: 0.4rem;
+}
+
+.settings-members-open-btn {
+  width: 100%;
+  border: 1px solid rgba(91, 140, 255, 0.38);
+  background: rgba(91, 140, 255, 0.14);
+  color: #e2e8f0;
+  border-radius: 9px;
+  padding: 0.45rem 0.58rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.members-panel-modal {
+  width: min(640px, calc(100vw - 2rem));
+}
+
+.members-panel-content {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.members-panel-section {
+  margin-top: 0;
+}
+
 .settings-invitation-groups {
   margin-top: 0.32rem;
   display: grid;
@@ -1447,6 +1480,52 @@ button[disabled] {
   font-size: 0.76rem;
   color: var(--text-muted);
   letter-spacing: 0.01em;
+}
+
+.task-details-title-preview {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.task-details-edit-section {
+  gap: 0.62rem;
+}
+
+.task-details-field {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.task-details-field span {
+  font-size: 0.74rem;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.task-details-field input,
+.task-details-field select {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.62);
+  color: var(--text);
+  padding: 0.5rem 0.58rem;
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.task-details-field input:focus,
+.task-details-field select:focus {
+  outline: 2px solid rgba(91, 140, 255, 0.22);
+  border-color: rgba(91, 140, 255, 0.45);
+}
+
+.task-details-save-btn {
+  justify-self: end;
 }
 
 .task-comments-section {
@@ -4122,6 +4201,10 @@ button[disabled] {
   color: #516078;
 }
 
+:root[data-theme="light"] .task-details-title-preview {
+  color: #0f172a;
+}
+
 :root[data-theme="light"] .task-comment-item {
   background: rgba(248, 251, 255, 0.96);
   border-color: rgba(15, 23, 42, 0.12);
@@ -4133,6 +4216,13 @@ button[disabled] {
 }
 
 :root[data-theme="light"] .task-comment-form textarea {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .task-details-field input,
+:root[data-theme="light"] .task-details-field select {
   background: #ffffff;
   border-color: rgba(15, 23, 42, 0.18);
   color: #0f172a;
@@ -4287,6 +4377,16 @@ button[disabled] {
 
 :root[data-theme="light"] .settings-invite-management {
   border-top-color: rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme="light"] .settings-members-entry {
+  border-top-color: rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme="light"] .settings-members-open-btn {
+  color: #1e3a8a;
+  border-color: rgba(47, 92, 216, 0.34);
+  background: rgba(47, 92, 216, 0.12);
 }
 
 :root[data-theme="light"] .settings-theme-tabs {
@@ -4694,13 +4794,19 @@ button[disabled] {
   font-weight: 600;
 }
 
-.auth-form-shell #google-signin-button,
 .auth-form-shell .google-button {
   display: flex;
   width: 100%;
   align-items: center;
   margin: 0.8rem 0 0;
   justify-content: center;
+}
+
+.auth-form-shell #google-signin-button {
+  width: 40px;
+  min-width: 40px;
+  flex: 0 0 40px;
+  margin: 0;
 }
 
 .auth-google-button {
@@ -4719,11 +4825,13 @@ button[disabled] {
 .auth-google-compact {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: center;
+  gap: 0.5rem;
   border: 1px solid #cbd5e1;
   background: #ffffff;
   border-radius: 8px;
-  padding: 0.34rem 0.6rem 0.34rem 0.34rem;
+  padding: 0.28rem 0.7rem 0.28rem 0.28rem;
+  width: fit-content;
 }
 
 .auth-google-label {
@@ -4731,6 +4839,10 @@ button[disabled] {
   font-weight: 600;
   color: #334155;
   line-height: 1;
+}
+
+.auth-google-compact #google-signin-button > div {
+  min-width: 40px !important;
 }
 
 .auth-provider-row {

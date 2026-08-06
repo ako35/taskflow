@@ -1,5 +1,4 @@
-import React from "react";
-import { priorityClassNames, statusClassNames } from "../../../constants";
+import React, { useEffect, useMemo, useState } from "react";
 import type { Task, TaskComment, User } from "../../../types";
 import { UiGlyph } from "../../ui/Icons";
 
@@ -11,9 +10,15 @@ type TaskDetailsPanelProps = {
   commentsLoading: boolean;
   commentDraft: string;
   commentSubmitting: boolean;
+  taskUpdating: boolean;
   onClose: () => void;
   onCommentDraftChange: (value: string) => void;
   onSubmitComment: () => void;
+  onSaveTaskDetails: (payload: {
+    title: string;
+    status: string;
+    priority: string;
+  }) => Promise<void>;
 };
 
 function authorDisplayName(comment: TaskComment) {
@@ -61,13 +66,43 @@ export default function TaskDetailsPanel({
   commentsLoading,
   commentDraft,
   commentSubmitting,
+  taskUpdating,
   onClose,
   onCommentDraftChange,
   onSubmitComment,
+  onSaveTaskDetails,
 }: TaskDetailsPanelProps) {
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftStatus, setDraftStatus] = useState("Yapılacak");
+  const [draftPriority, setDraftPriority] = useState("Orta");
+
+  useEffect(() => {
+    if (!task) {
+      return;
+    }
+
+    setDraftTitle(task.title || "");
+    setDraftStatus(task.status ?? "Yapılacak");
+    setDraftPriority(task.priority || "Orta");
+  }, [task]);
+
   if (!open || !task) {
     return null;
   }
+
+  const canSaveTaskDetails = useMemo(() => {
+    const nextTitle = draftTitle.trim();
+    const baseTitle = task.title.trim();
+    const baseStatus = task.status ?? "Yapılacak";
+    const basePriority = task.priority || "Orta";
+
+    const hasChanges =
+      nextTitle !== baseTitle ||
+      draftStatus !== baseStatus ||
+      draftPriority !== basePriority;
+
+    return Boolean(nextTitle) && hasChanges && !taskUpdating;
+  }, [draftPriority, draftStatus, draftTitle, task, taskUpdating]);
 
   return (
     <aside className="task-details-panel" aria-label="Görev detay paneli">
@@ -85,28 +120,66 @@ export default function TaskDetailsPanel({
 
       <div className="task-details-body">
         <div className="task-details-card">
-          <h4>{task.title}</h4>
+          <h4>Gorev</h4>
 
-          <div className="task-details-badges">
-            <span
-              className={`task-badge task-status-badge ${
-                statusClassNames[task.status ?? "Yapılacak"] ?? ""
-              }`}
-            >
-              {task.status ?? "Yapılacak"}
-            </span>
-            <span
-              className={`task-badge task-priority-badge ${
-                priorityClassNames[task.priority] ?? ""
-              }`}
-            >
-              {task.priority}
-            </span>
-          </div>
+          <p className="task-details-title-preview">{task.title}</p>
 
           <p className="task-details-created-at">
             Olusturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
           </p>
+        </div>
+
+        <div className="task-details-card task-details-edit-section">
+          <h4>Gorevi Duzenle</h4>
+
+          <label className="task-details-field">
+            <span>Gorev Metni</span>
+            <input
+              type="text"
+              value={draftTitle}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              placeholder="Gorev adini yazin"
+            />
+          </label>
+
+          <label className="task-details-field">
+            <span>Durum</span>
+            <select
+              value={draftStatus}
+              onChange={(event) => setDraftStatus(event.target.value)}
+            >
+              <option value="Yapılacak">Yapılacak</option>
+              <option value="Tamamlandı">Tamamlandı</option>
+            </select>
+          </label>
+
+          <label className="task-details-field">
+            <span>Onem</span>
+            <select
+              value={draftPriority}
+              onChange={(event) => setDraftPriority(event.target.value)}
+            >
+              <option value="Acil">Acil</option>
+              <option value="Yüksek">Yüksek</option>
+              <option value="Orta">Orta</option>
+              <option value="Düşük">Düşük</option>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            className="btn-primary task-details-save-btn"
+            onClick={() =>
+              void onSaveTaskDetails({
+                title: draftTitle.trim(),
+                status: draftStatus,
+                priority: draftPriority,
+              })
+            }
+            disabled={!canSaveTaskDetails}
+          >
+            {taskUpdating ? "Kaydediliyor..." : "Degisiklikleri Kaydet"}
+          </button>
         </div>
 
         <div className="task-comments-section">
