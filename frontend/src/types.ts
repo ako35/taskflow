@@ -61,6 +61,14 @@ export type Workspace = {
   role?: "OWNER" | "MEMBER";
 };
 
+export type WorkspaceMemberInfo = {
+  id: number;
+  firstName: string;
+  lastName?: string | null;
+  email: string;
+  role: "OWNER" | "MEMBER";
+};
+
 export type ThemeMode = "dark" | "light";
 export type TableDensity = "normal" | "dense";
 export type ViewMode = "workspaces" | "archive";

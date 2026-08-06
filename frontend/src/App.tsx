@@ -20,7 +20,13 @@ import useAuthSession from "./hooks/useAuthSession";
 import useTaskCrud from "./hooks/useTaskCrud";
 import useTaskTableInteractions from "./hooks/useTaskTableInteractions";
 import useWorkspaceManager from "./hooks/useWorkspaceManager";
-import type { TableDensity, Task, TaskComment, ThemeMode } from "./types";
+import type {
+  TableDensity,
+  Task,
+  TaskComment,
+  ThemeMode,
+  WorkspaceMemberInfo,
+} from "./types";
 import { buildUserDisplayName, getUserInitials, safeParseJson } from "./utils";
 
 type ProfileFormState = {
@@ -77,6 +83,13 @@ export default function App() {
   const [taskCommentsLoading, setTaskCommentsLoading] = useState(false);
   const [commentDraft, setCommentDraft] = useState("");
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [invitedMembers, setInvitedMembers] = useState<WorkspaceMemberInfo[]>(
+    [],
+  );
+  const [invitedMembersLoading, setInvitedMembersLoading] = useState(false);
+  const [invitedMembersError, setInvitedMembersError] = useState<string | null>(
+    null,
+  );
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 860);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -730,6 +743,83 @@ export default function App() {
     setSettingsMenuOpen((current) => !current);
   }, []);
 
+  useEffect(() => {
+    if (!settingsMenuOpen) {
+      return;
+    }
+
+    if (!idToken || !user || !selectedWorkspace.id) {
+      setInvitedMembers([]);
+      setInvitedMembersError(null);
+      setInvitedMembersLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadInvitedMembers = async () => {
+      setInvitedMembersLoading(true);
+      setInvitedMembersError(null);
+
+      try {
+        const response = await fetch(
+          `${API_URL}/workspaces/${selectedWorkspace.id}/members`,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          },
+        );
+
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        const text = await response.text();
+        const payload = safeParseJson<WorkspaceMemberInfo[] | null>(text, null);
+
+        if (!response.ok) {
+          throw new Error(
+            (payload as any)?.error || text || "Uyeler yuklenemedi.",
+          );
+        }
+
+        const members = Array.isArray(payload) ? payload : [];
+        const invitedOnly = members.filter(
+          (member) => member.role === "MEMBER",
+        );
+
+        if (!cancelled) {
+          setInvitedMembers(invitedOnly);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setInvitedMembers([]);
+          setInvitedMembersError(
+            error instanceof Error ? error.message : "Uyeler yuklenemedi.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setInvitedMembersLoading(false);
+        }
+      }
+    };
+
+    void loadInvitedMembers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    handleUnauthorized,
+    idToken,
+    selectedWorkspace.id,
+    settingsMenuOpen,
+    user,
+  ]);
+
   const handleToggleThemeMenu = useCallback(() => {
     setThemeMenuOpen((current) => !current);
   }, []);
@@ -831,6 +921,9 @@ export default function App() {
       settingsMenuOpen,
       themeMenuOpen,
       themeMode,
+      invitedMembers,
+      invitedMembersLoading,
+      invitedMembersError,
       settingsMenuRef,
       onToggleWorkspaceInput: handleToggleWorkspaceInput,
       onStartWorkspaceRename: startWorkspaceRename,
@@ -870,6 +963,9 @@ export default function App() {
       sidebarOpen,
       selectedWorkspace,
       settingsMenuOpen,
+      invitedMembers,
+      invitedMembersLoading,
+      invitedMembersError,
       startWorkspaceRename,
       submitWorkspaceRename,
       themeMenuOpen,

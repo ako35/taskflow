@@ -703,6 +703,50 @@ workspacesRouter.get("/", async (req, res) => {
   res.json(workspaces);
 });
 
+workspacesRouter.get("/:id/members", async (req, res) => {
+  const workspaceId = sanitizeLine(req.params.id);
+  if (!workspaceId) {
+    return res.status(400).json({ error: "workspace id is required" });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const membership = await getWorkspaceMember(profile.id, workspaceId);
+  if (!membership) {
+    return res.status(403).json({ error: "Bu calisma alanina erisiminiz yok." });
+  }
+
+  const members = await prisma.workspaceMember.findMany({
+    where: {
+      workspaceId,
+    },
+    include: {
+      userProfile: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: [
+      {
+        createdAt: "asc",
+      },
+    ],
+  });
+
+  res.json(
+    members.map((item) => ({
+      id: item.userProfile.id,
+      firstName: item.userProfile.firstName,
+      lastName: item.userProfile.lastName,
+      email: item.userProfile.email,
+      role: item.role,
+    })),
+  );
+});
+
 workspacesRouter.post("/", async (req, res) => {
   const { payload, errors } = validateWorkspacePayload(req.body || {});
   if (errors.length > 0) {

@@ -1,12 +1,15 @@
 import React from "react";
 import { SidebarGlyph, UiGlyph } from "../../ui/Icons";
-import type { ThemeMode, ViewMode } from "../../../types";
+import type { ThemeMode, ViewMode, WorkspaceMemberInfo } from "../../../types";
 
 type SidebarFooterProps = {
   viewMode: ViewMode;
   settingsMenuOpen: boolean;
   themeMenuOpen: boolean;
   themeMode: ThemeMode;
+  invitedMembers: WorkspaceMemberInfo[];
+  invitedMembersLoading: boolean;
+  invitedMembersError: string | null;
   settingsMenuRef: React.RefObject<HTMLDivElement | null>;
   onSetArchiveView: () => void;
   onToggleSettingsMenu: () => void;
@@ -20,6 +23,9 @@ export default function SidebarFooter({
   settingsMenuOpen,
   themeMenuOpen,
   themeMode,
+  invitedMembers,
+  invitedMembersLoading,
+  invitedMembersError,
   settingsMenuRef,
   onSetArchiveView,
   onToggleSettingsMenu,
@@ -94,6 +100,37 @@ export default function SidebarFooter({
                   </button>
                 </div>
               )}
+
+              <div className="settings-members">
+                <div className="settings-popover-title">Davetli Uyeler</div>
+                {invitedMembersLoading ? (
+                  <p className="settings-members-note">Uyeler yukleniyor...</p>
+                ) : invitedMembersError ? (
+                  <p className="settings-members-error">
+                    {invitedMembersError}
+                  </p>
+                ) : invitedMembers.length === 0 ? (
+                  <p className="settings-members-note">
+                    Henuz davetli uye yok.
+                  </p>
+                ) : (
+                  <div className="settings-members-list">
+                    {invitedMembers.map((member) => {
+                      const fullName = [member.firstName, member.lastName]
+                        .filter(Boolean)
+                        .join(" ")
+                        .trim();
+
+                      return (
+                        <div key={member.id} className="settings-member-item">
+                          <strong>{fullName || member.email}</strong>
+                          <span>{member.email}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

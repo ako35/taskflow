@@ -54,9 +54,9 @@ export default function TaskDetailsPanel({
   }
 
   return (
-    <aside className="task-details-panel" aria-label="Gorev detay paneli">
+    <aside className="task-details-panel" aria-label="Görev detay paneli">
       <div className="task-details-head">
-        <h3>Gorev Detayi</h3>
+        <h3>Görev Detayı</h3>
         <button
           type="button"
           className="task-details-close"

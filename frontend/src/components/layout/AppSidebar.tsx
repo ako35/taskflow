@@ -2,7 +2,12 @@ import React from "react";
 import { UiGlyph } from "../ui/Icons";
 import SidebarFooter from "./sidebar/SidebarFooter";
 import WorkspaceList from "./sidebar/WorkspaceList";
-import type { ThemeMode, ViewMode, Workspace } from "../../types";
+import type {
+  ThemeMode,
+  ViewMode,
+  Workspace,
+  WorkspaceMemberInfo,
+} from "../../types";
 
 type AppSidebarProps = {
   sidebarOpen: boolean;
@@ -15,6 +20,9 @@ type AppSidebarProps = {
   settingsMenuOpen: boolean;
   themeMenuOpen: boolean;
   themeMode: ThemeMode;
+  invitedMembers: WorkspaceMemberInfo[];
+  invitedMembersLoading: boolean;
+  invitedMembersError: string | null;
   settingsMenuRef: React.RefObject<HTMLDivElement | null>;
   onToggleWorkspaceInput: () => void;
   onStartWorkspaceRename: (workspaceId: string) => void;
@@ -44,6 +52,9 @@ export default function AppSidebar({
   settingsMenuOpen,
   themeMenuOpen,
   themeMode,
+  invitedMembers,
+  invitedMembersLoading,
+  invitedMembersError,
   settingsMenuRef,
   onToggleWorkspaceInput,
   onStartWorkspaceRename,
@@ -120,6 +131,9 @@ export default function AppSidebar({
         settingsMenuOpen={settingsMenuOpen}
         themeMenuOpen={themeMenuOpen}
         themeMode={themeMode}
+        invitedMembers={invitedMembers}
+        invitedMembersLoading={invitedMembersLoading}
+        invitedMembersError={invitedMembersError}
         settingsMenuRef={settingsMenuRef}
         onSetArchiveView={onSetArchiveView}
         onToggleSettingsMenu={onToggleSettingsMenu}
