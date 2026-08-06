@@ -1078,7 +1078,9 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
       },
     });
 
-    let inviteLink = "";
+    const token = crypto.randomBytes(24).toString("hex");
+    const appUrl = resolveAppBaseUrl(req.header("origin") || undefined);
+    const inviteLink = buildInviteLink(appUrl, token);
     let expiresAt: Date | null = null;
 
     if (existingInviteeProfile) {
@@ -1099,7 +1101,7 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
 
       await prisma.invitation.create({
         data: {
-          token: crypto.randomBytes(24).toString("hex"),
+          token,
           workspaceId: workspace.id,
           invitedEmail: inviteeEmail,
           message: payload.message || null,
@@ -1111,7 +1113,6 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
         },
       });
     } else {
-      const token = crypto.randomBytes(24).toString("hex");
       expiresAt = new Date(Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
       await prisma.invitation.create({
@@ -1124,9 +1125,6 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
           expiresAt,
         },
       });
-
-      const appUrl = resolveAppBaseUrl(req.header("origin") || undefined);
-      inviteLink = buildInviteLink(appUrl, token);
     }
 
     const inviterName = [inviterProfile.firstName, inviterProfile.lastName]
@@ -1154,9 +1152,10 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
       "Not:",
       inviteText,
       "",
+      `Daveti ac: ${inviteLink}`,
       existingInviteeProfile
-        ? "Bu hesap sistemde kayitli oldugu icin erisim aninda tanimlandi. Giris yaptiginda gorevleri gorebilirsin."
-        : `Daveti kabul et: ${inviteLink}`,
+        ? "Bu hesap sistemde kayitli oldugu icin erisim tanimlandi. Linkten giris yaptiginda gorevleri gorebilirsin."
+        : "Linkten giris yaptiktan sonra daveti kabul edip gorevlere ulasabilirsin.",
       "",
       `Davet eden e-posta: ${inviterProfile.email}`,
       expiresAt ? `Davet bitis tarihi: ${expiresAt.toISOString()}` : "",
@@ -1210,7 +1209,18 @@ app.post(["/invitations/accept", "/api/invitations/accept"], authenticate, async
       return res.status(404).json({ error: "Davet bulunamadi." });
     }
 
+    const invitedEmailCanonical = canonicalizeEmailForInvite(invitation.invitedEmail);
+    const profileEmailCanonical = canonicalizeEmailForInvite(profile.authEmail);
+    const isInvitedEmailMatch = invitedEmailCanonical === profileEmailCanonical;
+
     if (invitation.status === "ACCEPTED") {
+      const acceptedByCurrentUser = invitation.acceptedByUserId === profile.id;
+      if (!acceptedByCurrentUser && !isInvitedEmailMatch) {
+        return res.status(403).json({
+          error: "Bu davet farkli bir e-posta adresine gonderilmis.",
+        });
+      }
+
       return res.status(200).json({
         success: true,
         workspace: invitation.workspace,
@@ -1234,9 +1244,11 @@ app.post(["/invitations/accept", "/api/invitations/accept"], authenticate, async
       return res.status(400).json({ error: "Davet suresi dolmus." });
     }
 
-    const invitedEmailCanonical = canonicalizeEmailForInvite(invitation.invitedEmail);
-    const profileEmailCanonical = canonicalizeEmailForInvite(profile.authEmail);
-    const acceptedWithEmailMismatch = invitedEmailCanonical !== profileEmailCanonical;
+    if (!isInvitedEmailMatch) {
+      return res.status(403).json({
+        error: "Bu davet farkli bir e-posta adresine gonderilmis.",
+      });
+    }
 
     await prisma.workspaceMember.upsert({
       where: {
@@ -1267,7 +1279,6 @@ app.post(["/invitations/accept", "/api/invitations/accept"], authenticate, async
     res.status(200).json({
       success: true,
       workspace: invitation.workspace,
-      acceptedWithEmailMismatch,
     });
   } catch (error) {
     console.error("Invitation accept failed", error);
