@@ -9,7 +9,7 @@ import { OAuth2Client } from "google-auth-library";
 dotenv.config();
 
 const DEFAULT_GOOGLE_CLIENT_ID =
-  "625073924200-4lfk3mfgpokq2j41h5aa2l32m2e4u4qs.apps.googleusercontent.com";
+  "625073924200-3m8cpgu35qtc2mf1jnfg9aet24verhqk.apps.googleusercontent.com";
 const effectiveGoogleClientId =
   process.env.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID;
 
