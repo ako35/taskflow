@@ -10,6 +10,7 @@ type AppTopBarProps = {
   profileMenuRef: React.RefObject<HTMLDivElement | null>;
   themeMode: ThemeMode;
   onToggleProfileMenu: () => void;
+  onOpenInviteModal: () => void;
   onOpenProfileDetails: () => void;
   onSetThemeMode: (mode: ThemeMode) => void;
   onSignOut: () => void;
@@ -22,6 +23,7 @@ export default function AppTopBar({
   profileMenuRef,
   themeMode,
   onToggleProfileMenu,
+  onOpenInviteModal,
   onOpenProfileDetails,
   onSetThemeMode,
   onSignOut,
@@ -55,6 +57,18 @@ export default function AppTopBar({
               <small>{user.email}</small>
             </div>
           </div>
+          <button
+            type="button"
+            className="dropdown-item"
+            onClick={onOpenInviteModal}
+          >
+            <span className="dropdown-item-content">
+              <span className="sidebar-link-icon" aria-hidden="true">
+                <UiGlyph icon="mail" />
+              </span>
+              <span>E-posta ile Davet Et</span>
+            </span>
+          </button>
           <button
             type="button"
             className="dropdown-item"

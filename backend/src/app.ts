@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { PrismaClient } from "@prisma/client";
 import { OAuth2Client } from "google-auth-library";
@@ -33,6 +34,10 @@ const GEMINI_API_BASE = "https://generativelanguage.googleapis.com";
 
 const GEMINI_API_VERSIONS = ["v1beta", "v1"] as const;
 const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+
+const DEFAULT_WORKSPACE_COLOR = "#5b8cff";
+const DEFAULT_WORKSPACE_ICON = "compass";
+const INVITATION_EXPIRY_DAYS = 7;
 
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:5173",
@@ -108,6 +113,12 @@ const authenticate = async (
 const allowedPriorities = ["Acil", "Yüksek", "Orta", "Düşük"];
 const allowedStatuses = ["Yapılacak", "Tamamlandı"];
 
+type WorkspaceRole = "OWNER" | "MEMBER";
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function validateTaskPayload(body: Record<string, unknown>) {
   const errors: string[] = [];
   const requiredString = (value: unknown, field: string) => {
@@ -119,6 +130,7 @@ function validateTaskPayload(body: Record<string, unknown>) {
   };
 
   const title = requiredString(body.title, "title");
+  const workspaceId = requiredString(body.workspaceId, "workspaceId");
   const description = typeof body.description === "string" ? body.description.trim() : "";
   const priority =
     typeof body.priority === "string" && allowedPriorities.includes(body.priority)
@@ -131,6 +143,7 @@ function validateTaskPayload(body: Record<string, unknown>) {
 
   return {
     title,
+    workspaceId,
     vehicle: "",
     customer: "",
     area: "",
@@ -233,9 +246,11 @@ function validateProfilePayload(body: Record<string, unknown>) {
 }
 
 async function upsertUserProfile(authUser: NonNullable<express.Request["authUser"]>) {
+  const normalizedAuthEmail = normalizeEmail(authUser.email);
+
   const existingProfile = await prisma.userProfile.findUnique({
     where: {
-      authEmail: authUser.email,
+      authEmail: normalizedAuthEmail,
     },
   });
 
@@ -258,11 +273,57 @@ async function upsertUserProfile(authUser: NonNullable<express.Request["authUser
 
   return prisma.userProfile.create({
     data: {
-      authEmail: authUser.email,
+      authEmail: normalizedAuthEmail,
       firstName,
       lastName,
-      email: authUser.email,
+      email: normalizedAuthEmail,
       picture: authUser.picture,
+    },
+  });
+}
+
+async function ensureDefaultWorkspaceForUser(userProfileId: number) {
+  const existingMembership = await prisma.workspaceMember.findFirst({
+    where: {
+      userProfileId,
+    },
+    include: {
+      workspace: true,
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  if (existingMembership) {
+    return existingMembership.workspace;
+  }
+
+  const workspace = await prisma.workspace.create({
+    data: {
+      name: "Genel",
+      color: DEFAULT_WORKSPACE_COLOR,
+      icon: DEFAULT_WORKSPACE_ICON,
+      createdByUserId: userProfileId,
+      members: {
+        create: {
+          userProfileId,
+          role: "OWNER",
+        },
+      },
+    },
+  });
+
+  return workspace;
+}
+
+async function getWorkspaceMember(userProfileId: number, workspaceId: string) {
+  return prisma.workspaceMember.findUnique({
+    where: {
+      workspaceId_userProfileId: {
+        workspaceId,
+        userProfileId,
+      },
     },
   });
 }
@@ -276,12 +337,98 @@ type ContactRequestPayload = {
   message: string;
 };
 
+type InvitationPayload = {
+  inviteeEmail: string;
+  message: string;
+  workspaceId: string;
+};
+
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function sanitizeLine(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function sanitizeMultiline(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function validateWorkspacePayload(body: Record<string, unknown>) {
+  const name = sanitizeLine(body.name);
+  const color = sanitizeLine(body.color) || DEFAULT_WORKSPACE_COLOR;
+  const icon = sanitizeLine(body.icon) || DEFAULT_WORKSPACE_ICON;
+  const errors: string[] = [];
+
+  if (!name) {
+    errors.push("name is required");
+  }
+
+  return {
+    payload: {
+      name,
+      color,
+      icon,
+    },
+    errors,
+  };
+}
+
+function validateInvitationPayload(body: Record<string, unknown>) {
+  const inviteeEmail = sanitizeLine(body.inviteeEmail);
+  const message = sanitizeMultiline(body.message);
+  const workspaceId = sanitizeLine(body.workspaceId);
+  const errors: string[] = [];
+
+  if (!inviteeEmail) errors.push("inviteeEmail is required");
+  if (inviteeEmail && !isValidEmail(inviteeEmail)) {
+    errors.push("inviteeEmail is invalid");
+  }
+  if (!workspaceId) {
+    errors.push("workspaceId is required");
+  }
+  if (message.length > 500) {
+    errors.push("message must be 500 characters or fewer");
+  }
+
+  return {
+    payload: {
+      inviteeEmail,
+      message,
+      workspaceId,
+    } as InvitationPayload,
+    errors,
+  };
+}
+
+function validateInvitationAcceptPayload(body: Record<string, unknown>) {
+  const token = sanitizeLine(body.token);
+  const errors: string[] = [];
+
+  if (!token) {
+    errors.push("token is required");
+  }
+
+  return {
+    payload: { token },
+    errors,
+  };
+}
+
+function resolveAppBaseUrl(originHeader?: string) {
+  const allowedOrigin = typeof originHeader === "string" ? originHeader.trim() : "";
+  if (allowedOrigin && allowedOrigins.includes(allowedOrigin)) {
+    return allowedOrigin;
+  }
+
+  const fallbackBaseUrl =
+    process.env.FRONTEND_URL || allowedOrigins[0] || "http://localhost:5173";
+  return fallbackBaseUrl.replace(/\/$/, "");
+}
+
+function buildInviteLink(baseUrl: string, token: string) {
+  return `${baseUrl}/?inviteToken=${encodeURIComponent(token)}`;
 }
 
 function validateContactPayload(body: Record<string, unknown>) {
@@ -463,11 +610,12 @@ async function refineTextWithGemini(text: string, field: AiRefineField) {
 }
 
 const tasksRouter = express.Router();
-
 const profileRouter = express.Router();
+const workspacesRouter = express.Router();
 
 profileRouter.get("/", async (req, res) => {
   const profile = await upsertUserProfile(req.authUser!);
+  await ensureDefaultWorkspaceForUser(profile.id);
   res.json(profile);
 });
 
@@ -488,11 +636,151 @@ profileRouter.put("/", async (req, res) => {
   res.json(profile);
 });
 
-tasksRouter.get("/", async (req, res) => {
-  const tasks = await prisma.task.findMany({
-    where: { ownerEmail: req.authUser!.email } as any,
-    orderBy: { priority: "asc" },
+workspacesRouter.get("/", async (req, res) => {
+  const profile = await upsertUserProfile(req.authUser!);
+  await ensureDefaultWorkspaceForUser(profile.id);
+
+  const memberships = await prisma.workspaceMember.findMany({
+    where: {
+      userProfileId: profile.id,
+    },
+    include: {
+      workspace: true,
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
   });
+
+  const workspaces = memberships.map((membership) => ({
+    id: membership.workspace.id,
+    name: membership.workspace.name,
+    color: membership.workspace.color,
+    icon: membership.workspace.icon,
+    role: membership.role,
+  }));
+
+  res.json(workspaces);
+});
+
+workspacesRouter.post("/", async (req, res) => {
+  const { payload, errors } = validateWorkspacePayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+
+  const workspace = await prisma.workspace.create({
+    data: {
+      name: payload.name,
+      color: payload.color,
+      icon: payload.icon,
+      createdByUserId: profile.id,
+      members: {
+        create: {
+          userProfileId: profile.id,
+          role: "OWNER",
+        },
+      },
+    },
+  });
+
+  res.status(201).json({
+    id: workspace.id,
+    name: workspace.name,
+    color: workspace.color,
+    icon: workspace.icon,
+    role: "OWNER" as WorkspaceRole,
+  });
+});
+
+workspacesRouter.put("/:id", async (req, res) => {
+  const workspaceId = sanitizeLine(req.params.id);
+  if (!workspaceId) {
+    return res.status(400).json({ error: "workspace id is required" });
+  }
+
+  const { payload, errors } = validateWorkspacePayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const membership = await getWorkspaceMember(profile.id, workspaceId);
+  if (!membership) {
+    return res.status(403).json({ error: "Bu calisma alanina erisiminiz yok." });
+  }
+
+  if (membership.role !== "OWNER") {
+    return res
+      .status(403)
+      .json({ error: "Calisma alani sadece sahip tarafindan guncellenebilir." });
+  }
+
+  const workspace = await prisma.workspace.update({
+    where: {
+      id: workspaceId,
+    },
+    data: {
+      name: payload.name,
+    },
+  });
+
+  res.json({
+    id: workspace.id,
+    name: workspace.name,
+    color: workspace.color,
+    icon: workspace.icon,
+    role: membership.role,
+  });
+});
+
+workspacesRouter.delete("/:id", async (req, res) => {
+  const workspaceId = sanitizeLine(req.params.id);
+  if (!workspaceId) {
+    return res.status(400).json({ error: "workspace id is required" });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const membership = await getWorkspaceMember(profile.id, workspaceId);
+  if (!membership) {
+    return res.status(403).json({ error: "Bu calisma alanina erisiminiz yok." });
+  }
+
+  if (membership.role !== "OWNER") {
+    return res
+      .status(403)
+      .json({ error: "Calisma alani sadece sahip tarafindan silinebilir." });
+  }
+
+  await prisma.workspace.delete({
+    where: {
+      id: workspaceId,
+    },
+  });
+
+  await ensureDefaultWorkspaceForUser(profile.id);
+  res.status(204).end();
+});
+
+tasksRouter.get("/", async (req, res) => {
+  const profile = await upsertUserProfile(req.authUser!);
+  await ensureDefaultWorkspaceForUser(profile.id);
+
+  const tasks = await prisma.task.findMany({
+    where: {
+      workspace: {
+        members: {
+          some: {
+            userProfileId: profile.id,
+          },
+        },
+      },
+    },
+    orderBy: [{ status: "asc" }, { priority: "asc" }, { createdAt: "desc" }],
+  });
+
   res.json(tasks);
 });
 
@@ -502,8 +790,22 @@ tasksRouter.get("/:id", async (req, res) => {
     return res.status(400).json({ error: "Invalid task id" });
   }
 
-  const task = await prisma.task.findUnique({ where: { id } });
-  if (!task || task.ownerEmail !== req.authUser!.email) {
+  const profile = await upsertUserProfile(req.authUser!);
+
+  const task = await prisma.task.findFirst({
+    where: {
+      id,
+      workspace: {
+        members: {
+          some: {
+            userProfileId: profile.id,
+          },
+        },
+      },
+    },
+  });
+
+  if (!task) {
     return res.status(404).json({ error: "Not found" });
   }
 
@@ -511,9 +813,17 @@ tasksRouter.get("/:id", async (req, res) => {
 });
 
 tasksRouter.post("/", async (req, res) => {
-  const payload = validateTaskPayload(req.body);
+  const payload = validateTaskPayload(req.body || {});
   if (payload.errors.length > 0) {
     return res.status(400).json({ error: payload.errors.join(", ") });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const member = await getWorkspaceMember(profile.id, payload.workspaceId);
+  if (!member) {
+    return res
+      .status(403)
+      .json({ error: "Bu calisma alanina gorev ekleme yetkiniz yok." });
   }
 
   const task = await prisma.task.create({
@@ -526,9 +836,11 @@ tasksRouter.post("/", async (req, res) => {
       description: payload.description,
       priority: payload.priority,
       status: payload.status,
-      ownerEmail: req.authUser!.email,
+      ownerEmail: profile.authEmail,
+      workspaceId: payload.workspaceId,
     },
   });
+
   res.status(201).json(task);
 });
 
@@ -538,12 +850,26 @@ tasksRouter.put("/:id", async (req, res) => {
     return res.status(400).json({ error: "Invalid task id" });
   }
 
-  const existingTask = await prisma.task.findUnique({ where: { id } });
-  if (!existingTask || existingTask.ownerEmail !== req.authUser!.email) {
+  const profile = await upsertUserProfile(req.authUser!);
+
+  const existingTask = await prisma.task.findFirst({
+    where: {
+      id,
+      workspace: {
+        members: {
+          some: {
+            userProfileId: profile.id,
+          },
+        },
+      },
+    },
+  });
+
+  if (!existingTask) {
     return res.status(404).json({ error: "Not found" });
   }
 
-  const { updateData, errors } = validateTaskUpdatePayload(req.body);
+  const { updateData, errors } = validateTaskUpdatePayload(req.body || {});
   if (errors.length > 0) {
     return res.status(400).json({ error: errors.join(", ") });
   }
@@ -552,7 +878,7 @@ tasksRouter.put("/:id", async (req, res) => {
     return res.status(400).json({ error: "No valid fields provided for update" });
   }
 
-  const task = await prisma.task.update({ where: { id }, data: updateData as any });
+  const task = await prisma.task.update({ where: { id }, data: updateData });
   res.json(task);
 });
 
@@ -562,8 +888,25 @@ tasksRouter.delete("/:id", async (req, res) => {
     return res.status(400).json({ error: "Invalid task id" });
   }
 
-  const existingTask = await prisma.task.findUnique({ where: { id } });
-  if (!existingTask || existingTask.ownerEmail !== req.authUser!.email) {
+  const profile = await upsertUserProfile(req.authUser!);
+
+  const existingTask = await prisma.task.findFirst({
+    where: {
+      id,
+      workspace: {
+        members: {
+          some: {
+            userProfileId: profile.id,
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingTask) {
     return res.status(404).json({ error: "Not found" });
   }
 
@@ -575,6 +918,8 @@ app.use("/tasks", authenticate, tasksRouter);
 app.use("/api/tasks", authenticate, tasksRouter);
 app.use("/profile", authenticate, profileRouter);
 app.use("/api/profile", authenticate, profileRouter);
+app.use("/workspaces", authenticate, workspacesRouter);
+app.use("/api/workspaces", authenticate, workspacesRouter);
 
 app.post(["/ai/refine-text", "/api/ai/refine-text"], authenticate, async (req, res) => {
   const rawText = typeof req.body?.text === "string" ? req.body.text.trim() : "";
@@ -659,6 +1004,258 @@ app.post(["/contact-requests", "/api/contact-requests"], async (req, res) => {
   }
 });
 
+app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) => {
+  const { payload, errors } = validateInvitationPayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  const requesterEmail = normalizeEmail(req.authUser!.email);
+  const inviteeEmail = normalizeEmail(payload.inviteeEmail);
+
+  if (requesterEmail === inviteeEmail) {
+    return res
+      .status(400)
+      .json({ error: "Kendinize davet gonderemezsiniz." });
+  }
+
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !Number.isFinite(SMTP_PORT)) {
+    return res.status(503).json({
+      error:
+        "Mail servisi hazir degil. SMTP ayarlarini backend ortam degiskenlerinde tanimlayin.",
+    });
+  }
+
+  try {
+    const inviterProfile = await upsertUserProfile(req.authUser!);
+    await ensureDefaultWorkspaceForUser(inviterProfile.id);
+
+    const membership = await getWorkspaceMember(inviterProfile.id, payload.workspaceId);
+    if (!membership) {
+      return res.status(403).json({ error: "Bu calisma alanina davet yetkiniz yok." });
+    }
+
+    const workspace = await prisma.workspace.findUnique({
+      where: {
+        id: payload.workspaceId,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    if (!workspace) {
+      return res.status(404).json({ error: "Calisma alani bulunamadi." });
+    }
+
+    const existingInviteeProfile = await prisma.userProfile.findUnique({
+      where: {
+        authEmail: inviteeEmail,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    let inviteLink = "";
+    let expiresAt: Date | null = null;
+
+    if (existingInviteeProfile) {
+      const alreadyMember = await getWorkspaceMember(
+        existingInviteeProfile.id,
+        payload.workspaceId,
+      );
+
+      if (!alreadyMember) {
+        await prisma.workspaceMember.create({
+          data: {
+            workspaceId: workspace.id,
+            userProfileId: existingInviteeProfile.id,
+            role: "MEMBER",
+          },
+        });
+      }
+
+      await prisma.invitation.create({
+        data: {
+          token: crypto.randomBytes(24).toString("hex"),
+          workspaceId: workspace.id,
+          invitedEmail: inviteeEmail,
+          message: payload.message || null,
+          invitedByUserId: inviterProfile.id,
+          expiresAt: new Date(Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
+          status: "ACCEPTED",
+          acceptedAt: new Date(),
+          acceptedByUserId: existingInviteeProfile.id,
+        },
+      });
+    } else {
+      const token = crypto.randomBytes(24).toString("hex");
+      expiresAt = new Date(Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+
+      await prisma.invitation.create({
+        data: {
+          token,
+          workspaceId: workspace.id,
+          invitedEmail: inviteeEmail,
+          message: payload.message || null,
+          invitedByUserId: inviterProfile.id,
+          expiresAt,
+        },
+      });
+
+      const appUrl = resolveAppBaseUrl(req.header("origin") || undefined);
+      inviteLink = buildInviteLink(appUrl, token);
+    }
+
+    const inviterName = [inviterProfile.firstName, inviterProfile.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    const displayName = inviterName || inviterProfile.email || inviterProfile.authEmail;
+    const inviteText = payload.message
+      ? payload.message
+      : `${workspace.name} calisma alanina katilip gorevleri birlikte yonetebilirsin.`;
+
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+      },
+    });
+
+    const text = [
+      `${displayName} sizi TaskFlow'da \"${workspace.name}\" calisma alanina davet etti.`,
+      "",
+      "Not:",
+      inviteText,
+      "",
+      existingInviteeProfile
+        ? "Bu hesap sistemde kayitli oldugu icin erisim aninda tanimlandi. Giris yaptiginda gorevleri gorebilirsin."
+        : `Daveti kabul et: ${inviteLink}`,
+      "",
+      `Davet eden e-posta: ${inviterProfile.email}`,
+      expiresAt ? `Davet bitis tarihi: ${expiresAt.toISOString()}` : "",
+    ].join("\n");
+
+    await transporter.sendMail({
+      from: SMTP_FROM,
+      to: inviteeEmail,
+      replyTo: inviterProfile.email,
+      subject: `TaskFlow daveti - ${workspace.name}`,
+      text,
+    });
+
+    res.status(202).json({
+      success: true,
+      immediateAccessGranted: Boolean(existingInviteeProfile),
+    });
+  } catch (error) {
+    console.error("Invitation email failed", error);
+    res.status(500).json({ error: "Davet gonderilemedi. Lutfen tekrar deneyin." });
+  }
+});
+
+app.post(["/invitations/accept", "/api/invitations/accept"], authenticate, async (req, res) => {
+  const { payload, errors } = validateInvitationAcceptPayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  try {
+    const profile = await upsertUserProfile(req.authUser!);
+    await ensureDefaultWorkspaceForUser(profile.id);
+
+    const invitation = await prisma.invitation.findUnique({
+      where: {
+        token: payload.token,
+      },
+      include: {
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            icon: true,
+          },
+        },
+      },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: "Davet bulunamadi." });
+    }
+
+    if (invitation.status === "ACCEPTED") {
+      return res.status(200).json({
+        success: true,
+        workspace: invitation.workspace,
+        alreadyAccepted: true,
+      });
+    }
+
+    if (invitation.status !== "PENDING") {
+      return res.status(400).json({ error: "Davet gecersiz veya iptal edilmis." });
+    }
+
+    if (new Date(invitation.expiresAt).getTime() < Date.now()) {
+      await prisma.invitation.update({
+        where: {
+          id: invitation.id,
+        },
+        data: {
+          status: "EXPIRED",
+        },
+      });
+      return res.status(400).json({ error: "Davet suresi dolmus." });
+    }
+
+    if (normalizeEmail(invitation.invitedEmail) !== normalizeEmail(profile.authEmail)) {
+      return res.status(403).json({
+        error: "Bu davet farkli bir e-posta adresine gonderilmis.",
+      });
+    }
+
+    await prisma.workspaceMember.upsert({
+      where: {
+        workspaceId_userProfileId: {
+          workspaceId: invitation.workspaceId,
+          userProfileId: profile.id,
+        },
+      },
+      update: {},
+      create: {
+        workspaceId: invitation.workspaceId,
+        userProfileId: profile.id,
+        role: "MEMBER",
+      },
+    });
+
+    await prisma.invitation.update({
+      where: {
+        id: invitation.id,
+      },
+      data: {
+        status: "ACCEPTED",
+        acceptedAt: new Date(),
+        acceptedByUserId: profile.id,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      workspace: invitation.workspace,
+    });
+  } catch (error) {
+    console.error("Invitation accept failed", error);
+    res.status(500).json({ error: "Davet kabul edilemedi. Lutfen tekrar deneyin." });
+  }
+});
+
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
@@ -671,7 +1268,8 @@ app.get("/api/db-health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     const taskCount = await prisma.task.count();
-    res.status(200).json({ status: "ok", db: "connected", taskCount });
+    const workspaceCount = await prisma.workspace.count();
+    res.status(200).json({ status: "ok", db: "connected", taskCount, workspaceCount });
   } catch (error) {
     console.error("DB health check failed", error);
     res.status(500).json({ status: "error", db: "unavailable" });
@@ -680,7 +1278,7 @@ app.get("/api/db-health", async (_req, res) => {
 
 app.use(
   (
-    error: any,
+    error: unknown,
     _req: express.Request,
     res: express.Response,
     _next: express.NextFunction,

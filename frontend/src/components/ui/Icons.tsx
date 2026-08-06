@@ -21,6 +21,7 @@ import {
   Trash2,
   User,
   MoonStar,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 import type { WorkspaceIcon } from "../../types";
@@ -75,7 +76,8 @@ export function UiGlyph({
     | "trash"
     | "user"
     | "sun"
-    | "moon";
+    | "moon"
+    | "mail";
 }) {
   const iconMap: Record<
     | "chevron-down"
@@ -92,7 +94,8 @@ export function UiGlyph({
     | "trash"
     | "user"
     | "sun"
-    | "moon",
+    | "moon"
+    | "mail",
     LucideIcon
   > = {
     "chevron-down": ChevronDown,
@@ -110,6 +113,7 @@ export function UiGlyph({
     user: User,
     sun: Sun,
     moon: MoonStar,
+    mail: Mail,
   };
 
   return <Glyph icon={iconMap[icon]} />;

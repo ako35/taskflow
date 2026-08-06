@@ -20,6 +20,10 @@ model Task {
   updatedAt   DateTime @updatedAt
   ownerEmail  String?
   status      String   @default("Yapılacak")
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 model UserProfile {
@@ -32,4 +36,55 @@ model UserProfile {
   picture    String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  memberships WorkspaceMember[]
+  createdWorkspaces Workspace[] @relation("WorkspaceCreator")
+  sentInvitations Invitation[] @relation("InvitationSender")
+  acceptedInvitations Invitation[] @relation("InvitationAccepter")
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  color       String   @default("#5b8cff")
+  icon        String   @default("compass")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdByUserId Int
+  createdBy   UserProfile @relation("WorkspaceCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  members     WorkspaceMember[]
+  tasks       Task[]
+  invitations Invitation[]
+}
+
+model WorkspaceMember {
+  id          Int      @id @default(autoincrement())
+  workspaceId String
+  userProfileId Int
+  role        String   @default("MEMBER")
+  createdAt   DateTime @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userProfile UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userProfileId])
+  @@index([userProfileId])
+}
+
+model Invitation {
+  id               String   @id @default(cuid())
+  token            String   @unique
+  workspaceId      String
+  invitedEmail     String
+  message          String?
+  status           String   @default("PENDING")
+  createdAt        DateTime @default(now())
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  invitedByUserId  Int
+  acceptedByUserId Int?
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy        UserProfile @relation("InvitationSender", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  acceptedBy       UserProfile? @relation("InvitationAccepter", fields: [acceptedByUserId], references: [id])
+
+  @@index([workspaceId])
+  @@index([invitedEmail])
 }

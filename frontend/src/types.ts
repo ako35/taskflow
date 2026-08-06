@@ -8,6 +8,7 @@ export type Task = {
   description: string;
   priority: string;
   status?: string;
+  workspaceId: string;
 };
 
 export type TaskForm = {
@@ -40,6 +41,7 @@ export type Workspace = {
   name: string;
   color: string;
   icon: WorkspaceIcon;
+  role?: "OWNER" | "MEMBER";
 };
 
 export type ThemeMode = "dark" | "light";

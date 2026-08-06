@@ -4,17 +4,14 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from "react";
-import { DEFAULT_WORKSPACE_ID } from "../constants";
-import type { TableDensity, Task, ThemeMode } from "../types";
+import type { TableDensity, ThemeMode } from "../types";
 
 type UseAppUiEffectsArgs = {
   themeMode: ThemeMode;
   tableDensity: TableDensity;
-  tasks: Task[];
   settingsMenuRef: MutableRefObject<HTMLDivElement | null>;
   profileMenuRef: MutableRefObject<HTMLDivElement | null>;
   tasksTableWrapperRef: MutableRefObject<HTMLDivElement | null>;
-  setTaskWorkspaceMap: Dispatch<SetStateAction<Record<number, string>>>;
   setWorkspaceMenuOpenId: Dispatch<SetStateAction<string | null>>;
   setEditingWorkspaceId: Dispatch<SetStateAction<string | null>>;
   setEditingWorkspaceName: Dispatch<SetStateAction<string>>;
@@ -29,11 +26,9 @@ type UseAppUiEffectsArgs = {
 export default function useAppUiEffects({
   themeMode,
   tableDensity,
-  tasks,
   settingsMenuRef,
   profileMenuRef,
   tasksTableWrapperRef,
-  setTaskWorkspaceMap,
   setWorkspaceMenuOpenId,
   setEditingWorkspaceId,
   setEditingWorkspaceName,
@@ -51,17 +46,6 @@ export default function useAppUiEffects({
     document.documentElement.setAttribute("data-table-density", tableDensity);
     localStorage.setItem("taskflow_table_density", tableDensity);
   }, [tableDensity]);
-
-  useEffect(() => {
-    if (tasks.length === 0) return;
-    setTaskWorkspaceMap((prev) => {
-      const next: Record<number, string> = {};
-      for (const task of tasks) {
-        next[task.id] = prev[task.id] || DEFAULT_WORKSPACE_ID;
-      }
-      return next;
-    });
-  }, [setTaskWorkspaceMap, tasks]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {

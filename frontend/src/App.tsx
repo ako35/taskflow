@@ -9,11 +9,12 @@ import ContactView from "./components/auth/ContactView";
 import LandingPage from "./components/auth/LandingPage";
 import LoginView from "./components/auth/LoginView";
 import AppSidebar from "./components/layout/AppSidebar";
+import InviteTeammateModal from "./components/layout/InviteTeammateModal";
 import ProfileDetailsModal from "./components/layout/ProfileDetailsModal";
 import AppTopBar from "./components/layout/AppTopBar";
 import WorkspacePanel from "./components/layout/WorkspacePanel";
 import WorkspaceCreateModal from "./components/layout/sidebar/WorkspaceCreateModal";
-import { API_URL, DEFAULT_WORKSPACE_ID } from "./constants";
+import { API_URL } from "./constants";
 import useAppUiEffects from "./hooks/useAppUiEffects";
 import useAuthSession from "./hooks/useAuthSession";
 import useTaskCrud from "./hooks/useTaskCrud";
@@ -28,6 +29,11 @@ type ProfileFormState = {
   email: string;
   phone: string;
 };
+
+type InviteStatus = {
+  type: "success" | "error";
+  message: string;
+} | null;
 
 export default function App() {
   const {
@@ -50,6 +56,12 @@ export default function App() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteeEmail, setInviteeEmail] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteStatus, setInviteStatus] = useState<InviteStatus>(null);
+  const [inviteAccepting, setInviteAccepting] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileFormState>({
     firstName: "",
     lastName: "",
@@ -103,8 +115,6 @@ export default function App() {
   const {
     selectedWorkspaceId,
     setSelectedWorkspaceId,
-    taskWorkspaceMap,
-    setTaskWorkspaceMap,
     newWorkspaceName,
     setNewWorkspaceName,
     showWorkspaceInput,
@@ -127,8 +137,12 @@ export default function App() {
     handleArchiveWorkspace,
     handleRestoreWorkspace,
     handleDeleteWorkspace,
+    reloadWorkspaces,
   } = useWorkspaceManager({
+    idToken,
+    user,
     setError,
+    handleUnauthorized,
   });
 
   const {
@@ -153,19 +167,18 @@ export default function App() {
     user,
     selectedWorkspaceId,
     handleUnauthorized,
-    setTaskWorkspaceMap,
     setError,
   });
 
   const archivedTasks = useMemo(() => {
     return tasks.filter((task) => {
-      const workspaceId = taskWorkspaceMap[task.id] || DEFAULT_WORKSPACE_ID;
       return (
-        archivedWorkspaces.some((workspace) => workspace.id === workspaceId) ||
-        archivedTaskIds.includes(task.id)
+        archivedWorkspaces.some(
+          (workspace) => workspace.id === task.workspaceId,
+        ) || archivedTaskIds.includes(task.id)
       );
     });
-  }, [archivedTaskIds, archivedWorkspaces, taskWorkspaceMap, tasks]);
+  }, [archivedTaskIds, archivedWorkspaces, tasks]);
 
   const handleSignOut = useCallback(() => {
     setUser(null);
@@ -207,7 +220,6 @@ export default function App() {
     tasks,
     archivedTasks,
     archivedTaskIds,
-    taskWorkspaceMap,
     selectedWorkspaceId: selectedWorkspace.id,
     query,
     viewMode,
@@ -222,11 +234,9 @@ export default function App() {
   useAppUiEffects({
     themeMode,
     tableDensity,
-    tasks,
     settingsMenuRef,
     profileMenuRef,
     tasksTableWrapperRef,
-    setTaskWorkspaceMap,
     setWorkspaceMenuOpenId,
     setEditingWorkspaceId,
     setEditingWorkspaceName,
@@ -248,6 +258,21 @@ export default function App() {
     setProfileMenuOpen(false);
     setProfileDetailsOpen(true);
   }, []);
+
+  const handleOpenInviteModal = useCallback(() => {
+    setProfileMenuOpen(false);
+    setInviteStatus(null);
+    setInviteModalOpen(true);
+  }, []);
+
+  const handleCloseInviteModal = useCallback(() => {
+    if (inviteSending) {
+      return;
+    }
+
+    setInviteModalOpen(false);
+    setInviteStatus(null);
+  }, [inviteSending]);
 
   const handleCloseProfileDetails = useCallback(() => {
     setProfileDetailsOpen(false);
@@ -337,6 +362,175 @@ export default function App() {
       setProfileSaving(false);
     }
   }, [handleUnauthorized, idToken, profileForm, setUser, user]);
+
+  const handleSendInvitation = useCallback(async () => {
+    if (!idToken || !user) {
+      handleUnauthorized();
+      return;
+    }
+
+    const email = inviteeEmail.trim();
+    if (!email) {
+      setInviteStatus({
+        type: "error",
+        message: "Lutfen davet edilecek e-posta adresini girin.",
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setInviteStatus({
+        type: "error",
+        message: "Lutfen gecerli bir e-posta adresi girin.",
+      });
+      return;
+    }
+
+    setInviteSending(true);
+    setInviteStatus(null);
+
+    try {
+      const response = await fetch(`${API_URL}/invitations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          inviteeEmail: email,
+          message: inviteMessage,
+          workspaceId: selectedWorkspace.id,
+        }),
+      });
+
+      const text = await response.text();
+      const responseBody = safeParseJson<Record<string, any> | null>(
+        text,
+        null,
+      );
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          responseBody?.error ||
+            text ||
+            "Davet gonderilemedi. Lutfen tekrar deneyin.",
+        );
+      }
+
+      setInviteStatus({
+        type: "success",
+        message: responseBody?.immediateAccessGranted
+          ? "Davet gonderildi. Bu hesap zaten kayitli oldugu icin erisim aninda tanimlandi."
+          : "Davet e-postasi basariyla gonderildi.",
+      });
+      setInviteeEmail("");
+      setInviteMessage("");
+    } catch (err) {
+      setInviteStatus({
+        type: "error",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Davet gonderilemedi. Lutfen tekrar deneyin.",
+      });
+    } finally {
+      setInviteSending(false);
+    }
+  }, [
+    handleUnauthorized,
+    idToken,
+    inviteMessage,
+    inviteeEmail,
+    selectedWorkspace.id,
+    user,
+  ]);
+
+  useEffect(() => {
+    if (!idToken || !user) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const inviteToken = params.get("inviteToken");
+    if (!inviteToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const acceptInvite = async () => {
+      setInviteAccepting(true);
+      try {
+        const response = await fetch(`${API_URL}/invitations/accept`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ token: inviteToken }),
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        const text = await response.text();
+        const payload = safeParseJson<Record<string, any> | null>(text, null);
+
+        if (!response.ok) {
+          throw new Error(payload?.error || text || "Davet kabul edilemedi.");
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        const acceptedWorkspaceId =
+          typeof payload?.workspace?.id === "string"
+            ? payload.workspace.id
+            : "";
+
+        if (acceptedWorkspaceId) {
+          setSelectedWorkspaceId(acceptedWorkspaceId);
+        }
+
+        await reloadWorkspaces();
+        setError(null);
+
+        const newUrl = `${window.location.origin}${window.location.pathname}`;
+        window.history.replaceState({}, document.title, newUrl);
+      } catch (error) {
+        if (!cancelled) {
+          setError(
+            error instanceof Error ? error.message : "Davet kabul edilemedi.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setInviteAccepting(false);
+        }
+      }
+    };
+
+    acceptInvite();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    handleUnauthorized,
+    idToken,
+    reloadWorkspaces,
+    setSelectedWorkspaceId,
+    user,
+  ]);
 
   const handleToggleSidebar = useCallback(() => {
     setSidebarOpen((current) => !current);
@@ -589,6 +783,7 @@ export default function App() {
     profileMenuRef,
     themeMode,
     onToggleProfileMenu: handleToggleProfileMenu,
+    onOpenInviteModal: handleOpenInviteModal,
     onOpenProfileDetails: handleOpenProfileDetails,
     onSetThemeMode: handleSetThemeMode,
     onSignOut: handleSignOut,
@@ -630,6 +825,19 @@ export default function App() {
         onFieldChange={handleProfileFieldChange}
         onSave={handleSaveProfile}
         onClose={handleCloseProfileDetails}
+      />
+
+      <InviteTeammateModal
+        open={inviteModalOpen}
+        workspaceName={selectedWorkspace.name}
+        inviteeEmail={inviteeEmail}
+        message={inviteMessage}
+        sending={inviteSending || inviteAccepting}
+        status={inviteStatus}
+        onInviteeEmailChange={setInviteeEmail}
+        onMessageChange={setInviteMessage}
+        onSend={handleSendInvitation}
+        onClose={handleCloseInviteModal}
       />
     </div>
   );

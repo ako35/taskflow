@@ -746,7 +746,23 @@ button[disabled] {
   color: var(--text);
 }
 
+.workspace-create-modal textarea {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  padding: 0.8rem 0.9rem;
+  background: rgba(15, 23, 42, 0.82);
+  color: var(--text);
+  resize: vertical;
+  min-height: 108px;
+}
+
 .workspace-create-modal input:focus {
+  outline: none;
+  border-color: rgba(91, 140, 255, 0.52);
+}
+
+.workspace-create-modal textarea:focus {
   outline: none;
   border-color: rgba(91, 140, 255, 0.52);
 }
@@ -773,6 +789,12 @@ button[disabled] {
 }
 
 :root[data-theme="light"] .workspace-create-modal input {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .workspace-create-modal textarea {
   background: #ffffff;
   border-color: rgba(15, 23, 42, 0.18);
   color: #0f172a;
@@ -1423,8 +1445,31 @@ button[disabled] {
   width: 100%;
 }
 
+.profile-form-field textarea {
+  width: 100%;
+}
+
 .profile-form-field-full {
   grid-column: 1 / -1;
+}
+
+.invite-status {
+  margin: 0.85rem 0 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.invite-status.success {
+  background: rgba(52, 211, 153, 0.16);
+  border: 1px solid rgba(52, 211, 153, 0.34);
+  color: #34d399;
+}
+
+.invite-status.error {
+  background: rgba(251, 113, 133, 0.16);
+  border: 1px solid rgba(251, 113, 133, 0.34);
+  color: #fb7185;
 }
 
 .workspace-header h1 {

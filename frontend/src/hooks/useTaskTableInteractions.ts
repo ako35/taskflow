@@ -13,7 +13,6 @@ import {
   API_URL,
   COLUMN_WIDTHS_STORAGE_KEY,
   DEFAULT_COLUMN_WIDTHS,
-  DEFAULT_WORKSPACE_ID,
   tableColumns,
 } from "../constants";
 import type { Task, ViewMode } from "../types";
@@ -29,7 +28,6 @@ type UseTaskTableInteractionsArgs = {
   tasks: Task[];
   archivedTasks: Task[];
   archivedTaskIds: number[];
-  taskWorkspaceMap: Record<number, string>;
   selectedWorkspaceId: string;
   query: string;
   viewMode: ViewMode;
@@ -45,7 +43,6 @@ export default function useTaskTableInteractions({
   tasks,
   archivedTasks,
   archivedTaskIds,
-  taskWorkspaceMap,
   selectedWorkspaceId,
   query,
   viewMode,
@@ -95,13 +92,12 @@ export default function useTaskTableInteractions({
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
-      const inSelectedWorkspace =
-        (taskWorkspaceMap[task.id] || DEFAULT_WORKSPACE_ID) === selectedWorkspaceId;
+      const inSelectedWorkspace = task.workspaceId === selectedWorkspaceId;
       if (!inSelectedWorkspace) return false;
       if (archivedTaskIds.includes(task.id)) return false;
       return matchesSearch(task, query);
     });
-  }, [archivedTaskIds, query, selectedWorkspaceId, taskWorkspaceMap, tasks]);
+  }, [archivedTaskIds, query, selectedWorkspaceId, tasks]);
 
   const sortedTasks = useMemo(
     () =>
@@ -251,7 +247,11 @@ export default function useTaskTableInteractions({
           );
         }
 
-        const updatedTask = responseBody as Task;
+        const updatedTask = {
+          ...(responseBody as Task),
+          description: (responseBody as Task).description || "",
+          status: (responseBody as Task).status ?? "Yapılacak",
+        };
         setTasks((prev) =>
           prev.map((item) => (item.id === updatedTask.id ? updatedTask : item)),
         );
@@ -521,7 +521,11 @@ export default function useTaskTableInteractions({
           throw new Error(message);
         }
 
-        const updatedTask = updatePayload as Task;
+        const updatedTask = {
+          ...(updatePayload as Task),
+          description: (updatePayload as Task).description || "",
+          status: (updatePayload as Task).status ?? "Yapılacak",
+        };
         setTasks((prev) =>
           prev.map((item) => (item.id === updatedTask.id ? updatedTask : item)),
         );

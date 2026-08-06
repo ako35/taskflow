@@ -15,7 +15,6 @@ type UseTaskCrudArgs = {
   user: User | null;
   selectedWorkspaceId: string;
   handleUnauthorized: () => void;
-  setTaskWorkspaceMap: Dispatch<SetStateAction<Record<number, string>>>;
   setError: Dispatch<SetStateAction<string | null>>;
 };
 
@@ -24,7 +23,6 @@ export default function useTaskCrud({
   user,
   selectedWorkspaceId,
   handleUnauthorized,
-  setTaskWorkspaceMap,
   setError,
 }: UseTaskCrudArgs) {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -61,6 +59,11 @@ export default function useTaskCrud({
       return;
     }
 
+    if (!selectedWorkspaceId) {
+      setError("Lutfen bir calisma alani secin.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -71,7 +74,10 @@ export default function useTaskCrud({
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          workspaceId: selectedWorkspaceId,
+        }),
       });
 
       const text = await response.text();
@@ -99,10 +105,6 @@ export default function useTaskCrud({
       }
 
       const newTask = responseBody as Task;
-      setTaskWorkspaceMap((prev) => ({
-        ...prev,
-        [newTask.id]: selectedWorkspaceId,
-      }));
       setTasks((prev) => [newTask, ...prev]);
       setForm(initialForm);
       setQuery("");
@@ -120,7 +122,6 @@ export default function useTaskCrud({
     isFormValid,
     selectedWorkspaceId,
     setError,
-    setTaskWorkspaceMap,
   ]);
 
   const handleArchiveTask = useCallback(
@@ -170,11 +171,6 @@ export default function useTaskCrud({
 
         setTasks((prev) => prev.filter((task) => task.id !== taskId));
         setArchivedTaskIds((prev) => prev.filter((id) => id !== taskId));
-        setTaskWorkspaceMap((prev) => {
-          const next = { ...prev };
-          delete next[taskId];
-          return next;
-        });
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Görev silinemedi.");
@@ -182,7 +178,7 @@ export default function useTaskCrud({
         setLoading(false);
       }
     },
-    [handleUnauthorized, idToken, setError, setTaskWorkspaceMap],
+    [handleUnauthorized, idToken, setError],
   );
 
   useEffect(() => {
@@ -228,6 +224,7 @@ export default function useTaskCrud({
         setTasks(
           data.map((task) => ({
             ...task,
+            description: task.description || "",
             status: task.status ?? "Yapılacak",
           })),
         );

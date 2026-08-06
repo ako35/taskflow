@@ -168,6 +168,7 @@ export function normalizeWorkspaces(
       icon: WORKSPACE_ICONS.includes(item.icon as WorkspaceIcon)
         ? (item.icon as WorkspaceIcon)
         : pickWorkspaceIcon(item.id as string),
+      role: item.role === "OWNER" || item.role === "MEMBER" ? item.role : undefined,
     }));
 }
 

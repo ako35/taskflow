@@ -94,13 +94,15 @@ export default function WorkspaceList({
 
           {workspaceMenuOpenId === workspace.id && (
             <div className="workspace-menu-dropdown">
-              <button
-                type="button"
-                className="workspace-menu-action"
-                onClick={() => onStartWorkspaceRename(workspace.id)}
-              >
-                Yeniden adlandır
-              </button>
+              {workspace.role === "OWNER" ? (
+                <button
+                  type="button"
+                  className="workspace-menu-action"
+                  onClick={() => onStartWorkspaceRename(workspace.id)}
+                >
+                  Yeniden adlandır
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="workspace-menu-action"
@@ -108,13 +110,15 @@ export default function WorkspaceList({
               >
                 Arşiv
               </button>
-              <button
-                type="button"
-                className="workspace-menu-action workspace-menu-danger"
-                onClick={() => onDeleteWorkspace(workspace.id)}
-              >
-                Sil
-              </button>
+              {workspace.role === "OWNER" ? (
+                <button
+                  type="button"
+                  className="workspace-menu-action workspace-menu-danger"
+                  onClick={() => onDeleteWorkspace(workspace.id)}
+                >
+                  Sil
+                </button>
+              ) : null}
             </div>
           )}
         </div>
