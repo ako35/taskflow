@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Task, TaskComment, User } from "../../../types";
 import { UiGlyph } from "../../ui/Icons";
 import { priorityClassNames, statusClassNames } from "../../../constants";
+import InlineSelectMenu from "../../tasks/InlineSelectMenu";
 
 type TaskDetailsPanelProps = {
   open: boolean;
@@ -80,6 +81,9 @@ export default function TaskDetailsPanel({
   const [draftTitle, setDraftTitle] = useState("");
   const [draftStatus, setDraftStatus] = useState("Yapılacak");
   const [draftPriority, setDraftPriority] = useState("Orta");
+  const [editingField, setEditingField] = useState<
+    "status" | "priority" | null
+  >(null);
   const [saveAcknowledged, setSaveAcknowledged] = useState(false);
   const saveAckTimerRef = useRef<number | null>(null);
 
@@ -182,37 +186,57 @@ export default function TaskDetailsPanel({
             Olusturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
           </p>
 
-          <label className="task-details-field">
+          <div className="task-details-field">
             <span>Durum</span>
-            <div className="task-details-badge-group">
-              {(["Yapılacak", "Tamamlandı"] as const).map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  className={`inline-option-chip task-badge task-status-badge ${statusClassNames[opt] ?? ""} ${draftStatus === opt ? "active" : ""}`}
-                  onClick={() => setDraftStatus(opt)}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </label>
+            {editingField === "status" ? (
+              <InlineSelectMenu
+                value={draftStatus}
+                fallbackValue="Yapılacak"
+                options={["Yapılacak", "Tamamlandı"]}
+                getOptionClassName={(opt) => statusClassNames[opt] ?? ""}
+                badgeClassName="task-status-badge"
+                onSelect={(opt) => {
+                  setDraftStatus(opt);
+                  setEditingField(null);
+                }}
+                onCancel={() => setEditingField(null)}
+              />
+            ) : (
+              <button
+                type="button"
+                className={`inline-option-chip task-badge task-status-badge ${statusClassNames[draftStatus] ?? ""} active`}
+                onClick={() => setEditingField("status")}
+              >
+                {draftStatus}
+              </button>
+            )}
+          </div>
 
-          <label className="task-details-field">
+          <div className="task-details-field">
             <span>Onem</span>
-            <div className="task-details-badge-group">
-              {(["Acil", "Yüksek", "Orta", "Düşük"] as const).map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  className={`inline-option-chip task-badge task-priority-badge ${priorityClassNames[opt] ?? ""} ${draftPriority === opt ? "active" : ""}`}
-                  onClick={() => setDraftPriority(opt)}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </label>
+            {editingField === "priority" ? (
+              <InlineSelectMenu
+                value={draftPriority}
+                fallbackValue="Orta"
+                options={["Acil", "Yüksek", "Orta", "Düşük"]}
+                getOptionClassName={(opt) => priorityClassNames[opt] ?? ""}
+                badgeClassName="task-priority-badge"
+                onSelect={(opt) => {
+                  setDraftPriority(opt);
+                  setEditingField(null);
+                }}
+                onCancel={() => setEditingField(null)}
+              />
+            ) : (
+              <button
+                type="button"
+                className={`inline-option-chip task-badge task-priority-badge ${priorityClassNames[draftPriority] ?? ""} active`}
+                onClick={() => setEditingField("priority")}
+              >
+                {draftPriority}
+              </button>
+            )}
+          </div>
 
           <button
             type="button"
