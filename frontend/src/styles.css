@@ -1735,6 +1735,8 @@ button[disabled] {
 .notifications-trigger {
   width: 42px;
   height: 42px;
+  flex: 0 0 42px;
+  padding: 0;
   border: none;
   background: transparent;
   color: #ffffff;
