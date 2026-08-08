@@ -73,7 +73,8 @@ export default function InlineSelectMenu({
       const viewportWidth =
         window.innerWidth || document.documentElement.clientWidth;
       const viewportPadding = 8;
-      const menuWidth = Math.ceil(Math.max(triggerRect.width, 144));
+      const badgeWidth = badgeClassName.includes("priority") ? 106 : 96;
+      const menuWidth = badgeWidth + 20;
       const maxMenuHeight = Math.max(140, viewportHeight - viewportPadding * 2);
       const measuredMenuHeight = Math.ceil(menuRect.height);
       const effectiveMenuHeight = Math.min(measuredMenuHeight, maxMenuHeight);
@@ -122,7 +123,7 @@ export default function InlineSelectMenu({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [options, value, fallbackValue]);
+  }, [badgeClassName, options, value, fallbackValue]);
 
   const menu = (
     <div ref={menuRef} className="inline-options-menu" style={menuStyle}>

@@ -1621,7 +1621,7 @@ button[disabled] {
 .comment-delete-btn {
   position: absolute;
   bottom: 0.38rem;
-  left: 0.38rem;
+  right: 0.38rem;
   width: 24px;
   height: 24px;
   padding: 0;
@@ -1755,18 +1755,23 @@ button[disabled] {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.notifications-trigger svg {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
+.notifications-trigger svg,
+.notifications-trigger .bell-icon {
+  width: 22px;
+  height: 22px;
+  stroke: #ffffff;
   stroke-width: 2;
   fill: none;
-  transition: fill 0.18s ease;
+  display: block;
+  transition:
+    fill 0.18s ease,
+    stroke 0.18s ease;
 }
 
 /* filled bell when there are unread notifications */
-.notifications-trigger.has-unread svg {
-  fill: currentColor;
+.notifications-trigger.has-unread svg,
+.notifications-trigger.has-unread .bell-icon {
+  fill: #ffffff;
 }
 
 .notifications-count {
@@ -3729,7 +3734,7 @@ button[disabled] {
   gap: 0.4rem;
   padding: 0.55rem;
   width: max-content;
-  min-width: 144px;
+  min-width: 0;
   border: 1px solid rgba(91, 140, 255, 0.33);
   border-radius: 4px;
   background: rgba(6, 10, 20, 0.99);
@@ -4019,7 +4024,7 @@ button[disabled] {
   }
 
   .inline-options-menu {
-    min-width: 160px;
+    min-width: 0;
     padding: 0.62rem;
   }
 
