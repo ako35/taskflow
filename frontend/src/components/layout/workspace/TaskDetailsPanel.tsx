@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Task, TaskComment, User } from "../../../types";
 import { UiGlyph } from "../../ui/Icons";
+import { priorityClassNames, statusClassNames } from "../../../constants";
 
 type TaskDetailsPanelProps = {
   open: boolean;
   task: Task | null;
   currentUser: User | null;
+  isWorkspaceOwner: boolean;
   comments: TaskComment[];
   commentsLoading: boolean;
   commentDraft: string;
@@ -14,6 +16,7 @@ type TaskDetailsPanelProps = {
   onClose: () => void;
   onCommentDraftChange: (value: string) => void;
   onSubmitComment: () => void;
+  onDeleteComment: (commentId: number) => void;
   onSaveTaskDetails: (payload: {
     title: string;
     status: string;
@@ -62,6 +65,7 @@ export default function TaskDetailsPanel({
   open,
   task,
   currentUser,
+  isWorkspaceOwner,
   comments,
   commentsLoading,
   commentDraft,
@@ -70,6 +74,7 @@ export default function TaskDetailsPanel({
   onClose,
   onCommentDraftChange,
   onSubmitComment,
+  onDeleteComment,
   onSaveTaskDetails,
 }: TaskDetailsPanelProps) {
   const [draftTitle, setDraftTitle] = useState("");
@@ -122,7 +127,7 @@ export default function TaskDetailsPanel({
   const saveButtonLabel = taskUpdating
     ? "Kaydediliyor..."
     : saveAcknowledged && !canSaveTaskDetails
-      ? "Kaydedildi"
+      ? "✓ Kaydedildi"
       : "Degisiklikleri Kaydet";
 
   const handleSaveDetails = async () => {
@@ -158,48 +163,55 @@ export default function TaskDetailsPanel({
       </div>
 
       <div className="task-details-body">
-        <div className="task-details-card">
-          <h4>Gorev</h4>
-
-          <input
-            type="text"
-            className="task-details-title-input"
-            value={draftTitle}
-            onChange={(event) => setDraftTitle(event.target.value)}
-            placeholder="Gorev adini yazin"
-            aria-label="Gorev metni"
-          />
-
-          <p className="task-details-created-at">
-            Olusturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
-          </p>
-        </div>
-
         <div className="task-details-card task-details-edit-section">
           <h4>Gorevi Duzenle</h4>
 
           <label className="task-details-field">
+            <span>Gorev Metni</span>
+            <input
+              type="text"
+              className="task-details-title-input"
+              value={draftTitle}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              placeholder="Gorev adini yazin"
+              aria-label="Gorev metni"
+            />
+          </label>
+
+          <p className="task-details-created-at">
+            Olusturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
+          </p>
+
+          <label className="task-details-field">
             <span>Durum</span>
-            <select
-              value={draftStatus}
-              onChange={(event) => setDraftStatus(event.target.value)}
-            >
-              <option value="Yapılacak">Yapılacak</option>
-              <option value="Tamamlandı">Tamamlandı</option>
-            </select>
+            <div className="task-details-badge-group">
+              {(["Yapılacak", "Tamamlandı"] as const).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  className={`inline-option-chip task-badge task-status-badge ${statusClassNames[opt] ?? ""} ${draftStatus === opt ? "active" : ""}`}
+                  onClick={() => setDraftStatus(opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
           </label>
 
           <label className="task-details-field">
             <span>Onem</span>
-            <select
-              value={draftPriority}
-              onChange={(event) => setDraftPriority(event.target.value)}
-            >
-              <option value="Acil">Acil</option>
-              <option value="Yüksek">Yüksek</option>
-              <option value="Orta">Orta</option>
-              <option value="Düşük">Düşük</option>
-            </select>
+            <div className="task-details-badge-group">
+              {(["Acil", "Yüksek", "Orta", "Düşük"] as const).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  className={`inline-option-chip task-badge task-priority-badge ${priorityClassNames[opt] ?? ""} ${draftPriority === opt ? "active" : ""}`}
+                  onClick={() => setDraftPriority(opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
           </label>
 
           <button
@@ -234,6 +246,7 @@ export default function TaskDetailsPanel({
                   ? comment.author.email.toLowerCase() ===
                     currentUser.authEmail.toLowerCase()
                   : false;
+                const canDelete = isCurrentUser || isWorkspaceOwner;
 
                 return (
                   <article key={comment.id} className="task-comment-item">
@@ -242,11 +255,22 @@ export default function TaskDetailsPanel({
                         {isCurrentUser ? "Sen" : authorDisplayName(comment)}
                         {` (${comment.author.email})`}
                       </strong>
+                      <span className="task-comment-time">
+                        {formatCommentDate(comment.createdAt)}
+                      </span>
                     </div>
                     <p>{comment.content}</p>
-                    <span className="task-comment-time">
-                      {formatCommentDate(comment.createdAt)}
-                    </span>
+                    {canDelete ? (
+                      <button
+                        type="button"
+                        className="comment-delete-btn"
+                        title="Sil"
+                        onClick={() => onDeleteComment(comment.id)}
+                        aria-label="Yorumu sil"
+                      >
+                        <UiGlyph icon="trash" />
+                      </button>
+                    ) : null}
                   </article>
                 );
               })

@@ -1269,7 +1269,6 @@ tasksRouter.post("/:id/comments", async (req, res) => {
   const invitedMembers = await prisma.workspaceMember.findMany({
     where: {
       workspaceId: task.workspaceId,
-      role: "MEMBER",
       userProfileId: {
         not: profile.id,
       },
@@ -1310,6 +1309,39 @@ tasksRouter.post("/:id/comments", async (req, res) => {
       picture: comment.userProfile.picture,
     },
   });
+});
+
+tasksRouter.delete("/:taskId/comments/:commentId", async (req, res) => {
+  const taskId = Number(req.params.taskId);
+  const commentId = Number(req.params.commentId);
+  if (Number.isNaN(taskId) || Number.isNaN(commentId)) {
+    return res.status(400).json({ error: "Invalid id" });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+
+  const comment = await prisma.taskComment.findFirst({
+    where: { id: commentId, taskId },
+    select: { id: true, userProfileId: true, task: { select: { workspaceId: true } } },
+  });
+
+  if (!comment) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
+  const isAuthor = comment.userProfileId === profile.id;
+  if (!isAuthor) {
+    const ownerMember = await prisma.workspaceMember.findFirst({
+      where: { workspaceId: comment.task.workspaceId, userProfileId: profile.id, role: "OWNER" },
+      select: { id: true },
+    });
+    if (!ownerMember) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+  }
+
+  await prisma.taskComment.delete({ where: { id: commentId } });
+  res.status(204).end();
 });
 
 tasksRouter.post("/", async (req, res) => {

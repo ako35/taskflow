@@ -409,6 +409,24 @@ export default function App() {
     }
   }, [handleUnauthorized, idToken, notificationsUnreadCount, user]);
 
+  const handleDeleteComment = useCallback(
+    async (commentId: number) => {
+      if (!selectedTaskId || !idToken) return;
+      try {
+        const response = await fetch(
+          `${API_URL}/tasks/${selectedTaskId}/comments/${commentId}`,
+          { method: "DELETE", headers: { Authorization: `Bearer ${idToken}` } },
+        );
+        if (response.ok || response.status === 204) {
+          setTaskComments((prev) => prev.filter((c) => c.id !== commentId));
+        }
+      } catch {
+        // silent – non-critical
+      }
+    },
+    [idToken, selectedTaskId],
+  );
+
   const handleSubmitTaskComment = useCallback(async () => {
     const content = commentDraft.trim();
 
@@ -592,6 +610,21 @@ export default function App() {
   const handleHideForm = useCallback(() => {
     setShowForm(false);
   }, [setShowForm]);
+
+  const handleNavigateToNotification = useCallback(
+    (notification: UserNotification) => {
+      setNotificationsMenuOpen(false);
+      if (notification.workspaceId !== selectedWorkspace.id) {
+        setSelectedWorkspaceId(notification.workspaceId);
+      }
+      if (viewMode !== "workspaces") {
+        setViewMode("workspaces");
+      }
+      setSelectedTaskId(notification.taskId);
+      setCommentDraft("");
+    },
+    [selectedWorkspace.id, setSelectedWorkspaceId, setViewMode, viewMode],
+  );
 
   const handleToggleProfileMenu = useCallback(() => {
     setNotificationsMenuOpen(false);
@@ -1331,9 +1364,11 @@ export default function App() {
       commentSubmitting,
       taskUpdating,
       currentUser: user,
+      isWorkspaceOwner: selectedWorkspace.role === "OWNER",
       onCloseTaskDetails: handleCloseTaskDetails,
       onCommentDraftChange: setCommentDraft,
       onSubmitComment: handleSubmitTaskComment,
+      onDeleteComment: handleDeleteComment,
       onSaveTaskDetails: handleSaveTaskDetails,
     }),
     [
@@ -1355,6 +1390,7 @@ export default function App() {
       selectedTask,
       user,
       handleCloseTaskDetails,
+      handleDeleteComment,
       handleSaveTaskDetails,
       handleSubmitTaskComment,
       tasksTableProps,
@@ -1407,6 +1443,7 @@ export default function App() {
     onOpenProfileDetails: handleOpenProfileDetails,
     onSetThemeMode: handleSetThemeMode,
     onSignOut: handleSignOut,
+    onNavigateToNotification: handleNavigateToNotification,
   };
 
   return (

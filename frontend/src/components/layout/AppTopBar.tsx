@@ -21,6 +21,7 @@ type AppTopBarProps = {
   onOpenProfileDetails: () => void;
   onSetThemeMode: (mode: ThemeMode) => void;
   onSignOut: () => void;
+  onNavigateToNotification: (notification: UserNotification) => void;
 };
 
 function formatNotificationDate(value: string) {
@@ -53,6 +54,7 @@ export default function AppTopBar({
   onOpenProfileDetails,
   onSetThemeMode,
   onSignOut,
+  onNavigateToNotification,
 }: AppTopBarProps) {
   return (
     <div className="topbar">
@@ -67,7 +69,7 @@ export default function AppTopBar({
         <div className="notifications-bar" ref={notificationsMenuRef}>
           <button
             type="button"
-            className={`notifications-trigger ${notificationsMenuOpen ? "open" : ""}`}
+            className={`notifications-trigger ${notificationsMenuOpen ? "open" : ""} ${notificationsUnreadCount > 0 ? "has-unread" : ""}`}
             aria-label="Bildirimler"
             aria-expanded={notificationsMenuOpen}
             onClick={onToggleNotificationsMenu}
@@ -103,15 +105,17 @@ export default function AppTopBar({
                 <p className="notifications-empty">Su an bildirimin yok.</p>
               ) : (
                 notifications.map((notification) => (
-                  <article
+                  <button
                     key={notification.id}
+                    type="button"
                     className={`notification-item ${notification.isRead ? "" : "unread"}`}
+                    onClick={() => onNavigateToNotification(notification)}
                   >
                     <p>{notification.message}</p>
                     <span>
                       {formatNotificationDate(notification.createdAt)}
                     </span>
-                  </article>
+                  </button>
                 ))
               )}
             </div>
