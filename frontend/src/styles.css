@@ -1515,6 +1515,23 @@ button[disabled] {
   word-break: break-word;
 }
 
+.task-details-title-input {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.62);
+  color: var(--text);
+  padding: 0.54rem 0.62rem;
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.task-details-title-input:focus {
+  outline: 2px solid rgba(91, 140, 255, 0.22);
+  outline-offset: 0;
+}
+
 .task-details-edit-section {
   gap: 0.62rem;
 }
@@ -1551,6 +1568,18 @@ button[disabled] {
 
 .task-details-save-btn {
   justify-self: end;
+}
+
+.task-details-save-btn:disabled {
+  cursor: default;
+}
+
+.task-details-save-btn.saved {
+  background: linear-gradient(135deg, #10b981, #0ea5a0 58%, #0f766e);
+  border-color: rgba(16, 185, 129, 0.42);
+  box-shadow:
+    0 12px 26px rgba(15, 118, 110, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .task-comments-section {
@@ -4230,6 +4259,12 @@ button[disabled] {
   color: #0f172a;
 }
 
+:root[data-theme="light"] .task-details-title-input {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+}
+
 :root[data-theme="light"] .task-comment-item {
   background: rgba(248, 251, 255, 0.96);
   border-color: rgba(15, 23, 42, 0.12);
@@ -4253,6 +4288,13 @@ button[disabled] {
   color: #0f172a;
 }
 
+:root[data-theme="light"] .task-details-save-btn.saved {
+  background: linear-gradient(135deg, #10b981, #0f9b8e 58%, #0f766e);
+  border-color: rgba(15, 118, 110, 0.34);
+  box-shadow:
+    0 12px 24px rgba(15, 118, 110, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
 
 :root[data-theme="light"] .tasks-table tbody tr {
   background: #f4f7ff;
@@ -4853,6 +4895,9 @@ button[disabled] {
   width: 100% !important;
   height: 100% !important;
   overflow: hidden;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 .auth-google-compact {
@@ -4860,10 +4905,10 @@ button[disabled] {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
+  border: none;
+  background: transparent;
   border-radius: 8px;
-  padding: 0.28rem 0.7rem 0.28rem 0.28rem;
+  padding: 0.2rem 0.2rem 0.2rem 0.1rem;
   width: fit-content;
   cursor: pointer;
 }

@@ -90,7 +90,7 @@ describe("TaskDetailsPanel", () => {
     });
     expect(saveButton).toBeDisabled();
 
-    const titleInput = screen.getByLabelText("Gorev Metni");
+    const titleInput = screen.getByLabelText("Gorev metni");
     await user.clear(titleInput);
     await user.type(titleInput, "  Guncel gorev basligi  ");
 

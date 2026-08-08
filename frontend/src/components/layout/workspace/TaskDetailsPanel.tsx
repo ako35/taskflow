@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Task, TaskComment, User } from "../../../types";
 import { UiGlyph } from "../../ui/Icons";
 
@@ -75,6 +75,8 @@ export default function TaskDetailsPanel({
   const [draftTitle, setDraftTitle] = useState("");
   const [draftStatus, setDraftStatus] = useState("Yapılacak");
   const [draftPriority, setDraftPriority] = useState("Orta");
+  const [saveAcknowledged, setSaveAcknowledged] = useState(false);
+  const saveAckTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!task) {
@@ -84,7 +86,16 @@ export default function TaskDetailsPanel({
     setDraftTitle(task.title || "");
     setDraftStatus(task.status ?? "Yapılacak");
     setDraftPriority(task.priority || "Orta");
+    setSaveAcknowledged(false);
   }, [task]);
+
+  useEffect(() => {
+    return () => {
+      if (saveAckTimerRef.current !== null) {
+        window.clearTimeout(saveAckTimerRef.current);
+      }
+    };
+  }, []);
 
   const canSaveTaskDetails = useMemo(() => {
     if (!task) {
@@ -108,6 +119,30 @@ export default function TaskDetailsPanel({
     return null;
   }
 
+  const saveButtonLabel = taskUpdating
+    ? "Kaydediliyor..."
+    : saveAcknowledged && !canSaveTaskDetails
+      ? "Kaydedildi"
+      : "Degisiklikleri Kaydet";
+
+  const handleSaveDetails = async () => {
+    await onSaveTaskDetails({
+      title: draftTitle.trim(),
+      status: draftStatus,
+      priority: draftPriority,
+    });
+
+    setSaveAcknowledged(true);
+    if (saveAckTimerRef.current !== null) {
+      window.clearTimeout(saveAckTimerRef.current);
+    }
+
+    saveAckTimerRef.current = window.setTimeout(() => {
+      setSaveAcknowledged(false);
+      saveAckTimerRef.current = null;
+    }, 1500);
+  };
+
   return (
     <aside className="task-details-panel" aria-label="Görev detay paneli">
       <div className="task-details-head">
@@ -126,7 +161,14 @@ export default function TaskDetailsPanel({
         <div className="task-details-card">
           <h4>Gorev</h4>
 
-          <p className="task-details-title-preview">{task.title}</p>
+          <input
+            type="text"
+            className="task-details-title-input"
+            value={draftTitle}
+            onChange={(event) => setDraftTitle(event.target.value)}
+            placeholder="Gorev adini yazin"
+            aria-label="Gorev metni"
+          />
 
           <p className="task-details-created-at">
             Olusturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
@@ -135,16 +177,6 @@ export default function TaskDetailsPanel({
 
         <div className="task-details-card task-details-edit-section">
           <h4>Gorevi Duzenle</h4>
-
-          <label className="task-details-field">
-            <span>Gorev Metni</span>
-            <input
-              type="text"
-              value={draftTitle}
-              onChange={(event) => setDraftTitle(event.target.value)}
-              placeholder="Gorev adini yazin"
-            />
-          </label>
 
           <label className="task-details-field">
             <span>Durum</span>
@@ -172,17 +204,17 @@ export default function TaskDetailsPanel({
 
           <button
             type="button"
-            className="btn-primary task-details-save-btn"
-            onClick={() =>
-              void onSaveTaskDetails({
-                title: draftTitle.trim(),
-                status: draftStatus,
-                priority: draftPriority,
-              })
-            }
+            className={`btn-primary task-details-save-btn ${
+              saveAcknowledged && !taskUpdating && !canSaveTaskDetails
+                ? "saved"
+                : ""
+            }`}
+            onClick={() => {
+              void handleSaveDetails();
+            }}
             disabled={!canSaveTaskDetails}
           >
-            {taskUpdating ? "Kaydediliyor..." : "Degisiklikleri Kaydet"}
+            {saveButtonLabel}
           </button>
         </div>
 

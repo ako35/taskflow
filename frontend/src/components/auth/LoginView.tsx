@@ -16,6 +16,16 @@ export default function LoginView({
     googleButton?.click();
   }, []);
 
+  const handleGoogleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        triggerGoogleLogin();
+      }
+    },
+    [triggerGoogleLogin],
+  );
+
   return (
     <div className="auth-page">
       <header className="auth-topbar">
@@ -61,12 +71,7 @@ export default function LoginView({
               tabIndex={0}
               aria-label="Google ile oturum aç"
               onClick={triggerGoogleLogin}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  triggerGoogleLogin();
-                }
-              }}
+              onKeyDown={handleGoogleKeyDown}
             >
               <div id="google-signin-button" className="auth-google-button" />
               <span className="auth-google-label">Google</span>
