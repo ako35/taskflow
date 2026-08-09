@@ -70,8 +70,8 @@ export default function MembersPanelModal({
           <div>
             <h2 id="members-panel-title">Üyeler</h2>
             <p>
-              <strong>{workspaceName}</strong> calisma alanindaki davet ve uye
-              bilgilerini yonetin.
+              <strong>{workspaceName}</strong> çalışma alanındaki davet ve üye
+              bilgilerini yönetin.
             </p>
           </div>
           <button
@@ -86,7 +86,7 @@ export default function MembersPanelModal({
 
         <div className="members-panel-content">
           <div className="settings-invite-management members-panel-section">
-            <div className="settings-popover-title">Davet Gonder</div>
+            <div className="settings-popover-title">Davet Gönder</div>
             <div className="settings-invite-actions">
               <input
                 type="email"
@@ -106,7 +106,7 @@ export default function MembersPanelModal({
                 onClick={onSendInvite}
                 disabled={settingsInviteSending}
               >
-                {settingsInviteSending ? "Gonderiliyor..." : "Davet Gonder"}
+                {settingsInviteSending ? "Gönderiliyor..." : "Davet Gönder"}
               </button>
             </div>
             {settingsInviteStatus ? (
@@ -122,13 +122,13 @@ export default function MembersPanelModal({
           <div className="settings-invitations members-panel-section">
             <div className="settings-popover-title">Davetli Üyeler</div>
             {invitationsLoading ? (
-              <p className="settings-members-note">Davetler yukleniyor...</p>
+              <p className="settings-members-note">Davetler yükleniyor...</p>
             ) : invitationsError ? (
               <p className="settings-members-error">{invitationsError}</p>
             ) : (
               <div className="settings-invitation-groups">
                 <section className="settings-invitation-group">
-                  <h5>Davet Gonderilen</h5>
+                  <h5>Davet Gönderilen</h5>
                   {invitationsOverview.pending.length === 0 ? (
                     <p className="settings-members-note">Bekleyen davet yok.</p>
                   ) : (
@@ -181,8 +181,8 @@ export default function MembersPanelModal({
                                   }
                                 >
                                   {removingMemberUserId === invite.userProfileId
-                                    ? "Cikariliyor..."
-                                    : "Uye Cikar"}
+                                    ? "Çıkarılıyor..."
+                                    : "Üye Çıkar"}
                                 </button>
                               ) : null}
                             </div>

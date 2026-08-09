@@ -1,5 +1,5 @@
 import React from "react";
-import { SidebarGlyph } from "../../ui/Icons";
+import { SidebarGlyph, UiGlyph } from "../../ui/Icons";
 import type {
   ThemeMode,
   ViewMode,
@@ -80,31 +80,66 @@ export default function SidebarFooter({
           {settingsMenuOpen && (
             <div className="settings-popover">
               <div className="settings-theme-section">
-                <span className="settings-popover-title">Tema</span>
-                <div
-                  className="settings-theme-tabs"
-                  role="tablist"
-                  aria-label="Tema secimi"
+                <button
+                  type="button"
+                  className="theme-menu-row settings-theme-trigger"
+                  onClick={onToggleThemeMenu}
+                  aria-expanded={themeMenuOpen}
+                  aria-controls="settings-theme-options"
                 >
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={themeMode === "light"}
-                    className={`settings-theme-tab ${themeMode === "light" ? "active" : ""}`}
-                    onClick={() => onSetThemeMode("light")}
+                  <span className="settings-popover-title">Tema</span>
+                  <span
+                    className={`settings-popover-chevron ${themeMenuOpen ? "open" : ""}`}
+                    aria-hidden="true"
                   >
-                    Acik
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={themeMode === "dark"}
-                    className={`settings-theme-tab ${themeMode === "dark" ? "active" : ""}`}
-                    onClick={() => onSetThemeMode("dark")}
+                    <UiGlyph icon="chevron-down" />
+                  </span>
+                </button>
+                {themeMenuOpen ? (
+                  <div
+                    id="settings-theme-options"
+                    className="theme-menu-options settings-theme-options"
+                    role="group"
+                    aria-label="Tema secenekleri"
                   >
-                    Koyu
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      className={`theme-option ${themeMode === "light" ? "active" : ""}`}
+                      aria-pressed={themeMode === "light"}
+                      onClick={() => onSetThemeMode("light")}
+                    >
+                      <span className="theme-option-label">
+                        <span className="sidebar-link-icon" aria-hidden="true">
+                          <UiGlyph icon="sun" />
+                        </span>
+                        <span>Açık</span>
+                      </span>
+                      {themeMode === "light" ? (
+                        <span className="theme-option-check" aria-hidden="true">
+                          <UiGlyph icon="check" />
+                        </span>
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      className={`theme-option ${themeMode === "dark" ? "active" : ""}`}
+                      aria-pressed={themeMode === "dark"}
+                      onClick={() => onSetThemeMode("dark")}
+                    >
+                      <span className="theme-option-label">
+                        <span className="sidebar-link-icon" aria-hidden="true">
+                          <UiGlyph icon="moon" />
+                        </span>
+                        <span>Koyu</span>
+                      </span>
+                      {themeMode === "dark" ? (
+                        <span className="theme-option-check" aria-hidden="true">
+                          <UiGlyph icon="check" />
+                        </span>
+                      ) : null}
+                    </button>
+                  </div>
+                ) : null}
               </div>
 
               <div className="settings-members-entry">

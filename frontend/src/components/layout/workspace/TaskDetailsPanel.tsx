@@ -48,12 +48,12 @@ function formatCommentDate(value: string) {
 
 function formatTaskCreatedAt(value?: string) {
   if (!value) {
-    return "Olusturma tarihi bilinmiyor";
+    return "Oluşturma tarihi bilinmiyor";
   }
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "Olusturma tarihi bilinmiyor";
+    return "Oluşturma tarihi bilinmiyor";
   }
 
   return new Intl.DateTimeFormat("tr-TR", {
@@ -168,22 +168,22 @@ export default function TaskDetailsPanel({
 
       <div className="task-details-body">
         <div className="task-details-card task-details-edit-section">
-          <h4>Gorevi Duzenle</h4>
+          <h4>Görevi Düzenle</h4>
 
           <label className="task-details-field">
-            <span>Gorev Metni</span>
+            <span>Görev Metni</span>
             <input
               type="text"
               className="task-details-title-input"
               value={draftTitle}
               onChange={(event) => setDraftTitle(event.target.value)}
-              placeholder="Gorev adini yazin"
-              aria-label="Gorev metni"
+              placeholder="Görev adını yazın"
+              aria-label="Görev metni"
             />
           </label>
 
           <p className="task-details-created-at">
-            Olusturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
+            Oluşturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
           </p>
 
           <div className="task-details-field">
@@ -213,7 +213,7 @@ export default function TaskDetailsPanel({
           </div>
 
           <div className="task-details-field">
-            <span>Onem</span>
+            <span>Önem</span>
             {editingField === "priority" ? (
               <InlineSelectMenu
                 value={draftPriority}
@@ -259,10 +259,10 @@ export default function TaskDetailsPanel({
 
           <div className="task-comments-list">
             {commentsLoading ? (
-              <p className="task-comments-empty">Yorumlar yukleniyor...</p>
+              <p className="task-comments-empty">Yorumlar yükleniyor...</p>
             ) : comments.length === 0 ? (
               <p className="task-comments-empty">
-                Henuz yorum yok. Ilk yorumu sen birak.
+                Henüz yorum yok. İlk yorumu sen bırak.
               </p>
             ) : (
               comments.map((comment) => {
@@ -305,7 +305,7 @@ export default function TaskDetailsPanel({
             <textarea
               value={commentDraft}
               onChange={(event) => onCommentDraftChange(event.target.value)}
-              placeholder="Bu gorev hakkinda bir yorum yaz..."
+              placeholder="Bu görev hakkında bir yorum yaz..."
               maxLength={2000}
             />
             <button
@@ -314,7 +314,7 @@ export default function TaskDetailsPanel({
               onClick={onSubmitComment}
               disabled={commentSubmitting || !commentDraft.trim()}
             >
-              {commentSubmitting ? "Gonderiliyor..." : "Yorum Ekle"}
+              {commentSubmitting ? "Gönderiliyor..." : "Yorum Ekle"}
             </button>
           </div>
         </div>

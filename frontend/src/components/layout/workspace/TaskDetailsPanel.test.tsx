@@ -7,12 +7,12 @@ import type { Task } from "../../../types";
 function buildTask(overrides: Partial<Task> = {}): Task {
   return {
     id: 101,
-    title: "Ilk gorev",
-    vehicle: "Arac",
-    customer: "Musteri",
+    title: "İlk görev",
+    vehicle: "Araç",
+    customer: "Müşteri",
     area: "Saha",
     responsible: "Ali",
-    description: "Aciklama",
+    description: "Açıklama",
     priority: "Orta",
     status: "Yapılacak",
     createdAt: "2026-08-07T10:00:00.000Z",
@@ -71,7 +71,7 @@ describe("TaskDetailsPanel", () => {
     render(
       <TaskDetailsPanel
         open
-        task={buildTask({ title: "Mevcut gorev" })}
+        task={buildTask({ title: "Mevcut görev" })}
         currentUser={null}
         comments={[]}
         commentsLoading={false}
@@ -90,16 +90,16 @@ describe("TaskDetailsPanel", () => {
     });
     expect(saveButton).toBeDisabled();
 
-    const titleInput = screen.getByLabelText("Gorev metni");
+    const titleInput = screen.getByLabelText("Görev metni");
     await user.clear(titleInput);
-    await user.type(titleInput, "  Guncel gorev basligi  ");
+    await user.type(titleInput, "  Güncel görev başlığı  ");
 
     expect(saveButton).toBeEnabled();
 
     await user.click(saveButton);
 
     expect(onSaveTaskDetails).toHaveBeenCalledWith({
-      title: "Guncel gorev basligi",
+      title: "Güncel görev başlığı",
       status: "Yapılacak",
       priority: "Orta",
     });

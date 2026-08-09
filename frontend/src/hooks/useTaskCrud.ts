@@ -60,7 +60,7 @@ export default function useTaskCrud({
     }
 
     if (!selectedWorkspaceId) {
-      setError("Lutfen bir calisma alani secin.");
+      setError("Lütfen bir çalışma alanı seçin.");
       return;
     }
 

@@ -257,7 +257,7 @@ export default function useAuthSession(): UseAuthSessionResult {
         }
 
         if (!response.ok) {
-          throw new Error("Profil bilgileri yuklenemedi.");
+          throw new Error("Profil bilgileri yüklenemedi.");
         }
 
         const profile = (await response.json()) as {
@@ -290,7 +290,7 @@ export default function useAuthSession(): UseAuthSessionResult {
         setUser(nextUser);
         localStorage.setItem("taskflow_user", JSON.stringify(nextUser));
       } catch (error) {
-        console.error("Profil bilgileri yuklenemedi", error);
+        console.error("Profil bilgileri yüklenemedi", error);
       }
     }
 

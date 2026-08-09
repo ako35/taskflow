@@ -42,7 +42,7 @@ export default function ProfileDetailsModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="profile-details-title">Profil Bilgilerim</h2>
-        <p>Ad, soyad, telefon ve e-posta bilgilerinizi guncelleyin.</p>
+        <p>Ad, soyad, telefon ve e-posta bilgilerinizi güncelleyin.</p>
 
         <div className="profile-form-grid">
           <label className="profile-form-field">
@@ -114,7 +114,7 @@ export default function ProfileDetailsModal({
             onClick={onClose}
             disabled={saving}
           >
-            Iptal
+            İptal
           </button>
         </div>
       </div>

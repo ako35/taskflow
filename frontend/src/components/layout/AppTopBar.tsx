@@ -112,7 +112,7 @@ export default function AppTopBar({
 
             <div className="notifications-list">
               {notificationsLoading ? (
-                <p className="notifications-empty">Bildirimler yukleniyor...</p>
+                <p className="notifications-empty">Bildirimler yükleniyor...</p>
               ) : notifications.length === 0 ? (
                 <p className="notifications-empty">Su an bildirimin yok.</p>
               ) : (
@@ -217,7 +217,11 @@ export default function AppTopBar({
                 </button>
               </div>
             </div>
-            <button type="button" className="dropdown-item" onClick={onSignOut}>
+            <button
+              type="button"
+              className="dropdown-item danger-link"
+              onClick={onSignOut}
+            >
               <span className="dropdown-item-content">
                 <span className="sidebar-link-icon" aria-hidden="true">
                   <SidebarGlyph icon="logout" />

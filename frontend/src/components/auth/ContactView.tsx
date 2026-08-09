@@ -77,18 +77,18 @@ export default function ContactView({
         const data = (await response.json().catch(() => null)) as {
           error?: string;
         } | null;
-        throw new Error(data?.error || "Talep gonderilemedi.");
+        throw new Error(data?.error || "Talep gönderilemedi.");
       }
 
       setFormNotice(
-        "Talebiniz alindi. TaskFlow ekibi en kisa surede sizinle iletisime gececek.",
+        "Talebiniz alındı. TaskFlow ekibi en kısa sürede sizinle iletişime geçecek.",
       );
       setForm(INITIAL_FORM);
     } catch (error) {
       setFormError(
         error instanceof Error
           ? error.message
-          : "Talep gonderilirken beklenmedik bir hata olustu.",
+          : "Talep gönderilirken beklenmedik bir hata oluştu.",
       );
     } finally {
       setIsSubmitting(false);
@@ -222,7 +222,7 @@ export default function ContactView({
               className="btn-primary"
               disabled={isSubmitDisabled || isSubmitting}
             >
-              {isSubmitting ? "Gonderiliyor..." : "Iletisime gecin"}
+              {isSubmitting ? "Gönderiliyor..." : "İletişime geçin"}
             </button>
 
             {formNotice ? (

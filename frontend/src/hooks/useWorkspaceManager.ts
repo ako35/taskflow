@@ -89,14 +89,14 @@ export default function useWorkspaceManager({
 
       const text = await response.text();
       if (!response.ok) {
-        throw new Error(parseApiError(text, "Calisma alanlari yuklenemedi."));
+        throw new Error(parseApiError(text, "Çalışma alanları yüklenemedi."));
       }
 
       const data = safeParseJson<Array<Partial<Workspace>>>(text, []);
       const normalized = normalizeWorkspaces(data);
       setWorkspaces(normalized.length > 0 ? normalized : DEFAULT_WORKSPACES);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Calisma alanlari yuklenemedi.");
+      setError(error instanceof Error ? error.message : "Çalışma alanları yüklenemedi.");
     }
   }, [handleUnauthorized, idToken, setError, user]);
 
@@ -138,13 +138,13 @@ export default function useWorkspaceManager({
 
       const text = await response.text();
       if (!response.ok) {
-        throw new Error(parseApiError(text, "Calisma alani olusturulamadi."));
+        throw new Error(parseApiError(text, "Çalışma alanı oluşturulamadı."));
       }
 
       const payload = safeParseJson<Partial<Workspace>>(text, {});
       const [createdWorkspace] = normalizeWorkspaces([payload]);
       if (!createdWorkspace) {
-        throw new Error("Calisma alani yaniti gecersiz.");
+        throw new Error("Çalışma alanı yanıtı geçersiz.");
       }
 
       setWorkspaces((prev) => [...prev, createdWorkspace]);
@@ -153,7 +153,7 @@ export default function useWorkspaceManager({
       setShowWorkspaceInput(false);
       setError(null);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Calisma alani olusturulamadi.");
+      setError(error instanceof Error ? error.message : "Çalışma alanı oluşturulamadı.");
     }
   }, [handleUnauthorized, idToken, newWorkspaceName, setError, workspaces]);
 
@@ -183,7 +183,7 @@ export default function useWorkspaceManager({
     }
 
     if (workspace.role !== "OWNER") {
-      setError("Bu calisma alanini sadece sahibi yeniden adlandirabilir.");
+      setError("Bu çalışma alanını sadece sahibi yeniden adlandırabilir.");
       return;
     }
 
@@ -226,13 +226,13 @@ export default function useWorkspaceManager({
 
       const text = await response.text();
       if (!response.ok) {
-        throw new Error(parseApiError(text, "Calisma alani guncellenemedi."));
+        throw new Error(parseApiError(text, "Çalışma alanı güncellenemedi."));
       }
 
       const payload = safeParseJson<Partial<Workspace>>(text, {});
       const [updatedWorkspace] = normalizeWorkspaces([payload]);
       if (!updatedWorkspace) {
-        throw new Error("Calisma alani yaniti gecersiz.");
+        throw new Error("Çalışma alanı yanıtı geçersiz.");
       }
 
       setWorkspaces((prev) =>
@@ -242,7 +242,7 @@ export default function useWorkspaceManager({
       setEditingWorkspaceId(null);
       setEditingWorkspaceName("");
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Calisma alani guncellenemedi.");
+      setError(error instanceof Error ? error.message : "Çalışma alanı güncellenemedi.");
     }
   }, [
     cancelWorkspaceRename,
@@ -288,7 +288,7 @@ export default function useWorkspaceManager({
       if (!workspace) return;
 
       if (workspace.role !== "OWNER") {
-        setError("Bu calisma alanini sadece sahibi silebilir.");
+        setError("Bu çalışma alanını sadece sahibi silebilir.");
         return;
       }
 
@@ -312,7 +312,7 @@ export default function useWorkspaceManager({
 
         if (!response.ok && response.status !== 204) {
           const text = await response.text();
-          throw new Error(parseApiError(text, "Calisma alani silinemedi."));
+          throw new Error(parseApiError(text, "Çalışma alanı silinemedi."));
         }
 
         setWorkspaces((prev) => prev.filter((item) => item.id !== workspaceId));
@@ -322,7 +322,7 @@ export default function useWorkspaceManager({
         setWorkspaceMenuOpenId(null);
         setError(null);
       } catch (error) {
-        setError(error instanceof Error ? error.message : "Calisma alani silinemedi.");
+        setError(error instanceof Error ? error.message : "Çalışma alanı silinemedi.");
       }
     },
     [handleUnauthorized, idToken, setError, workspaces],

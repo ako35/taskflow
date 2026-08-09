@@ -282,7 +282,7 @@ export default function App() {
 
         if (!response.ok) {
           throw new Error(
-            (payload as any)?.error || text || "Yorumlar yuklenemedi.",
+            (payload as any)?.error || text || "Yorumlar yüklenemedi.",
           );
         }
 
@@ -292,7 +292,7 @@ export default function App() {
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error ? err.message : "Yorumlar yuklenemedi.",
+            err instanceof Error ? err.message : "Yorumlar yüklenemedi.",
           );
         }
       } finally {
@@ -354,7 +354,7 @@ export default function App() {
 
       if (!response.ok) {
         throw new Error(
-          (payload as any)?.error || text || "Bildirimler yuklenemedi.",
+          (payload as any)?.error || text || "Bildirimler yüklenemedi.",
         );
       }
 
@@ -394,7 +394,7 @@ export default function App() {
 
       if (!response.ok) {
         throw new Error(
-          payload?.error || text || "Bildirimler guncellenemedi.",
+          payload?.error || text || "Bildirimler güncellenemedi.",
         );
       }
 
@@ -512,7 +512,7 @@ export default function App() {
 
         if (!response.ok || !responseBody || Array.isArray(responseBody)) {
           throw new Error(
-            (responseBody as any)?.error || text || "Gorev guncellenemedi.",
+            (responseBody as any)?.error || text || "Görev güncellenemedi.",
           );
         }
 
@@ -528,7 +528,7 @@ export default function App() {
         setError(null);
       } catch (error) {
         setError(
-          error instanceof Error ? error.message : "Gorev guncellenemedi.",
+          error instanceof Error ? error.message : "Görev güncellenemedi.",
         );
       } finally {
         setTaskUpdating(false);
@@ -713,12 +713,12 @@ export default function App() {
 
       if (!response.ok) {
         throw new Error(
-          responseBody?.error || text || "Profil guncellenemedi.",
+          responseBody?.error || text || "Profil güncellenemedi.",
         );
       }
 
       if (!responseBody) {
-        throw new Error("Profil guncelleme yaniti okunamadi.");
+        throw new Error("Profil güncelleme yanıtı okunamadı.");
       }
 
       const nextUser = {
@@ -740,7 +740,7 @@ export default function App() {
       localStorage.setItem("taskflow_user", JSON.stringify(nextUser));
       setProfileDetailsOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Profil guncellenemedi.");
+      setError(err instanceof Error ? err.message : "Profil güncellenemedi.");
     } finally {
       setProfileSaving(false);
     }
@@ -756,7 +756,7 @@ export default function App() {
     if (!email) {
       setInviteStatus({
         type: "error",
-        message: "Lutfen davet edilecek e-posta adresini girin.",
+        message: "Lütfen davet edilecek e-posta adresini girin.",
       });
       return;
     }
@@ -765,7 +765,7 @@ export default function App() {
     if (!emailRegex.test(email)) {
       setInviteStatus({
         type: "error",
-        message: "Lutfen gecerli bir e-posta adresi girin.",
+        message: "Lütfen geçerli bir e-posta adresi girin.",
       });
       return;
     }
@@ -802,15 +802,15 @@ export default function App() {
         throw new Error(
           responseBody?.error ||
             text ||
-            "Davet gonderilemedi. Lutfen tekrar deneyin.",
+            "Davet gönderilemedi. Lütfen tekrar deneyin.",
         );
       }
 
       setInviteStatus({
         type: "success",
         message: responseBody?.immediateAccessGranted
-          ? "Davet gonderildi. Bu hesap zaten kayitli oldugu icin erisim aninda tanimlandi."
-          : "Davet e-postasi basariyla gonderildi.",
+          ? "Davet gönderildi. Bu hesap zaten kayıtlı olduğu için erişim anında tanımlandı."
+          : "Davet e-postası başarıyla gönderildi.",
       });
       setInviteeEmail("");
       setInviteMessage("");
@@ -820,7 +820,7 @@ export default function App() {
         message:
           err instanceof Error
             ? err.message
-            : "Davet gonderilemedi. Lutfen tekrar deneyin.",
+            : "Davet gönderilemedi. Lütfen tekrar deneyin.",
       });
     } finally {
       setInviteSending(false);
@@ -868,7 +868,7 @@ export default function App() {
 
       if (!response.ok) {
         throw new Error(
-          (payload as any)?.error || text || "Davetler yuklenemedi.",
+          (payload as any)?.error || text || "Davetler yüklenemedi.",
         );
       }
 
@@ -879,7 +879,7 @@ export default function App() {
     } catch (error) {
       setInvitationsOverview({ pending: [], accepted: [] });
       setInvitationsError(
-        error instanceof Error ? error.message : "Davetler yuklenemedi.",
+        error instanceof Error ? error.message : "Davetler yüklenemedi.",
       );
     } finally {
       setInvitationsLoading(false);
@@ -894,13 +894,13 @@ export default function App() {
 
     const email = settingsInviteEmail.trim();
     if (!email) {
-      setSettingsInviteStatus("Lutfen davet edilecek e-posta adresini girin.");
+      setSettingsInviteStatus("Lütfen davet edilecek e-posta adresini girin.");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setSettingsInviteStatus("Lutfen gecerli bir e-posta adresi girin.");
+      setSettingsInviteStatus("Lütfen geçerli bir e-posta adresi girin.");
       return;
     }
 
@@ -936,18 +936,18 @@ export default function App() {
         throw new Error(
           responseBody?.error ||
             text ||
-            "Davet gonderilemedi. Lutfen tekrar deneyin.",
+            "Davet gönderilemedi. Lütfen tekrar deneyin.",
         );
       }
 
-      setSettingsInviteStatus("Davet basariyla gonderildi.");
+      setSettingsInviteStatus("Davet başarıyla gönderildi.");
       setSettingsInviteEmail("");
       await loadInvitationsOverview();
     } catch (err) {
       setSettingsInviteStatus(
         err instanceof Error
           ? err.message
-          : "Davet gonderilemedi. Lutfen tekrar deneyin.",
+          : "Davet gönderilemedi. Lütfen tekrar deneyin.",
       );
     } finally {
       setSettingsInviteSending(false);
@@ -994,7 +994,7 @@ export default function App() {
           throw new Error(payload?.error || text || "Uye cikarilamadi.");
         }
 
-        setSettingsInviteStatus("Uye calisma alanindan cikarildi.");
+        setSettingsInviteStatus("Üye çalışma alanından çıkarıldı.");
         await loadInvitationsOverview();
       } catch (error) {
         setSettingsInviteStatus(

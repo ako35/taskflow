@@ -60,8 +60,8 @@ export default function InviteTeammateModal({
           </button>
         </div>
         <p>
-          Takim arkadasinizi <strong>{workspaceName}</strong> calisma alanina
-          davet etmek icin e-posta adresini girin.
+          Takım arkadaşınızı <strong>{workspaceName}</strong> çalışma alanına
+          davet etmek için e-posta adresini girin.
         </p>
 
         <div className="profile-form-grid">
@@ -108,7 +108,7 @@ export default function InviteTeammateModal({
             onClick={onSend}
             disabled={sending}
           >
-            {sending ? "Gonderiliyor..." : "Daveti Gonder"}
+            {sending ? "Gönderiliyor..." : "Daveti Gönder"}
           </button>
           <button
             type="button"
@@ -116,7 +116,7 @@ export default function InviteTeammateModal({
             onClick={onClose}
             disabled={sending}
           >
-            Iptal
+            İptal
           </button>
         </div>
       </div>
