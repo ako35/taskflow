@@ -1024,6 +1024,13 @@ export default function App() {
       return;
     }
 
+    params.delete("inviteToken");
+    const remainingQuery = params.toString();
+    const newUrl = `${window.location.pathname}${
+      remainingQuery ? `?${remainingQuery}` : ""
+    }${window.location.hash}`;
+    window.history.replaceState({}, document.title, newUrl);
+
     let cancelled = false;
 
     const acceptInvite = async () => {
@@ -1065,9 +1072,6 @@ export default function App() {
 
         await reloadWorkspaces();
         setError(null);
-
-        const newUrl = `${window.location.origin}${window.location.pathname}`;
-        window.history.replaceState({}, document.title, newUrl);
       } catch (error) {
         if (!cancelled) {
           setError(
@@ -1350,6 +1354,7 @@ export default function App() {
       onQueryChange: setQuery,
       archivedWorkspaces,
       error,
+      onDismissError: () => setError(null),
       showForm,
       tableDensity,
       onSetTableDensity: handleSetTableDensity,

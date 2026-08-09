@@ -4,6 +4,7 @@ import ArchivedWorkspacesSection from "./workspace/ArchivedWorkspacesSection";
 import TaskDetailsPanel from "./workspace/TaskDetailsPanel";
 import WorkspaceContextBar from "./workspace/WorkspaceContextBar";
 import WorkspacePanelHeader from "./workspace/WorkspacePanelHeader";
+import { UiGlyph } from "../ui/Icons";
 import type {
   TableDensity,
   Task,
@@ -20,6 +21,7 @@ type WorkspacePanelProps = {
   onQueryChange: (value: string) => void;
   archivedWorkspaces: Workspace[];
   error: string | null;
+  onDismissError: () => void;
   showForm: boolean;
   tableDensity: TableDensity;
   onSetTableDensity: (density: TableDensity) => void;
@@ -53,6 +55,7 @@ export default function WorkspacePanel({
   onQueryChange,
   archivedWorkspaces,
   error,
+  onDismissError,
   showForm,
   tableDensity,
   onSetTableDensity,
@@ -100,7 +103,20 @@ export default function WorkspacePanel({
             />
           ) : null}
 
-          {error && <div className="toast-error">{error}</div>}
+          {error && (
+            <div className="toast-error" role="alert">
+              <span>{error}</span>
+              <button
+                type="button"
+                className="toast-error-close"
+                aria-label="Uyarıyı kapat"
+                title="Uyarıyı kapat"
+                onClick={onDismissError}
+              >
+                <UiGlyph icon="close" />
+              </button>
+            </div>
+          )}
 
           <TasksTable {...tasksTableProps} />
         </section>

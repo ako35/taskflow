@@ -66,7 +66,11 @@ export default function useAppUiEffects({
 
       if (
         settingsMenuRef.current &&
-        !settingsMenuRef.current.contains(event.target)
+        !settingsMenuRef.current.contains(event.target) &&
+        !(
+          event.target instanceof Element &&
+          event.target.closest(".settings-theme-flyout")
+        )
       ) {
         setSettingsMenuOpen(false);
         setThemeMenuOpen(false);

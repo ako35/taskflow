@@ -1044,7 +1044,7 @@ button[disabled] {
     rgba(7, 12, 26, 0.98),
     rgba(10, 18, 34, 0.98)
   );
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: none;
   border-radius: 14px;
   padding: 0.55rem;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
@@ -1101,9 +1101,6 @@ button[disabled] {
 }
 
 .settings-theme-flyout {
-  position: absolute;
-  top: -0.22rem;
-  left: calc(100% + 0.45rem);
   min-width: 188px;
   padding: 0.45rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -1186,17 +1183,17 @@ button[disabled] {
 
 .settings-members-entry {
   margin-top: 0.25rem;
-  padding-top: 0.3rem;
+  padding: 0.3rem 0.2rem 0.2rem;
   border-top: 1px solid rgba(148, 163, 184, 0.18);
-  display: flex;
 }
 
 .settings-members-trigger {
-  border: none;
+  width: 100%;
+  border: 1px solid transparent;
   background: transparent;
-  padding: 0.2rem 0.35rem 0.1rem;
+  border-radius: 10px;
+  padding: 0.45rem 0.5rem;
   font-size: 0.75rem;
-  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -1206,6 +1203,7 @@ button[disabled] {
 
 .settings-members-trigger:hover {
   color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .members-panel-modal {
@@ -3926,6 +3924,34 @@ button[disabled] {
   background: rgba(251, 113, 133, 0.14);
   border: 1px solid rgba(251, 113, 133, 0.25);
   color: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.toast-error-close {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.toast-error-close:hover,
+.toast-error-close:focus-visible {
+  background: rgba(251, 113, 133, 0.18);
+}
+
+.toast-error-close svg {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .login-page {
@@ -4548,11 +4574,16 @@ button[disabled] {
 }
 
 :root[data-theme="light"] .workspace-menu-dropdown,
-:root[data-theme="light"] .settings-popover,
 :root[data-theme="light"] .settings-theme-flyout,
 :root[data-theme="light"] .profile-dropdown {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid transparent;
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16);
+}
+
+:root[data-theme="light"] .settings-popover {
+  background: rgba(255, 255, 255, 0.98);
+  border: none;
   box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16);
 }
 
