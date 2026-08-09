@@ -85,11 +85,11 @@ export default function SidebarFooter({
                   className="theme-menu-row settings-theme-trigger"
                   onClick={onToggleThemeMenu}
                   aria-expanded={themeMenuOpen}
-                  aria-controls="settings-theme-options"
+                  aria-controls="settings-theme-flyout-options"
                 >
                   <span className="settings-popover-title">Tema</span>
                   <span
-                    className={`settings-popover-chevron ${themeMenuOpen ? "open" : ""}`}
+                    className={`settings-popover-chevron flyout ${themeMenuOpen ? "open" : ""}`}
                     aria-hidden="true"
                   >
                     <UiGlyph icon="chevron-down" />
@@ -97,10 +97,10 @@ export default function SidebarFooter({
                 </button>
                 {themeMenuOpen ? (
                   <div
-                    id="settings-theme-options"
-                    className="theme-menu-options settings-theme-options"
+                    id="settings-theme-flyout-options"
+                    className="theme-menu-options settings-theme-options settings-theme-flyout"
                     role="group"
-                    aria-label="Tema secenekleri"
+                    aria-label="Tema seçenekleri"
                   >
                     <button
                       type="button"

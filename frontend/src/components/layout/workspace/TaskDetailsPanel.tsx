@@ -195,6 +195,7 @@ export default function TaskDetailsPanel({
                 options={["Yapılacak", "Tamamlandı"]}
                 getOptionClassName={(opt) => statusClassNames[opt] ?? ""}
                 badgeClassName="task-status-badge"
+                horizontalAlign="left"
                 onSelect={(opt) => {
                   setDraftStatus(opt);
                   setEditingField(null);
@@ -221,6 +222,7 @@ export default function TaskDetailsPanel({
                 options={["Acil", "Yüksek", "Orta", "Düşük"]}
                 getOptionClassName={(opt) => priorityClassNames[opt] ?? ""}
                 badgeClassName="task-priority-badge"
+                horizontalAlign="left"
                 onSelect={(opt) => {
                   setDraftPriority(opt);
                   setEditingField(null);

@@ -7,6 +7,7 @@ type InlineSelectMenuProps = {
   options: string[];
   getOptionClassName: (option: string) => string;
   badgeClassName: string;
+  horizontalAlign?: "center" | "left";
   onSelect: (option: string) => void;
   onCancel: () => void;
 };
@@ -17,6 +18,7 @@ export default function InlineSelectMenu({
   options,
   getOptionClassName,
   badgeClassName,
+  horizontalAlign = "center",
   onSelect,
   onCancel,
 }: InlineSelectMenuProps) {
@@ -28,7 +30,7 @@ export default function InlineSelectMenu({
     position: "fixed",
     top: -9999,
     left: -9999,
-    transform: "translateX(-50%)",
+    transform: horizontalAlign === "center" ? "translateX(-50%)" : "none",
     opacity: 0,
     visibility: "hidden",
     pointerEvents: "none",
@@ -92,12 +94,18 @@ export default function InlineSelectMenu({
         viewportHeight - effectiveMenuHeight - viewportPadding,
       );
       const top = Math.min(Math.max(requestedTop, minTop), maxTop);
-      const requestedLeft = triggerRect.left + triggerRect.width / 2;
-      const minLeft = viewportPadding + menuWidth / 2;
-      const maxLeft = Math.max(
-        minLeft,
-        viewportWidth - viewportPadding - menuWidth / 2,
-      );
+      const requestedLeft =
+        horizontalAlign === "left"
+          ? triggerRect.left
+          : triggerRect.left + triggerRect.width / 2;
+      const minLeft =
+        horizontalAlign === "left"
+          ? viewportPadding
+          : viewportPadding + menuWidth / 2;
+      const maxLeft =
+        horizontalAlign === "left"
+          ? Math.max(minLeft, viewportWidth - viewportPadding - menuWidth)
+          : Math.max(minLeft, viewportWidth - viewportPadding - menuWidth / 2);
       const left = Math.min(Math.max(requestedLeft, minLeft), maxLeft);
 
       setMenuStyle({
@@ -107,7 +115,7 @@ export default function InlineSelectMenu({
         width: menuWidth,
         maxHeight: maxMenuHeight,
         overflowY: "auto",
-        transform: "translateX(-50%)",
+        transform: horizontalAlign === "center" ? "translateX(-50%)" : "none",
         zIndex: 2600,
         opacity: 1,
         visibility: "visible",
@@ -123,7 +131,7 @@ export default function InlineSelectMenu({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [badgeClassName, options, value, fallbackValue]);
+  }, [badgeClassName, fallbackValue, horizontalAlign, options, value]);
 
   const menu = (
     <div ref={menuRef} className="inline-options-menu" style={menuStyle}>
