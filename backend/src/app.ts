@@ -822,6 +822,29 @@ notificationsRouter.post("/read-all", async (req, res) => {
   res.status(204).end();
 });
 
+notificationsRouter.post("/:id/read", async (req, res) => {
+  const profile = await upsertUserProfile(req.authUser!);
+  const notificationId = Number(req.params.id);
+
+  if (!Number.isInteger(notificationId) || notificationId <= 0) {
+    res.status(400).json({ error: "Gecersiz bildirim kimligi." });
+    return;
+  }
+
+  await prisma.notification.updateMany({
+    where: {
+      id: notificationId,
+      userProfileId: profile.id,
+      isRead: false,
+    },
+    data: {
+      isRead: true,
+    },
+  });
+
+  res.status(204).end();
+});
+
 workspacesRouter.get("/", async (req, res) => {
   const profile = await upsertUserProfile(req.authUser!);
   await ensureDefaultWorkspaceForUser(profile.id);
@@ -953,29 +976,48 @@ workspacesRouter.get("/:id/invitations", async (req, res) => {
     return res.status(403).json({ error: "Bu calisma alanina erisiminiz yok." });
   }
 
-  const invitations = await prisma.invitation.findMany({
-    where: {
-      workspaceId,
-    },
-    select: {
-      id: true,
-      invitedEmail: true,
-      status: true,
-      createdAt: true,
-      acceptedAt: true,
-      acceptedBy: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
+  const [invitations, workspaceMembers] = await Promise.all([
+    prisma.invitation.findMany({
+      where: {
+        workspaceId,
+      },
+      select: {
+        id: true,
+        invitedEmail: true,
+        status: true,
+        createdAt: true,
+        acceptedAt: true,
+        acceptedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
         },
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+    prisma.workspaceMember.findMany({
+      where: {
+        workspaceId,
+        role: "MEMBER",
+      },
+      select: {
+        createdAt: true,
+        userProfile: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    }),
+  ]);
 
   const acceptedByAccount = new Map<
     string,
@@ -1017,6 +1059,32 @@ workspacesRouter.get("/:id/invitations", async (req, res) => {
         });
       }
     });
+
+  workspaceMembers.forEach((membership) => {
+    const accountKey = `user:${membership.userProfile.id}`;
+    const membershipEmailKey = canonicalizeEmailForInvite(
+      membership.userProfile.email,
+    );
+    const legacyEntry = Array.from(acceptedByAccount.entries()).find(
+      ([, invite]) =>
+        canonicalizeEmailForInvite(invite.email) === membershipEmailKey,
+    );
+    const existing = acceptedByAccount.get(accountKey) || legacyEntry?.[1];
+
+    if (legacyEntry && legacyEntry[0] !== accountKey) {
+      acceptedByAccount.delete(legacyEntry[0]);
+    }
+
+    acceptedByAccount.set(accountKey, {
+      id: existing?.id || `member:${membership.userProfile.id}`,
+      userProfileId: membership.userProfile.id,
+      email: membership.userProfile.email,
+      firstName: membership.userProfile.firstName,
+      lastName: membership.userProfile.lastName,
+      invitedAt: existing?.invitedAt || membership.createdAt,
+      acceptedAt: existing?.acceptedAt || membership.createdAt,
+    });
+  });
 
   const acceptedEmailKeys = new Set(
     Array.from(acceptedByAccount.values()).map((invite) =>

@@ -1414,9 +1414,9 @@ button[disabled] {
   position: fixed;
   top: 92px;
   bottom: 0;
-  left: 260px;
+  left: auto;
   right: 0;
-  width: auto;
+  width: 75vw;
   z-index: 180;
   max-height: none;
   display: grid;
@@ -1429,7 +1429,7 @@ button[disabled] {
 }
 
 .app-shell.sidebar-closed .task-details-panel {
-  left: 72px;
+  left: auto;
 }
 
 .task-details-head {
@@ -1479,12 +1479,16 @@ button[disabled] {
 
 .task-details-body {
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 0.9rem;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.9rem;
-  align-items: start;
+  align-items: stretch;
+}
+
+.task-details-edit-section {
+  align-self: start;
 }
 
 .task-details-card {
@@ -1642,13 +1646,16 @@ button[disabled] {
   border-radius: 12px;
   padding: 0.8rem;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0.7rem;
+  min-height: 0;
 }
 
 .task-comments-list {
   display: grid;
+  align-content: start;
   gap: 0.55rem;
-  max-height: 280px;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -6530,19 +6537,24 @@ button[disabled] {
     position: fixed;
     top: 92px;
     bottom: 0;
-    left: 220px;
+    left: auto;
     right: 0;
-    width: auto;
+    width: 75vw;
     max-height: none;
     margin-top: 0;
   }
 
   .app-shell.sidebar-closed .task-details-panel {
-    left: 72px;
+    left: auto;
   }
 
   .task-details-body {
     grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .task-comments-section {
+    min-height: 60vh;
   }
 }
 
@@ -6626,6 +6638,7 @@ button[disabled] {
   .app-shell.sidebar-closed .task-details-panel {
     top: 74px;
     left: 0;
+    width: 100vw;
   }
 
   .sidebar-backdrop {

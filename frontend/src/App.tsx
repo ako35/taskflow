@@ -491,6 +491,47 @@ export default function App() {
     }
   }, [handleUnauthorized, idToken, notificationsUnreadCount, user]);
 
+  const handleMarkNotificationRead = useCallback(
+    (notification: UserNotification) => {
+      if (!idToken || !user || notification.isRead) {
+        return;
+      }
+
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === notification.id ? { ...item, isRead: true } : item,
+        ),
+      );
+      setNotificationsUnreadCount((current) => Math.max(0, current - 1));
+
+      void (async () => {
+        try {
+          const response = await fetch(
+            `${API_URL}/notifications/${notification.id}/read`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+              },
+            },
+          );
+
+          if (response.status === 401) {
+            handleUnauthorized();
+            return;
+          }
+
+          if (!response.ok) {
+            throw new Error("Bildirim güncellenemedi.");
+          }
+        } catch (_error) {
+          void loadNotifications();
+        }
+      })();
+    },
+    [handleUnauthorized, idToken, loadNotifications, user],
+  );
+
   const handleDeleteComment = useCallback(
     async (commentId: number) => {
       if (!selectedTaskId || !idToken) return;
@@ -700,6 +741,7 @@ export default function App() {
 
   const handleNavigateToNotification = useCallback(
     (notification: UserNotification) => {
+      handleMarkNotificationRead(notification);
       setNotificationsMenuOpen(false);
       if (notification.workspaceId !== selectedWorkspace.id) {
         setSelectedWorkspaceId(notification.workspaceId);
@@ -710,7 +752,13 @@ export default function App() {
       setSelectedTaskId(notification.taskId);
       setCommentDraft("");
     },
-    [selectedWorkspace.id, setSelectedWorkspaceId, setViewMode, viewMode],
+    [
+      handleMarkNotificationRead,
+      selectedWorkspace.id,
+      setSelectedWorkspaceId,
+      setViewMode,
+      viewMode,
+    ],
   );
 
   const handleToggleProfileMenu = useCallback(() => {
