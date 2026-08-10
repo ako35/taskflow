@@ -9,6 +9,7 @@ export type Task = {
   priority: string;
   status?: string;
   createdAt?: string;
+  remindAt?: string | null;
   workspaceId: string;
 };
 
@@ -88,6 +89,7 @@ export type WorkspaceInvitationsOverview = {
 export type UserNotification = {
   id: number;
   message: string;
+  type?: "comment" | "reminder";
   isRead: boolean;
   createdAt: string;
   workspaceId: string;

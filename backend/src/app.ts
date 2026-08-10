@@ -141,6 +141,25 @@ function canonicalizeEmailForInvite(value: string) {
   return normalized;
 }
 
+function parseOptionalReminder(value: unknown, errors: string[]) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    errors.push("remindAt must be an ISO date string or null");
+    return null;
+  }
+
+  const remindAt = new Date(value);
+  if (Number.isNaN(remindAt.getTime())) {
+    errors.push("Invalid remindAt date");
+    return null;
+  }
+
+  return remindAt;
+}
+
 function validateTaskPayload(body: Record<string, unknown>) {
   const errors: string[] = [];
   const requiredString = (value: unknown, field: string) => {
@@ -162,6 +181,7 @@ function validateTaskPayload(body: Record<string, unknown>) {
     typeof body.status === "string" && allowedStatuses.includes(body.status)
       ? body.status
       : "Yapılacak";
+  const remindAt = parseOptionalReminder(body.remindAt, errors);
 
   return {
     title,
@@ -173,6 +193,7 @@ function validateTaskPayload(body: Record<string, unknown>) {
     description,
     priority,
     status,
+    remindAt,
     errors,
   };
 }
@@ -211,6 +232,10 @@ function validateTaskUpdatePayload(body: Record<string, unknown>) {
     } else {
       errors.push("Invalid status");
     }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "remindAt")) {
+    updateData.remindAt = parseOptionalReminder(body.remindAt, errors);
   }
 
   return { updateData, errors };
@@ -655,6 +680,60 @@ const tasksRouter = express.Router();
 const profileRouter = express.Router();
 const workspacesRouter = express.Router();
 
+async function createDueReminderNotifications() {
+  const now = new Date();
+
+  await prisma.$transaction(async (transaction) => {
+    const dueTasks = await transaction.task.findMany({
+      where: {
+        remindAt: { lte: now },
+        reminderNotifiedAt: null,
+      },
+      orderBy: { remindAt: "asc" },
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        workspaceId: true,
+      },
+    });
+
+    for (const task of dueTasks) {
+      const claimed = await transaction.task.updateMany({
+        where: {
+          id: task.id,
+          reminderNotifiedAt: null,
+        },
+        data: {
+          reminderNotifiedAt: now,
+        },
+      });
+
+      if (claimed.count === 0) {
+        continue;
+      }
+
+      const members = await transaction.workspaceMember.findMany({
+        where: { workspaceId: task.workspaceId },
+        select: { userProfileId: true },
+      });
+
+      if (members.length > 0) {
+        await transaction.notification.createMany({
+          data: members.map((member) => ({
+            userProfileId: member.userProfileId,
+            workspaceId: task.workspaceId,
+            taskId: task.id,
+            commentId: null,
+            type: "reminder",
+            message: `Hatırlatıcı: "${task.title}" görevinin zamanı geldi.`,
+          })),
+        });
+      }
+    }
+  });
+}
+
 profileRouter.get("/", async (req, res) => {
   const profile = await upsertUserProfile(req.authUser!);
   await ensureDefaultWorkspaceForUser(profile.id);
@@ -680,6 +759,7 @@ profileRouter.put("/", async (req, res) => {
 
 notificationsRouter.get("/", async (req, res) => {
   const profile = await upsertUserProfile(req.authUser!);
+  await createDueReminderNotifications();
   const rawLimit = Number(req.query.limit);
   const limit = Number.isFinite(rawLimit)
     ? Math.max(1, Math.min(50, Math.floor(rawLimit)))
@@ -697,6 +777,7 @@ notificationsRouter.get("/", async (req, res) => {
       select: {
         id: true,
         message: true,
+        type: true,
         isRead: true,
         createdAt: true,
         workspaceId: true,
@@ -716,6 +797,7 @@ notificationsRouter.get("/", async (req, res) => {
     items: items.map((item) => ({
       id: item.id,
       message: item.message,
+      type: item.type,
       isRead: item.isRead,
       createdAt: item.createdAt,
       workspaceId: item.workspaceId,
@@ -1368,6 +1450,7 @@ tasksRouter.post("/", async (req, res) => {
       description: payload.description,
       priority: payload.priority,
       status: payload.status,
+      remindAt: payload.remindAt,
       ownerEmail: profile.authEmail,
       workspaceId: payload.workspaceId,
     },
@@ -1408,6 +1491,15 @@ tasksRouter.put("/:id", async (req, res) => {
 
   if (Object.keys(updateData).length === 0) {
     return res.status(400).json({ error: "No valid fields provided for update" });
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updateData, "remindAt")) {
+    const nextRemindAt = updateData.remindAt as Date | null;
+    const currentTime = existingTask.remindAt?.getTime() ?? null;
+    const nextTime = nextRemindAt?.getTime() ?? null;
+    if (currentTime !== nextTime) {
+      updateData.reminderNotifiedAt = null;
+    }
   }
 
   const task = await prisma.task.update({ where: { id }, data: updateData });

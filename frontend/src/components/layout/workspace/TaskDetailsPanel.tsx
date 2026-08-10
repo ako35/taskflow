@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Task, TaskComment, User } from "../../../types";
 import { UiGlyph } from "../../ui/Icons";
 import { priorityClassNames, statusClassNames } from "../../../constants";
@@ -22,8 +28,23 @@ type TaskDetailsPanelProps = {
     title: string;
     status: string;
     priority: string;
+    remindAt: string | null;
   }) => Promise<void>;
 };
+
+function toDateTimeLocal(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 function authorDisplayName(comment: TaskComment) {
   const fullName = [comment.author.firstName, comment.author.lastName]
@@ -81,11 +102,13 @@ export default function TaskDetailsPanel({
   const [draftTitle, setDraftTitle] = useState("");
   const [draftStatus, setDraftStatus] = useState("Yapılacak");
   const [draftPriority, setDraftPriority] = useState("Orta");
+  const [draftRemindAt, setDraftRemindAt] = useState("");
   const [editingField, setEditingField] = useState<
     "status" | "priority" | null
   >(null);
   const [saveAcknowledged, setSaveAcknowledged] = useState(false);
   const saveAckTimerRef = useRef<number | null>(null);
+  const titleTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (!task) {
@@ -95,6 +118,7 @@ export default function TaskDetailsPanel({
     setDraftTitle(task.title || "");
     setDraftStatus(task.status ?? "Yapılacak");
     setDraftPriority(task.priority || "Orta");
+    setDraftRemindAt(toDateTimeLocal(task.remindAt));
     setSaveAcknowledged(false);
   }, [task]);
 
@@ -106,6 +130,17 @@ export default function TaskDetailsPanel({
     };
   }, []);
 
+  useLayoutEffect(() => {
+    const textarea = titleTextareaRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
+    textarea.style.overflowY = textarea.scrollHeight > 180 ? "auto" : "hidden";
+  }, [draftTitle, open, task?.id]);
+
   const canSaveTaskDetails = useMemo(() => {
     if (!task) {
       return false;
@@ -115,14 +150,23 @@ export default function TaskDetailsPanel({
     const baseTitle = task.title.trim();
     const baseStatus = task.status ?? "Yapılacak";
     const basePriority = task.priority || "Orta";
+    const baseRemindAt = toDateTimeLocal(task.remindAt);
 
     const hasChanges =
       nextTitle !== baseTitle ||
       draftStatus !== baseStatus ||
-      draftPriority !== basePriority;
+      draftPriority !== basePriority ||
+      draftRemindAt !== baseRemindAt;
 
     return Boolean(nextTitle) && hasChanges && !taskUpdating;
-  }, [draftPriority, draftStatus, draftTitle, task, taskUpdating]);
+  }, [
+    draftPriority,
+    draftRemindAt,
+    draftStatus,
+    draftTitle,
+    task,
+    taskUpdating,
+  ]);
 
   if (!open || !task) {
     return null;
@@ -139,6 +183,7 @@ export default function TaskDetailsPanel({
       title: draftTitle.trim(),
       status: draftStatus,
       priority: draftPriority,
+      remindAt: draftRemindAt ? new Date(draftRemindAt).toISOString() : null,
     });
 
     setSaveAcknowledged(true);
@@ -172,19 +217,41 @@ export default function TaskDetailsPanel({
 
           <label className="task-details-field">
             <span>Görev Metni</span>
-            <input
-              type="text"
+            <textarea
+              ref={titleTextareaRef}
               className="task-details-title-input"
               value={draftTitle}
               onChange={(event) => setDraftTitle(event.target.value)}
               placeholder="Görev adını yazın"
               aria-label="Görev metni"
+              rows={2}
             />
           </label>
 
           <p className="task-details-created-at">
             Oluşturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
           </p>
+
+          <label className="task-details-field">
+            <span>Hatırlatıcı</span>
+            <div className="task-reminder-controls">
+              <input
+                type="datetime-local"
+                value={draftRemindAt}
+                onChange={(event) => setDraftRemindAt(event.target.value)}
+                aria-label="Hatırlatıcı tarihi ve saati"
+              />
+              {draftRemindAt ? (
+                <button
+                  type="button"
+                  className="btn-secondary task-reminder-clear"
+                  onClick={() => setDraftRemindAt("")}
+                >
+                  Kaldır
+                </button>
+              ) : null}
+            </div>
+          </label>
 
           <div className="task-details-field">
             <span>Durum</span>

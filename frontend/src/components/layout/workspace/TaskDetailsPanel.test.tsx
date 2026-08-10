@@ -91,6 +91,7 @@ describe("TaskDetailsPanel", () => {
     expect(saveButton).toBeDisabled();
 
     const titleInput = screen.getByLabelText("Görev metni");
+    expect(titleInput.tagName).toBe("TEXTAREA");
     await user.clear(titleInput);
     await user.type(titleInput, "  Güncel görev başlığı  ");
 
@@ -102,6 +103,43 @@ describe("TaskDetailsPanel", () => {
       title: "Güncel görev başlığı",
       status: "Yapılacak",
       priority: "Orta",
+      remindAt: null,
     });
+  });
+
+  it("saves a reminder as an ISO timestamp", async () => {
+    const user = userEvent.setup();
+    const onSaveTaskDetails = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <TaskDetailsPanel
+        open
+        task={buildTask()}
+        currentUser={null}
+        comments={[]}
+        commentsLoading={false}
+        commentDraft=""
+        commentSubmitting={false}
+        taskUpdating={false}
+        onClose={() => {}}
+        onCommentDraftChange={() => {}}
+        onSubmitComment={() => {}}
+        onSaveTaskDetails={onSaveTaskDetails}
+      />,
+    );
+
+    await user.type(
+      screen.getByLabelText("Hatırlatıcı tarihi ve saati"),
+      "2026-08-10T14:30",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Degisiklikleri Kaydet" }),
+    );
+
+    expect(onSaveTaskDetails).toHaveBeenCalledWith(
+      expect.objectContaining({
+        remindAt: new Date("2026-08-10T14:30").toISOString(),
+      }),
+    );
   });
 });

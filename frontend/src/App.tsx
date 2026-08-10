@@ -111,6 +111,69 @@ export default function App() {
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationsMenuRef = useRef<HTMLDivElement | null>(null);
   const tasksTableWrapperRef = useRef<HTMLDivElement | null>(null);
+  const notificationIdsRef = useRef<Set<number>>(new Set());
+  const notificationsInitializedRef = useRef(false);
+  const notificationAudioContextRef = useRef<AudioContext | null>(null);
+
+  const ensureNotificationAudio = useCallback(() => {
+    if (!notificationAudioContextRef.current) {
+      const AudioContextClass =
+        window.AudioContext ||
+        (
+          window as typeof window & {
+            webkitAudioContext?: typeof AudioContext;
+          }
+        ).webkitAudioContext;
+
+      if (!AudioContextClass) {
+        return null;
+      }
+
+      notificationAudioContextRef.current = new AudioContextClass();
+    }
+
+    const context = notificationAudioContextRef.current;
+    if (context.state === "suspended") {
+      void context.resume();
+    }
+    return context;
+  }, []);
+
+  const playNotificationSound = useCallback(() => {
+    const context = ensureNotificationAudio();
+    if (!context || context.state === "closed") {
+      return;
+    }
+
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const startAt = context.currentTime;
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(660, startAt);
+    oscillator.frequency.setValueAtTime(880, startAt + 0.12);
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(0.16, startAt + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.3);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + 0.32);
+  }, [ensureNotificationAudio]);
+
+  useEffect(() => {
+    const enableAudio = () => {
+      ensureNotificationAudio();
+    };
+
+    document.addEventListener("pointerdown", enableAudio, { once: true });
+    document.addEventListener("keydown", enableAudio, { once: true });
+
+    return () => {
+      document.removeEventListener("pointerdown", enableAudio);
+      document.removeEventListener("keydown", enableAudio);
+    };
+  }, [ensureNotificationAudio]);
 
   const collapseSidebarOnMobile = useCallback(() => {
     if (window.innerWidth <= 860) {
@@ -329,6 +392,8 @@ export default function App() {
       setNotifications([]);
       setNotificationsUnreadCount(0);
       setNotificationsLoading(false);
+      notificationIdsRef.current.clear();
+      notificationsInitializedRef.current = false;
       return;
     }
 
@@ -358,16 +423,33 @@ export default function App() {
         );
       }
 
-      setNotifications(Array.isArray(payload?.items) ? payload.items : []);
+      const nextNotifications = Array.isArray(payload?.items)
+        ? payload.items
+        : [];
+      const hasNewNotification =
+        notificationsInitializedRef.current &&
+        nextNotifications.some(
+          (notification) => !notificationIdsRef.current.has(notification.id),
+        );
+
+      setNotifications(nextNotifications);
       setNotificationsUnreadCount(
         typeof payload?.unreadCount === "number" ? payload.unreadCount : 0,
       );
+      notificationIdsRef.current = new Set(
+        nextNotifications.map((notification) => notification.id),
+      );
+      notificationsInitializedRef.current = true;
+
+      if (hasNewNotification) {
+        playNotificationSound();
+      }
     } catch (_error) {
       // Silent fail to avoid interrupting core task workflow with non-critical badge errors.
     } finally {
       setNotificationsLoading(false);
     }
-  }, [handleUnauthorized, idToken, user]);
+  }, [handleUnauthorized, idToken, playNotificationSound, user]);
 
   const handleMarkNotificationsRead = useCallback(async () => {
     if (!idToken || !user || notificationsUnreadCount === 0) {
@@ -482,7 +564,12 @@ export default function App() {
   ]);
 
   const handleSaveTaskDetails = useCallback(
-    async (payload: { title: string; status: string; priority: string }) => {
+    async (payload: {
+      title: string;
+      status: string;
+      priority: string;
+      remindAt: string | null;
+    }) => {
       if (!selectedTaskId || !idToken || !user) {
         return;
       }

@@ -45,6 +45,7 @@ type WorkspacePanelProps = {
     title: string;
     status: string;
     priority: string;
+    remindAt: string | null;
   }) => Promise<void>;
 };
 
