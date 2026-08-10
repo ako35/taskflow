@@ -1,15 +1,24 @@
 const { execSync } = require("child_process");
 const path = require("path");
 
+const backendDir = path.resolve(__dirname, "..");
+const prismaCli = path.join(backendDir, "node_modules", ".bin", process.platform === "win32" ? "prisma.cmd" : "prisma");
+const prismaNode = path.join(backendDir, "node_modules", "prisma", "build", "index.js");
+
 function run(command) {
-    execSync(command, { stdio: "inherit" });
+    execSync(command, { cwd: backendDir, stdio: "inherit" });
 }
 
-const prismaCli = path.join("node_modules", ".bin", process.platform === "win32" ? "prisma.cmd" : "prisma");
+function runPrisma(args) {
+    try {
+        run(`"${prismaCli}" ${args}`);
+    } catch (_) {
+        run(`node "${prismaNode}" ${args}`);
+    }
+}
 
-try {
-    run(`"${prismaCli}" generate`);
-} catch (_) {
-    const prismaNode = path.join("node_modules", "prisma", "build", "index.js");
-    run(`node "${prismaNode}" generate`);
+runPrisma("generate");
+
+if (process.env.VERCEL === "1" && process.env.DATABASE_URL) {
+    runPrisma("migrate deploy");
 }
