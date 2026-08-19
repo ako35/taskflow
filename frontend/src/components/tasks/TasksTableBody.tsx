@@ -5,8 +5,11 @@ import {
   tableDisplayColumns,
 } from "../../constants";
 import type { Task, ViewMode } from "../../types";
+import { isCompletedStatus } from "../../utils";
 import { UiGlyph } from "../ui/Icons";
 import InlineSelectMenu from "./InlineSelectMenu";
+
+const TASK_RENDER_BATCH_SIZE = 100;
 
 type TasksTableBodyProps = {
   loading: boolean;
@@ -68,6 +71,15 @@ export default function TasksTableBody({
   onArchiveTask,
   onDeleteTask,
 }: TasksTableBodyProps) {
+  const [renderLimit, setRenderLimit] = React.useState(TASK_RENDER_BATCH_SIZE);
+
+  React.useEffect(() => {
+    setRenderLimit(TASK_RENDER_BATCH_SIZE);
+  }, [viewMode, visibleTasks]);
+
+  const renderedTasks = visibleTasks.slice(0, renderLimit);
+  const remainingTaskCount = visibleTasks.length - renderedTasks.length;
+
   return (
     <tbody>
       {loading && tasks.length === 0 ? (
@@ -89,7 +101,7 @@ export default function TasksTableBody({
           let currentStatus = "";
           let visibleIndex = 0;
 
-          return visibleTasks.map((task) => {
+          const rows = renderedTasks.map((task) => {
             const status = task.status ?? "Yapılacak";
             const groupKey = `${viewMode}:${status}`;
             const groupChanged = status !== currentStatus;
@@ -97,7 +109,8 @@ export default function TasksTableBody({
               currentStatus = status;
             }
 
-            const isCollapsed = collapsedStatusGroups[groupKey] ?? false;
+            const isCollapsed =
+              collapsedStatusGroups[groupKey] ?? isCompletedStatus(status);
             const rowIndex = visibleIndex + 1;
             if (!isCollapsed) {
               visibleIndex += 1;
@@ -462,6 +475,32 @@ export default function TasksTableBody({
               </React.Fragment>
             );
           });
+
+          if (remainingTaskCount > 0) {
+            rows.push(
+              <tr className="task-load-more-row" key="task-load-more">
+                <td colSpan={tableDisplayColumns.length}>
+                  <button
+                    type="button"
+                    className="task-load-more-button"
+                    onClick={() =>
+                      setRenderLimit((current) =>
+                        Math.min(
+                          current + TASK_RENDER_BATCH_SIZE,
+                          visibleTasks.length,
+                        ),
+                      )
+                    }
+                  >
+                    {Math.min(TASK_RENDER_BATCH_SIZE, remainingTaskCount)} görev
+                    daha göster
+                  </button>
+                </td>
+              </tr>,
+            );
+          }
+
+          return rows;
         })()
       )}
     </tbody>

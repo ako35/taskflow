@@ -213,6 +213,7 @@ export default function App() {
   }, [user]);
 
   const {
+    workspaces,
     selectedWorkspaceId,
     setSelectedWorkspaceId,
     newWorkspaceName,
@@ -265,17 +266,23 @@ export default function App() {
   } = useTaskCrud({
     idToken,
     user,
-    selectedWorkspaceId,
+    selectedWorkspaceId: selectedWorkspace.id,
+    workspaceIds: workspaces.map((workspace) => workspace.id),
+    viewMode,
     handleUnauthorized,
     setError,
   });
 
   const archivedTasks = useMemo(() => {
+    const archivedWorkspaceIdSet = new Set(
+      archivedWorkspaces.map((workspace) => workspace.id),
+    );
+    const archivedTaskIdSet = new Set(archivedTaskIds);
+
     return tasks.filter((task) => {
       return (
-        archivedWorkspaces.some(
-          (workspace) => workspace.id === task.workspaceId,
-        ) || archivedTaskIds.includes(task.id)
+        archivedWorkspaceIdSet.has(task.workspaceId) ||
+        archivedTaskIdSet.has(task.id)
       );
     });
   }, [archivedTaskIds, archivedWorkspaces, tasks]);

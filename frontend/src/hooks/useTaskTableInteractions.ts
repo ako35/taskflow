@@ -19,6 +19,8 @@ import type { Task, ViewMode } from "../types";
 import {
   getPriorityRank,
   getStatusRank,
+  fitColumnWidthsToContainer,
+  isCompletedStatus,
   matchesSearch,
   safeParseJson,
 } from "../utils";
@@ -167,14 +169,19 @@ export default function useTaskTableInteractions({
     [getTableTotalWidth],
   );
 
+  const archivedTaskIdSet = useMemo(
+    () => new Set(archivedTaskIds),
+    [archivedTaskIds],
+  );
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
       const inSelectedWorkspace = task.workspaceId === selectedWorkspaceId;
       if (!inSelectedWorkspace) return false;
-      if (archivedTaskIds.includes(task.id)) return false;
+      if (archivedTaskIdSet.has(task.id)) return false;
       return matchesSearch(task, query);
     });
-  }, [archivedTaskIds, query, selectedWorkspaceId, tasks]);
+  }, [archivedTaskIdSet, query, selectedWorkspaceId, tasks]);
 
   const sortedTasks = useMemo(
     () =>
@@ -353,18 +360,18 @@ export default function useTaskTableInteractions({
   );
 
   const syncColumnWidthsToContainer = useCallback(() => {
-    setColumnWidths((prev) => {
-      const next = tableColumns.reduce<Record<string, number>>((acc, column) => {
-        acc[column.field] = Math.max(
-          column.minWidth,
-          prev[column.field] ?? DEFAULT_COLUMN_WIDTHS[column.field] ?? column.minWidth,
-        );
-        return acc;
-      }, {});
+    const wrapper = tableWrapperRef.current;
+    if (!wrapper) return;
 
-      return keepTableWidthFixed(prev, next, "title");
+    setColumnWidths((prev) => {
+      const next = fitColumnWidthsToContainer(prev, wrapper.clientWidth - 2);
+      tableTotalWidthRef.current = tableColumns.reduce(
+        (total, column) => total + next[column.field],
+        0,
+      );
+      return next;
     });
-  }, [keepTableWidthFixed]);
+  }, [tableWrapperRef]);
 
   const resizeState = useRef<{
     field: string;
@@ -514,9 +521,10 @@ export default function useTaskTableInteractions({
     (status: string) => {
       setCollapsedStatusGroups((prev) => {
         const key = `${viewMode}:${status}`;
+        const isCurrentlyCollapsed = prev[key] ?? isCompletedStatus(status);
         return {
           ...prev,
-          [key]: !prev[key],
+          [key]: !isCurrentlyCollapsed,
         };
       });
     },

@@ -25,6 +25,35 @@ export function fitColumnWidthsToContainer(
     return acc;
   }, {});
 
+  const minimumTableWidth = tableColumns.reduce(
+    (total, column) => total + column.minWidth,
+    0,
+  );
+  const targetWidth = Math.max(minimumTableWidth, Math.floor(containerWidth));
+  const currentWidth = tableColumns.reduce(
+    (total, column) => total + next[column.field],
+    0,
+  );
+  let difference = targetWidth - currentWidth;
+
+  if (difference > 0) {
+    next.title += difference;
+  } else if (difference < 0) {
+    let remainingReduction = Math.abs(difference);
+    const shrinkOrder = ["title", "priority", "status", "index"];
+
+    for (const field of shrinkOrder) {
+      if (remainingReduction <= 0) break;
+      const column = tableColumns.find((item) => item.field === field);
+      if (!column) continue;
+
+      const reducibleWidth = Math.max(0, next[field] - column.minWidth);
+      const reduction = Math.min(reducibleWidth, remainingReduction);
+      next[field] -= reduction;
+      remainingReduction -= reduction;
+    }
+  }
+
   return next;
 }
 
@@ -177,6 +206,10 @@ export function getStatusRank(status?: string) {
   if (normalized === "yapılacak" || normalized === "yapilacak") return 0;
   if (normalized === "tamamlandı" || normalized === "tamamlandi") return 1;
   return 999;
+}
+
+export function isCompletedStatus(status?: string) {
+  return getStatusRank(status) === 1;
 }
 
 export function getPriorityRank(priority?: string) {

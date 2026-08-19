@@ -8,12 +8,15 @@ import {
 } from "react";
 import { API_URL, initialForm } from "../constants";
 import type { Task, TaskForm, User } from "../types";
+import type { ViewMode } from "../types";
 import { safeParseJson } from "../utils";
 
 type UseTaskCrudArgs = {
   idToken: string | null;
   user: User | null;
   selectedWorkspaceId: string;
+  workspaceIds: string[];
+  viewMode: ViewMode;
   handleUnauthorized: () => void;
   setError: Dispatch<SetStateAction<string | null>>;
 };
@@ -22,6 +25,8 @@ export default function useTaskCrud({
   idToken,
   user,
   selectedWorkspaceId,
+  workspaceIds,
+  viewMode,
   handleUnauthorized,
   setError,
 }: UseTaskCrudArgs) {
@@ -182,63 +187,89 @@ export default function useTaskCrud({
   );
 
   useEffect(() => {
+    const controller = new AbortController();
+
     async function loadTasks() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_URL}/tasks`, {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
+        const requestedWorkspaceIds =
+          viewMode === "archive" ? workspaceIds : [selectedWorkspaceId];
+        const uniqueWorkspaceIds = [...new Set(requestedWorkspaceIds)].filter(Boolean);
 
-        const text = await response.text();
-        let responseBody: any = null;
-        try {
-          responseBody = text ? JSON.parse(text) : null;
-        } catch {
-          responseBody = null;
-        }
+        const responses = await Promise.all(
+          uniqueWorkspaceIds.map(async (workspaceId) => {
+            const params = new URLSearchParams({ workspaceId });
+            const response = await fetch(`${API_URL}/tasks?${params}`, {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+              },
+              signal: controller.signal,
+            });
 
-        if (response.status === 401) {
-          handleUnauthorized();
-          return;
-        }
+            const text = await response.text();
+            const responseBody = safeParseJson<any>(text, null);
 
-        if (!response.ok) {
-          const message =
-            responseBody?.error ||
-            responseBody?.message ||
-            text ||
-            "Görevler yüklenemedi.";
-          throw new Error(message);
-        }
+            if (response.status === 401) {
+              handleUnauthorized();
+              return [];
+            }
 
-        if (!Array.isArray(responseBody)) {
-          throw new Error(
-            "Sunucudan beklenmeyen yanıt alındı. API adresini kontrol edin.",
-          );
-        }
+            if (!response.ok) {
+              throw new Error(
+                responseBody?.error ||
+                  responseBody?.message ||
+                  text ||
+                  "Görevler yüklenemedi.",
+              );
+            }
 
-        const data = responseBody as Task[];
-        setTasks(
-          data.map((task) => ({
+            if (!Array.isArray(responseBody)) {
+              throw new Error(
+                "Sunucudan beklenmeyen yanıt alındı. API adresini kontrol edin.",
+              );
+            }
+
+            return responseBody as Task[];
+          }),
+        );
+
+        if (controller.signal.aborted) return;
+
+        const data = responses.flat().map((task) => ({
             ...task,
             description: task.description || "",
             status: task.status ?? "Yapılacak",
-          })),
-        );
+          }));
+        const loadedWorkspaceIds = new Set(uniqueWorkspaceIds);
+        setTasks((current) => [
+          ...current.filter((task) => !loadedWorkspaceIds.has(task.workspaceId)),
+          ...data,
+        ]);
       } catch (err) {
+        if (controller.signal.aborted) return;
         setError(err instanceof Error ? err.message : "Bilinmeyen hata");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
 
     if (user && idToken) {
       loadTasks();
     }
-  }, [handleUnauthorized, idToken, setError, user]);
+
+    return () => controller.abort();
+  }, [
+    handleUnauthorized,
+    idToken,
+    selectedWorkspaceId,
+    setError,
+    user,
+    viewMode,
+    workspaceIds.join(","),
+  ]);
 
   useEffect(() => {
     localStorage.setItem("taskflow_archived_tasks", JSON.stringify(archivedTaskIds));

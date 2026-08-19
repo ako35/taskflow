@@ -3513,6 +3513,25 @@ button[disabled] {
   color: var(--text-muted);
 }
 
+.task-load-more-row td {
+  padding: 14px;
+  text-align: center;
+}
+
+.task-load-more-button {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-alt);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  padding: 8px 14px;
+}
+
+.task-load-more-button:hover {
+  border-color: var(--primary);
+}
+
 .task-badge {
   display: inline-flex;
   align-items: center;
@@ -6699,12 +6718,12 @@ button[disabled] {
   }
 
   .tasks-table {
-    min-width: 700px;
+    min-width: 578px;
     font-size: 0.78rem;
   }
 
   :root[data-table-density="dense"] .tasks-table {
-    min-width: 660px;
+    min-width: 578px;
     font-size: 0.72rem;
   }
 

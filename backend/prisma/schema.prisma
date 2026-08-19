@@ -29,6 +29,7 @@ model Task {
   notifications Notification[]
 
   @@index([workspaceId])
+  @@index([workspaceId, status, priority, createdAt])
   @@index([remindAt, reminderNotifiedAt])
 }
 

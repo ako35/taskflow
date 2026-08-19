@@ -1250,16 +1250,26 @@ tasksRouter.get("/", async (req, res) => {
   const profile = await upsertUserProfile(req.authUser!);
   await ensureDefaultWorkspaceForUser(profile.id);
 
+  const workspaceId = sanitizeLine(String(req.query.workspaceId ?? ""));
+  if (workspaceId) {
+    const membership = await getWorkspaceMember(profile.id, workspaceId);
+    if (!membership) {
+      return res.status(403).json({ error: "Bu calisma alanina erisiminiz yok." });
+    }
+  }
+
   const tasks = await prisma.task.findMany({
-    where: {
-      workspace: {
-        members: {
-          some: {
-            userProfileId: profile.id,
+    where: workspaceId
+      ? { workspaceId }
+      : {
+          workspace: {
+            members: {
+              some: {
+                userProfileId: profile.id,
+              },
+            },
           },
         },
-      },
-    },
     orderBy: [{ status: "asc" }, { priority: "asc" }, { createdAt: "desc" }],
   });
 
