@@ -1,0 +1,184 @@
+/* Styles owned by global. */
+/* Styles owned by global. */
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
+
+:root {
+  --bg: #0a1225;
+  --surface: rgba(15, 23, 42, 0.95);
+  --surface-alt: rgba(30, 41, 59, 0.9);
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: rgba(148, 163, 184, 0.18);
+  --primary: #5b8cff;
+  --primary-strong: #3366ff;
+  --danger: #fb7185;
+  --success: #34d399;
+  --radius: 10px;
+  --shadow: 0 28px 80px rgba(15, 23, 42, 0.25);
+  --font-sans: "Manrope", "Segoe UI", sans-serif;
+  --font-display: "Space Grotesk", "Manrope", sans-serif;
+  --space-xs: 10px;
+  --space-sm: 14px;
+  --space-md: 22px;
+  --space-lg: 30px;
+  --space-xl: 42px;
+  --icon-size-xs: 0.88rem;
+  --icon-size-sm: 0.95rem;
+  --icon-size-md: 1rem;
+  --icon-stroke: 2;
+}
+
+:root[data-theme="light"] {
+  --bg: #f3f6fc;
+  --surface: #ffffff;
+  --surface-alt: #eef3ff;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --border: rgba(15, 23, 42, 0.14);
+  --primary: #2f5cd8;
+  --primary-strong: #264fc0;
+  --danger: #dc2626;
+  --success: #059669;
+  --shadow: 0 20px 48px rgba(15, 23, 42, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top, rgba(91, 140, 255, 0.18), transparent 24%),
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(59, 130, 246, 0.16),
+      transparent 18%
+    ),
+    linear-gradient(180deg, #061020 0%, #091529 100%);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button:disabled,
+button[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@keyframes sidebar-reopen-enter{
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* filled bell when there are unread notifications */
+
+/* Remove duplicate user-bar definition and keep only the workspace-header variant */
+
+@keyframes inline-dropdown-enter{
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.14), transparent 30%),
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(14, 165, 233, 0.1),
+      transparent 22%
+    ),
+    linear-gradient(180deg, #f8fbff 0%, #edf3ff 100%);
+}
+
+#google-signin-button > div {
+  min-width: 240px;
+}
+
+/* Remove duplicate user-bar definition to avoid layout conflicts */
+
+/* Low-oval mode: keep frame corners only slightly rounded */
+
+/* strip every border/shadow GIS injects on its nested elements and iframe */
+
+/* Mobile/tablet layout hardening for the main authenticated app */
+
+/* Styles owned by shared. */
+
+/* Styles owned by App. */
+
+/* Styles owned by components/auth/ContactView. */
+
+/* Styles owned by components/auth/LandingPage. */
+
+/* Styles owned by components/auth/LoginView. */
+
+/* Styles owned by components/layout/AppSidebar. */
+
+/* Styles owned by components/layout/AppTopBar. */
+
+/* Styles owned by components/layout/InviteTeammateModal. */
+
+/* Styles owned by components/layout/MembersPanelModal. */
+
+/* Styles owned by components/layout/ProfileDetailsModal. */
+
+
+/* Styles owned by components/layout/WorkspacePanel. */
+
+/* Styles owned by components/layout/sidebar/SidebarFooter. */
+
+/* Styles owned by components/layout/sidebar/WorkspaceCreateForm. */
+
+/* Styles owned by components/layout/sidebar/WorkspaceCreateModal. */
+
+
+/* Styles owned by components/layout/sidebar/WorkspaceList. */
+
+/* Styles owned by components/layout/workspace/ArchivedWorkspacesSection. */
+
+/* Styles owned by components/layout/workspace/TaskDetailsPanel. */
+
+/* Styles owned by components/layout/workspace/WorkspaceContextBar. */
+
+/* Styles owned by components/layout/workspace/WorkspacePanelHeader. */
+
+/* Styles owned by components/tasks/InlineSelectMenu. */
+
+/* Styles owned by components/tasks/TasksTable. */
+
+/* Styles owned by components/tasks/TasksTableBody. */
+
+/* Styles owned by components/tasks/TasksTableHead. */

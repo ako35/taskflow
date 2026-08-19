@@ -15,6 +15,7 @@ import ProfileDetailsModal from "./components/layout/ProfileDetailsModal";
 import AppTopBar from "./components/layout/AppTopBar";
 import WorkspacePanel from "./components/layout/WorkspacePanel";
 import WorkspaceCreateModal from "./components/layout/sidebar/WorkspaceCreateModal";
+import { UiGlyph } from "./components/ui/Icons";
 import { API_URL } from "./constants";
 import useAppUiEffects from "./hooks/useAppUiEffects";
 import useAuthSession from "./hooks/useAuthSession";
@@ -1620,6 +1621,19 @@ export default function App() {
 
         <WorkspacePanel {...workspacePanelProps} />
       </div>
+
+      {!sidebarOpen ? (
+        <button
+          type="button"
+          className="sidebar-toggle sidebar-reopen-button"
+          aria-label="Menüyü aç"
+          aria-expanded="false"
+          aria-controls="app-sidebar"
+          onClick={handleToggleSidebar}
+        >
+          <UiGlyph icon="chevron-right" />
+        </button>
+      ) : null}
 
       {sidebarOpen ? (
         <button

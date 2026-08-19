@@ -1,0 +1,67 @@
+/* Styles owned by components/layout/workspace/ArchivedWorkspacesSection. */
+.archive-workspaces {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.archive-workspaces strong {
+  display: block;
+  margin-bottom: 0.45rem;
+}
+
+.archive-workspaces p {
+  margin: 0;
+}
+
+.archive-workspace-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.archive-restore-btn {
+  border: none;
+  padding: 0.34rem 0.56rem;
+  background: rgba(91, 140, 255, 0.24);
+  color: var(--text);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.archive-restore-btn:hover {
+  background: rgba(91, 140, 255, 0.34);
+}
+
+.archive-workspace-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid rgba(91, 140, 255, 0.35);
+  background: rgba(91, 140, 255, 0.14);
+  border-radius: 6px;
+  font-size: 0.84rem;
+}
+
+:root[data-theme="light"] .archive-workspaces {
+  background: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme="light"] .archive-workspace-chip {
+  border-color: rgba(47, 92, 216, 0.35);
+  background: rgba(47, 92, 216, 0.12);
+}
+
+:root[data-theme="light"] .archive-restore-btn {
+  background: rgba(47, 92, 216, 0.2);
+  color: #1e293b;
+}
+
+:root[data-theme="light"] .archive-restore-btn:hover {
+  background: rgba(47, 92, 216, 0.3);
+}

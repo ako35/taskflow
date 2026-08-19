@@ -1,0 +1,71 @@
+/* Styles owned by components/layout/WorkspacePanel. */
+.tasks-panel.compact {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  padding: 1rem 1rem 1.1rem;
+}
+
+@media (max-width: 860px) {
+
+  .tasks-panel.compact,
+  .tasks-panel {
+    padding: 0.9rem;
+  }
+}
+.workspace {
+  min-width: 0;
+  padding: 1.2rem 1.75rem 1.75rem;
+  margin-top: 6px;
+}
+
+.workspace-main {
+  position: relative;
+}
+
+.tasks-panel {
+  padding: 1.25rem;
+}
+
+.tasks-panel {
+  padding: 1.5rem;
+}
+
+.toast-error-close {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.toast-error-close:hover,
+.toast-error-close:focus-visible {
+  background: rgba(251, 113, 133, 0.18);
+}
+
+.toast-error-close svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+@media (max-width: 1024px) {
+
+  .workspace {
+    padding: 1.2rem;
+  }
+}
+
+@media (max-width: 860px) {
+
+  .workspace {
+    margin-top: 0;
+    padding: 0.7rem;
+  }
+}

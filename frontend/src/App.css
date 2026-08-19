@@ -1,0 +1,57 @@
+/* Styles owned by App. */
+.app-layout {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #08101f 0%, #090f1b 100%);
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: calc(100vh - 92px);
+  gap: 0;
+  padding-top: 110px;
+  transition: grid-template-columns 0.56s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-shell.sidebar-closed {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+:root[data-theme="light"] .app-layout {
+  background: linear-gradient(180deg, #f8fbff 0%, #edf3ff 100%);
+}
+
+@media (max-width: 1024px) {
+  .app-shell {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+
+  .app-shell {
+    grid-template-columns: 1fr;
+    min-height: calc(100vh - 74px);
+    padding-top: 86px;
+  }
+
+  .app-shell.sidebar-open,
+  .app-shell.sidebar-closed {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 74px 0 0;
+    z-index: 1050;
+    display: block;
+    border: none;
+    padding: 0;
+    background: rgba(2, 6, 23, 0.42);
+    backdrop-filter: blur(2px);
+  }
+}
