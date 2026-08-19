@@ -117,7 +117,7 @@
 }
 
 .app-shell.sidebar-closed .sidebar {
-  transform: translateX(-100%);
+  transform: translate3d(-100%, 0, 0);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -144,7 +144,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .sidebar-toggle:hover,
   .sidebar-toggle.open,
   .sidebar-toggle:hover svg,
@@ -213,10 +212,10 @@
 }
 
 @media (max-width: 860px) {
-
   .app-shell.sidebar-closed .sidebar {
     width: min(320px, 86vw);
-    transform: translateX(-100%);
+    min-width: min(320px, 86vw);
+    transform: translate3d(-100%, 0, 0);
   }
 }
 
@@ -229,14 +228,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .sidebar-reopen-button {
     animation: none;
   }
 }
 
 @media (max-width: 860px) {
-
   .sidebar-reopen-button {
     top: 86px;
     left: 10px;
@@ -249,15 +246,19 @@
   align-self: start;
   position: sticky;
   top: 110px;
+  width: 260px;
+  min-width: 260px;
   height: calc(100vh - 110px);
   padding: 2rem 1.25rem;
   background: rgba(8, 13, 29, 0.98);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   overflow-x: hidden;
   overflow-y: auto;
-  transform: translateX(0);
+  transform: translate3d(0, 0, 0);
   opacity: 1;
   visibility: visible;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
   transition:
     transform 0.56s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.34s ease,
@@ -414,14 +415,21 @@
   border-color: rgba(15, 23, 42, 0.14);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1024px) and (min-width: 861px) {
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+  }
+}
 
+@media (max-width: 860px) {
   .sidebar {
     position: fixed;
     top: 74px;
     left: 0;
     z-index: 1100;
     width: min(320px, 86vw);
+    min-width: min(320px, 86vw);
     height: calc(100vh - 74px);
     max-height: calc(100vh - 74px);
     padding: 1rem;
@@ -435,7 +443,6 @@
 }
 
 @media (max-width: 520px) {
-
   .workspace-switcher-head span {
     font-size: 0.7rem;
   }

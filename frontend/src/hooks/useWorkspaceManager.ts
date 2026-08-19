@@ -37,6 +37,7 @@ export default function useWorkspaceManager({
     return localStorage.getItem("taskflow_selected_workspace") || DEFAULT_WORKSPACE_ID;
   });
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [newWorkspaceType, setNewWorkspaceType] = useState<Workspace["type"]>("TASKS");
   const [showWorkspaceInput, setShowWorkspaceInput] = useState(false);
   const [workspaceMenuOpenId, setWorkspaceMenuOpenId] = useState<string | null>(null);
   const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
@@ -128,7 +129,7 @@ export default function useWorkspaceManager({
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, type: newWorkspaceType }),
       });
 
       if (response.status === 401) {
@@ -150,12 +151,13 @@ export default function useWorkspaceManager({
       setWorkspaces((prev) => [...prev, createdWorkspace]);
       setSelectedWorkspaceId(createdWorkspace.id);
       setNewWorkspaceName("");
+      setNewWorkspaceType("TASKS");
       setShowWorkspaceInput(false);
       setError(null);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Çalışma alanı oluşturulamadı.");
     }
-  }, [handleUnauthorized, idToken, newWorkspaceName, setError, workspaces]);
+  }, [handleUnauthorized, idToken, newWorkspaceName, newWorkspaceType, setError, workspaces]);
 
   const startWorkspaceRename = useCallback(
     (workspaceId: string) => {
@@ -361,6 +363,8 @@ export default function useWorkspaceManager({
     setSelectedWorkspaceId,
     newWorkspaceName,
     setNewWorkspaceName,
+    newWorkspaceType,
+    setNewWorkspaceType,
     showWorkspaceInput,
     setShowWorkspaceInput,
     workspaceMenuOpenId,

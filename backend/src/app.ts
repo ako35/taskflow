@@ -426,10 +426,15 @@ function validateWorkspacePayload(body: Record<string, unknown>) {
   const name = sanitizeLine(body.name);
   const color = sanitizeLine(body.color) || DEFAULT_WORKSPACE_COLOR;
   const icon = sanitizeLine(body.icon) || DEFAULT_WORKSPACE_ICON;
+  const type = sanitizeLine(body.type) || "TASKS";
   const errors: string[] = [];
 
   if (!name) {
     errors.push("name is required");
+  }
+
+  if (type !== "TASKS" && type !== "KNOWLEDGE") {
+    errors.push("type must be TASKS or KNOWLEDGE");
   }
 
   return {
@@ -437,6 +442,7 @@ function validateWorkspacePayload(body: Record<string, unknown>) {
       name,
       color,
       icon,
+      type,
     },
     errors,
   };
@@ -864,6 +870,7 @@ workspacesRouter.get("/", async (req, res) => {
   const workspaces = memberships.map((membership) => ({
     id: membership.workspace.id,
     name: membership.workspace.name,
+    type: membership.workspace.type,
     color: membership.workspace.color,
     icon: membership.workspace.icon,
     role: membership.role,
@@ -1156,6 +1163,7 @@ workspacesRouter.post("/", async (req, res) => {
   const workspace = await prisma.workspace.create({
     data: {
       name: payload.name,
+      type: payload.type,
       color: payload.color,
       icon: payload.icon,
       createdByUserId: profile.id,
@@ -1171,6 +1179,7 @@ workspacesRouter.post("/", async (req, res) => {
   res.status(201).json({
     id: workspace.id,
     name: workspace.name,
+    type: workspace.type,
     color: workspace.color,
     icon: workspace.icon,
     role: "OWNER" as WorkspaceRole,
@@ -1212,6 +1221,7 @@ workspacesRouter.put("/:id", async (req, res) => {
   res.json({
     id: workspace.id,
     name: workspace.name,
+    type: workspace.type,
     color: workspace.color,
     icon: workspace.icon,
     role: membership.role,

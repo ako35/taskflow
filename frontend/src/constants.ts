@@ -13,6 +13,7 @@ export const DEFAULT_WORKSPACES: Workspace[] = [
   {
     id: DEFAULT_WORKSPACE_ID,
     name: "Genel",
+    type: "TASKS",
     color: "#5b8cff",
     icon: "compass",
   },

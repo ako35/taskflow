@@ -1,0 +1,125 @@
+/* Styles owned by components/tasks/KnowledgeTable. */
+.knowledge-table-wrapper {
+  overflow-x: auto;
+}
+
+.knowledge-table {
+  width: 100%;
+  min-width: 560px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0 5px;
+}
+
+.knowledge-number-column {
+  width: 72px;
+}
+.knowledge-subject-column {
+  width: 30%;
+}
+.knowledge-description-column {
+  width: auto;
+}
+
+.knowledge-table th {
+  padding: 0.7rem 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.knowledge-table td {
+  position: relative;
+  padding: 0.78rem 0.85rem;
+  background: rgba(21, 31, 51, 0.82);
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  vertical-align: top;
+}
+
+.knowledge-table td:first-child {
+  border-left: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 6px 0 0 6px;
+}
+
+.knowledge-table td:last-child {
+  border-right: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 0 6px 6px 0;
+}
+
+.knowledge-number-cell {
+  color: var(--text-muted);
+  text-align: center;
+}
+.knowledge-editable-cell {
+  cursor: text;
+}
+.knowledge-title-cell {
+  font-weight: 700;
+}
+.knowledge-description-cell {
+  padding-right: 3.2rem !important;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+}
+.knowledge-description-cell > span:empty {
+  opacity: 0.65;
+}
+
+.knowledge-editable-cell input,
+.knowledge-editable-cell textarea,
+.knowledge-create-row input,
+.knowledge-create-row textarea {
+  width: 100%;
+  border: 1px solid rgba(91, 140, 255, 0.5);
+  border-radius: 5px;
+  padding: 0.55rem 0.65rem;
+  background: rgba(9, 16, 29, 0.72);
+  color: var(--text);
+  resize: vertical;
+}
+
+.knowledge-description-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.knowledge-description-form textarea {
+  flex: 1;
+}
+.knowledge-delete-button {
+  position: absolute;
+  top: 50%;
+  right: 0.7rem;
+  transform: translateY(-50%);
+  opacity: 0;
+}
+.knowledge-table tr:hover .knowledge-delete-button,
+.knowledge-delete-button:focus-visible {
+  opacity: 1;
+}
+
+:root[data-theme="light"] .knowledge-table td {
+  background: #f7f9fd;
+  border-color: rgba(15, 23, 42, 0.14);
+}
+:root[data-theme="light"] .knowledge-editable-cell input,
+:root[data-theme="light"] .knowledge-editable-cell textarea,
+:root[data-theme="light"] .knowledge-create-row input,
+:root[data-theme="light"] .knowledge-create-row textarea {
+  background: #fff;
+  color: #172033;
+}
+
+@media (max-width: 640px) {
+  .knowledge-table {
+    min-width: 480px;
+  }
+  .knowledge-number-column {
+    width: 52px;
+  }
+  .knowledge-subject-column {
+    width: 38%;
+  }
+}

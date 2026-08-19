@@ -17,6 +17,12 @@
   flex-wrap: wrap;
   gap: 0.45rem;
   margin-bottom: 0.8rem;
+  padding-left: 0;
+  transition: padding-left 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-shell.sidebar-closed .workspace-actions {
+  padding-left: 3.25rem;
 }
 
 .workspace-title-block {
@@ -169,7 +175,6 @@
 }
 
 @media (max-width: 860px) {
-
   .workspace-selected-row {
     align-items: stretch;
   }

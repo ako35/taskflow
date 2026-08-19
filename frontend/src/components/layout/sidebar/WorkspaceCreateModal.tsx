@@ -1,9 +1,12 @@
 import React from "react";
+import type { Workspace } from "../../../types";
 
 type WorkspaceCreateModalProps = {
   open: boolean;
   value: string;
+  type: Workspace["type"];
   onValueChange: (value: string) => void;
+  onTypeChange: (type: Workspace["type"]) => void;
   onCreate: () => void;
   onClose: () => void;
 };
@@ -11,7 +14,9 @@ type WorkspaceCreateModalProps = {
 export default function WorkspaceCreateModal({
   open,
   value,
+  type,
   onValueChange,
+  onTypeChange,
   onCreate,
   onClose,
 }: WorkspaceCreateModalProps) {
@@ -32,7 +37,34 @@ export default function WorkspaceCreateModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="workspace-create-title">Yeni Çalışma Alanı</h2>
-        <p>Çalışma alanı adını girin ve oluşturun.</p>
+        <p>Alan türünü seçin, adını girin ve oluşturun.</p>
+
+        <div
+          className="workspace-type-options"
+          role="radiogroup"
+          aria-label="Çalışma alanı türü"
+        >
+          <button
+            type="button"
+            className={type === "TASKS" ? "active" : ""}
+            role="radio"
+            aria-checked={type === "TASKS"}
+            onClick={() => onTypeChange("TASKS")}
+          >
+            <strong>Görev Takibi</strong>
+            <span>Görev, durum ve önem bilgilerini yönetin.</span>
+          </button>
+          <button
+            type="button"
+            className={type === "KNOWLEDGE" ? "active" : ""}
+            role="radio"
+            aria-checked={type === "KNOWLEDGE"}
+            onClick={() => onTypeChange("KNOWLEDGE")}
+          >
+            <strong>Bilgi Alanı</strong>
+            <span>No, Konu ve Açıklama sütunlarında bilgi saklayın.</span>
+          </button>
+        </div>
 
         <input
           type="text"

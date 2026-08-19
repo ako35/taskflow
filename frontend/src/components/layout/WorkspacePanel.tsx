@@ -1,5 +1,6 @@
 import React from "react";
 import TasksTable from "../tasks/TasksTable";
+import KnowledgeTable from "../tasks/KnowledgeTable";
 import ArchivedWorkspacesSection from "./workspace/ArchivedWorkspacesSection";
 import TaskDetailsPanel from "./workspace/TaskDetailsPanel";
 import WorkspaceContextBar from "./workspace/WorkspaceContextBar";
@@ -93,6 +94,7 @@ export default function WorkspacePanel({
             query={query}
             showForm={showForm}
             showAddButton={viewMode === "workspaces"}
+            workspaceType={selectedWorkspace.type}
             onToggleShowForm={onToggleShowForm}
             onQueryChange={onQueryChange}
           />
@@ -119,10 +121,15 @@ export default function WorkspacePanel({
             </div>
           )}
 
-          <TasksTable {...tasksTableProps} />
+          {selectedWorkspace.type === "KNOWLEDGE" &&
+          viewMode === "workspaces" ? (
+            <KnowledgeTable {...tasksTableProps} />
+          ) : (
+            <TasksTable {...tasksTableProps} />
+          )}
         </section>
 
-        {viewMode === "workspaces" ? (
+        {viewMode === "workspaces" && selectedWorkspace.type === "TASKS" ? (
           <TaskDetailsPanel
             open={taskDetailsOpen}
             task={selectedTask}

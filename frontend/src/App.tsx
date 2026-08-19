@@ -235,6 +235,8 @@ export default function App() {
     setSelectedWorkspaceId,
     newWorkspaceName,
     setNewWorkspaceName,
+    newWorkspaceType,
+    setNewWorkspaceType,
     showWorkspaceInput,
     setShowWorkspaceInput,
     workspaceMenuOpenId,
@@ -1267,8 +1269,9 @@ export default function App() {
 
   const handleCancelWorkspaceCreate = useCallback(() => {
     setNewWorkspaceName("");
+    setNewWorkspaceType("TASKS");
     setShowWorkspaceInput(false);
-  }, [setNewWorkspaceName, setShowWorkspaceInput]);
+  }, [setNewWorkspaceName, setNewWorkspaceType, setShowWorkspaceInput]);
 
   const handleSelectWorkspace = useCallback(
     (workspaceId: string) => {
@@ -1647,7 +1650,9 @@ export default function App() {
       <WorkspaceCreateModal
         open={showWorkspaceInput}
         value={newWorkspaceName}
+        type={newWorkspaceType}
         onValueChange={setNewWorkspaceName}
+        onTypeChange={setNewWorkspaceType}
         onCreate={handleCreateWorkspace}
         onClose={handleCancelWorkspaceCreate}
       />

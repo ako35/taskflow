@@ -387,10 +387,19 @@ export default function useTaskTableInteractions({
     const minWidth =
       tableColumns.find((column) => column.field === current.field)?.minWidth ?? 80;
     setColumnWidths((prev) => {
+      const nextWidth = Math.max(minWidth, current.startWidth + delta);
       const requested = {
         ...prev,
-        [current.field]: Math.max(minWidth, current.startWidth + delta),
+        [current.field]: nextWidth,
       };
+
+      if (current.field === "title") {
+        tableTotalWidthRef.current = tableColumns.reduce(
+          (total, column) => total + requested[column.field],
+          0,
+        );
+        return requested;
+      }
 
       return keepTableWidthFixed(prev, requested, current.field);
     });

@@ -69,6 +69,7 @@ model TaskComment {
 model Workspace {
   id          String   @id @default(cuid())
   name        String
+  type        String   @default("TASKS")
   color       String   @default("#5b8cff")
   icon        String   @default("compass")
   createdAt   DateTime @default(now())
