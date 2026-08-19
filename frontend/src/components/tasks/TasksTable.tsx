@@ -99,6 +99,9 @@ export default function TasksTable({
           {tableDisplayColumns.map((column) => (
             <col
               key={`col-${column.field}`}
+              className={
+                column.field === "priority" ? "priority-column" : undefined
+              }
               style={{
                 width:
                   column.field === "__spacer"

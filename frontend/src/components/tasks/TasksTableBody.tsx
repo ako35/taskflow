@@ -155,10 +155,11 @@ export default function TasksTableBody({
                         className={
                           column.field === "__spacer"
                             ? "table-spacer-head"
-                            : column.field === "status" ||
-                                column.field === "priority"
-                              ? "centered-head"
-                              : undefined
+                            : column.field === "priority"
+                              ? "centered-head priority-column"
+                              : column.field === "status"
+                                ? "centered-head"
+                                : undefined
                         }
                         style={{
                           width:
@@ -207,7 +208,7 @@ export default function TasksTableBody({
                               : column.field === "status"
                                 ? "status-cell"
                                 : column.field === "priority"
-                                  ? "priority-cell"
+                                  ? "priority-cell priority-column"
                                   : column.field === "title"
                                     ? "preview-cell"
                                     : undefined

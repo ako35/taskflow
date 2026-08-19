@@ -6777,6 +6777,24 @@ button[disabled] {
   }
 }
 
+@media (max-width: 640px) {
+  .tasks-table,
+  :root[data-table-density="dense"] .tasks-table {
+    width: 100% !important;
+    min-width: 428px;
+  }
+
+  .tasks-table col.priority-column {
+    width: 0 !important;
+    visibility: collapse;
+  }
+
+  .tasks-table th.priority-column,
+  .tasks-table td.priority-column {
+    display: none;
+  }
+}
+
 @media (max-width: 520px) {
   .topbar {
     padding: 0 0.72rem;

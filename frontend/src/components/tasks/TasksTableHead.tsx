@@ -38,7 +38,11 @@ export default function TasksTableHead({
               <td
                 key={column.field}
                 className={
-                  column.field === "__spacer" ? "table-spacer-cell" : undefined
+                  column.field === "__spacer"
+                    ? "table-spacer-cell"
+                    : column.field === "priority"
+                      ? "priority-column"
+                      : undefined
                 }
                 style={{
                   width:

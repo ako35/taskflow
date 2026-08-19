@@ -32,6 +32,8 @@ import type {
 } from "./types";
 import { buildUserDisplayName, getUserInitials, safeParseJson } from "./utils";
 
+const SIDEBAR_COLLAPSE_MEDIA_QUERY = "(max-width: 860px)";
+
 type ProfileFormState = {
   firstName: string;
   lastName: string;
@@ -106,7 +108,9 @@ export default function App() {
   const [removingMemberUserId, setRemovingMemberUserId] = useState<
     number | null
   >(null);
-  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 860);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => !window.matchMedia(SIDEBAR_COLLAPSE_MEDIA_QUERY).matches,
+  );
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationsMenuRef = useRef<HTMLDivElement | null>(null);
@@ -175,8 +179,20 @@ export default function App() {
     };
   }, [ensureNotificationAudio]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(SIDEBAR_COLLAPSE_MEDIA_QUERY);
+    const syncSidebarWithViewport = (event: MediaQueryListEvent) => {
+      setSidebarOpen(!event.matches);
+    };
+
+    mediaQuery.addEventListener("change", syncSidebarWithViewport);
+    return () => {
+      mediaQuery.removeEventListener("change", syncSidebarWithViewport);
+    };
+  }, []);
+
   const collapseSidebarOnMobile = useCallback(() => {
-    if (window.innerWidth <= 860) {
+    if (window.matchMedia(SIDEBAR_COLLAPSE_MEDIA_QUERY).matches) {
       setSidebarOpen(false);
     }
   }, []);
