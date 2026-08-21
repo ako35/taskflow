@@ -695,9 +695,98 @@ async function refineTextWithGemini(text: string, field: AiRefineField) {
 const tasksRouter = express.Router();
 const profileRouter = express.Router();
 const workspacesRouter = express.Router();
+const pushTokensRouter = express.Router();
+
+const EXPO_PUSH_API_URL = "https://exp.host/--/api/v2/push/send";
+const EXPO_ACCESS_TOKEN = process.env.EXPO_ACCESS_TOKEN;
+
+async function sendPushNotifications(
+  userProfileIds: number[],
+  title: string,
+  body: string,
+  data: Record<string, unknown>,
+) {
+  if (userProfileIds.length === 0) {
+    return;
+  }
+
+  const tokens = await prisma.pushToken.findMany({
+    where: { userProfileId: { in: userProfileIds } },
+    select: { token: true },
+  });
+
+  if (tokens.length === 0) {
+    return;
+  }
+
+  const messages = tokens.map((item) => ({
+    to: item.token,
+    title,
+    body,
+    data,
+  }));
+
+  try {
+    await fetch(EXPO_PUSH_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${EXPO_ACCESS_TOKEN}` } : {}),
+      },
+      body: JSON.stringify(messages),
+    });
+  } catch (error) {
+    console.error("Push notification send failed", error);
+  }
+}
+
+function validatePushTokenPayload(body: Record<string, unknown>) {
+  const token = sanitizeLine(body.token);
+  const errors: string[] = [];
+
+  if (!token) {
+    errors.push("token is required");
+  }
+
+  return { token, errors };
+}
+
+pushTokensRouter.post("/", async (req, res) => {
+  const { token, errors } = validatePushTokenPayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+
+  await prisma.pushToken.upsert({
+    where: { token },
+    update: { userProfileId: profile.id },
+    create: { token, userProfileId: profile.id },
+  });
+
+  res.status(204).end();
+});
+
+pushTokensRouter.delete("/", async (req, res) => {
+  const { token, errors } = validatePushTokenPayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+
+  await prisma.pushToken.deleteMany({
+    where: { token, userProfileId: profile.id },
+  });
+
+  res.status(204).end();
+});
 
 async function createDueReminderNotifications() {
   const now = new Date();
+  const remindersToPush: { taskId: number; title: string; memberIds: number[] }[] = [];
 
   await prisma.$transaction(async (transaction) => {
     const dueTasks = await transaction.task.findMany({
@@ -745,9 +834,23 @@ async function createDueReminderNotifications() {
             message: `Hatırlatıcı: "${task.title}" görevinin zamanı geldi.`,
           })),
         });
+        remindersToPush.push({
+          taskId: task.id,
+          title: task.title,
+          memberIds: members.map((member) => member.userProfileId),
+        });
       }
     }
   });
+
+  for (const reminder of remindersToPush) {
+    await sendPushNotifications(
+      reminder.memberIds,
+      "Hatırlatıcı",
+      `"${reminder.title}" görevinin zamanı geldi.`,
+      { type: "reminder", taskId: reminder.taskId },
+    );
+  }
 }
 
 profileRouter.get("/", async (req, res) => {
@@ -1473,6 +1576,12 @@ tasksRouter.post("/:id/comments", async (req, res) => {
         message: `${commenterDisplayName} \"${task.title}\" gorevine yorum yapti.`,
       })),
     });
+    await sendPushNotifications(
+      invitedMembers.map((member) => member.userProfileId),
+      "Yeni yorum",
+      `${commenterDisplayName} "${task.title}" görevine yorum yaptı.`,
+      { type: "comment", taskId: task.id },
+    );
   }
 
   res.status(201).json({
@@ -1644,6 +1753,8 @@ app.use("/workspaces", authenticate, workspacesRouter);
 app.use("/api/workspaces", authenticate, workspacesRouter);
 app.use("/notifications", authenticate, notificationsRouter);
 app.use("/api/notifications", authenticate, notificationsRouter);
+app.use("/push-tokens", authenticate, pushTokensRouter);
+app.use("/api/push-tokens", authenticate, pushTokensRouter);
 
 app.post(["/ai/refine-text", "/api/ai/refine-text"], authenticate, async (req, res) => {
   const rawText = typeof req.body?.text === "string" ? req.body.text.trim() : "";

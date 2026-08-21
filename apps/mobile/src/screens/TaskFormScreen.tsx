@@ -10,21 +10,56 @@ import {
   TextInput,
   View,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useAuth } from "../context/AuthContext";
 import { createTask, deleteTask, updateTask } from "../lib/api";
 import { PRIORITIES, STATUSES } from "../constants";
+import { formatReminderInput } from "../lib/format";
+import { useTheme } from "../theme/ThemeContext";
 import CommentSection from "../components/CommentSection";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "TaskForm">;
 
+const REMINDER_PRESETS: { label: string; compute: () => Date }[] = [
+  {
+    label: "1 saat sonra",
+    compute: () => new Date(Date.now() + 60 * 60 * 1000),
+  },
+  {
+    label: "Yarın 09:00",
+    compute: () => {
+      const date = new Date();
+      date.setDate(date.getDate() + 1);
+      date.setHours(9, 0, 0, 0);
+      return date;
+    },
+  },
+  {
+    label: "1 hafta sonra",
+    compute: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  },
+];
+
+function combineDateAndTime(datePart: Date, timePart: Date): Date {
+  const combined = new Date(datePart);
+  combined.setHours(timePart.getHours(), timePart.getMinutes(), 0, 0);
+  return combined;
+}
+
 export default function TaskFormScreen({ route, navigation }: Props) {
   const { task, workspaceId } = route.params;
   const { idToken } = useAuth();
+  const { colors, mode } = useTheme();
   const [title, setTitle] = useState(task?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [priority, setPriority] = useState(task?.priority ?? PRIORITIES[2]);
   const [status, setStatus] = useState(task?.status ?? STATUSES[0]);
+  const [reminderDate, setReminderDate] = useState<Date | null>(
+    task?.remindAt ? new Date(task.remindAt) : null,
+  );
+  const [pickerStep, setPickerStep] = useState<"idle" | "date" | "time">("idle");
+  const [pendingDate, setPendingDate] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -33,12 +68,22 @@ export default function TaskFormScreen({ route, navigation }: Props) {
       Alert.alert("Eksik bilgi", "Görev başlığı zorunludur.");
       return;
     }
+
+    const remindAt = reminderDate ? reminderDate.toISOString() : null;
+
     setSaving(true);
     try {
       if (task) {
-        await updateTask(idToken, task.id, { title, description, priority, status });
+        await updateTask(idToken, task.id, { title, description, priority, status, remindAt });
       } else {
-        await createTask(idToken, { title, description, priority, status, workspaceId });
+        await createTask(idToken, {
+          title,
+          description,
+          priority,
+          status,
+          workspaceId,
+          remindAt,
+        });
       }
       navigation.goBack();
     } catch {
@@ -70,70 +115,158 @@ export default function TaskFormScreen({ route, navigation }: Props) {
     ]);
   };
 
+  const inputStyle = [
+    styles.input,
+    { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+  ];
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.label}>Başlık</Text>
+    <ScrollView
+      style={{ backgroundColor: colors.bg }}
+      contentContainerStyle={styles.container}
+    >
+      <Text style={[styles.label, { color: colors.textMuted }]}>Başlık</Text>
       <TextInput
-        style={styles.input}
+        style={inputStyle}
         value={title}
         onChangeText={setTitle}
         placeholder="Görev başlığı"
+        placeholderTextColor={colors.textMuted}
       />
 
-      <Text style={styles.label}>Açıklama</Text>
+      <Text style={[styles.label, { color: colors.textMuted }]}>Açıklama</Text>
       <TextInput
-        style={[styles.input, styles.multiline]}
+        style={[inputStyle, styles.multiline]}
         value={description}
         onChangeText={setDescription}
         placeholder="Görev açıklaması (opsiyonel)"
+        placeholderTextColor={colors.textMuted}
         multiline
       />
 
-      <Text style={styles.label}>Önem</Text>
+      <Text style={[styles.label, { color: colors.textMuted }]}>Önem</Text>
       <View style={styles.segmentRow}>
-        {PRIORITIES.map((option) => (
-          <Pressable
-            key={option}
-            onPress={() => setPriority(option)}
-            style={[styles.segment, priority === option && styles.segmentActive]}
-          >
-            <Text
+        {PRIORITIES.map((option) => {
+          const active = priority === option;
+          return (
+            <Pressable
+              key={option}
+              onPress={() => setPriority(option)}
               style={[
-                styles.segmentText,
-                priority === option && styles.segmentTextActive,
+                styles.segment,
+                { borderColor: colors.border },
+                active && { backgroundColor: colors.primary, borderColor: colors.primary },
               ]}
             >
-              {option}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                style={[
+                  styles.segmentText,
+                  { color: active ? "#fff" : colors.text },
+                ]}
+              >
+                {option}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
-      <Text style={styles.label}>Durum</Text>
+      <Text style={[styles.label, { color: colors.textMuted }]}>Durum</Text>
       <View style={styles.segmentRow}>
-        {STATUSES.map((option) => (
-          <Pressable
-            key={option}
-            onPress={() => setStatus(option)}
-            style={[styles.segment, status === option && styles.segmentActive]}
-          >
-            <Text
+        {STATUSES.map((option) => {
+          const active = status === option;
+          return (
+            <Pressable
+              key={option}
+              onPress={() => setStatus(option)}
               style={[
-                styles.segmentText,
-                status === option && styles.segmentTextActive,
+                styles.segment,
+                { borderColor: colors.border },
+                active && { backgroundColor: colors.primary, borderColor: colors.primary },
               ]}
             >
-              {option}
-            </Text>
+              <Text
+                style={[
+                  styles.segmentText,
+                  { color: active ? "#fff" : colors.text },
+                ]}
+              >
+                {option}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Text style={[styles.label, { color: colors.textMuted }]}>Hatırlatıcı</Text>
+      <Text style={[styles.reminderValue, { color: colors.text }]}>
+        {reminderDate ? formatReminderInput(reminderDate) : "Hatırlatıcı yok"}
+      </Text>
+      <View style={styles.segmentRow}>
+        <Pressable
+          style={[styles.segment, { borderColor: colors.border }]}
+          onPress={() => {
+            setPendingDate(reminderDate ?? new Date());
+            setPickerStep("date");
+          }}
+        >
+          <Text style={[styles.segmentText, { color: colors.text }]}>Tarih/Saat Seç</Text>
+        </Pressable>
+        {REMINDER_PRESETS.map((preset) => (
+          <Pressable
+            key={preset.label}
+            style={[styles.segment, { borderColor: colors.border }]}
+            onPress={() => setReminderDate(preset.compute())}
+          >
+            <Text style={[styles.segmentText, { color: colors.text }]}>{preset.label}</Text>
           </Pressable>
         ))}
+        {reminderDate ? (
+          <Pressable
+            style={[styles.segment, { borderColor: colors.border }]}
+            onPress={() => setReminderDate(null)}
+          >
+            <Text style={[styles.segmentText, { color: colors.text }]}>Temizle</Text>
+          </Pressable>
+        ) : null}
       </View>
+
+      {pickerStep === "date" ? (
+        <DateTimePicker
+          value={pendingDate ?? new Date()}
+          mode="date"
+          themeVariant={mode}
+          onChange={(event, selectedDate) => {
+            if (event.type === "set" && selectedDate) {
+              setPendingDate(selectedDate);
+              setPickerStep("time");
+            } else {
+              setPickerStep("idle");
+            }
+          }}
+        />
+      ) : null}
+
+      {pickerStep === "time" ? (
+        <DateTimePicker
+          value={pendingDate ?? new Date()}
+          mode="time"
+          themeVariant={mode}
+          onChange={(event, selectedTime) => {
+            if (event.type === "set" && selectedTime && pendingDate) {
+              setReminderDate(combineDateAndTime(pendingDate, selectedTime));
+            }
+            setPickerStep("idle");
+          }}
+        />
+      ) : null}
 
       <View style={styles.saveButton}>
         <Button
           title={saving ? "Kaydediliyor..." : "Kaydet"}
           onPress={onSave}
           disabled={saving || deleting}
+          color={colors.primary}
         />
       </View>
 
@@ -141,7 +274,7 @@ export default function TaskFormScreen({ route, navigation }: Props) {
         <View style={styles.deleteButton}>
           <Button
             title={deleting ? "Siliniyor..." : "Görevi Sil"}
-            color="#dc2626"
+            color={colors.danger}
             onPress={onDelete}
             disabled={saving || deleting}
           />
@@ -161,13 +294,11 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#555",
     marginTop: 16,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -177,6 +308,10 @@ const styles = StyleSheet.create({
     minHeight: 90,
     textAlignVertical: "top",
   },
+  reminderValue: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
   segmentRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -184,22 +319,13 @@ const styles = StyleSheet.create({
   },
   segment: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
-  segmentActive: {
-    backgroundColor: "#1d4ed8",
-    borderColor: "#1d4ed8",
-  },
   segmentText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#333",
-  },
-  segmentTextActive: {
-    color: "#fff",
   },
   saveButton: {
     marginTop: 28,

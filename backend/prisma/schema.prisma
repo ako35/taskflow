@@ -49,6 +49,17 @@ model UserProfile {
   acceptedInvitations Invitation[] @relation("InvitationAccepter")
   taskComments TaskComment[]
   notifications Notification[]
+  pushTokens PushToken[]
+}
+
+model PushToken {
+  id            Int      @id @default(autoincrement())
+  userProfileId Int
+  token         String   @unique
+  createdAt     DateTime @default(now())
+  userProfile   UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+
+  @@index([userProfileId])
 }
 
 model TaskComment {

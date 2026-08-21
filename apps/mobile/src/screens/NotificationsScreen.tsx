@@ -17,12 +17,14 @@ import { useAuth } from "../context/AuthContext";
 import useNotifications from "../hooks/useNotifications";
 import { fetchTask } from "../lib/api";
 import { formatDateTime } from "../lib/format";
+import { useTheme } from "../theme/ThemeContext";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Notifications">;
 
 export default function NotificationsScreen({ navigation }: Props) {
   const { idToken } = useAuth();
+  const { colors } = useTheme();
   const { notifications, unreadCount, loading, error, reload, markOneRead, markAllRead } =
     useNotifications(idToken);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,39 +60,57 @@ export default function NotificationsScreen({ navigation }: Props) {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: colors.text }]}>
           Bildirimler{unreadCount > 0 ? ` (${unreadCount})` : ""}
         </Text>
         {unreadCount > 0 ? (
           <Pressable onPress={() => markAllRead().catch(() => undefined)} hitSlop={8}>
-            <Text style={styles.markAllLink}>Tümünü okundu işaretle</Text>
+            <Text style={[styles.markAllLink, { color: colors.primary }]}>
+              Tümünü okundu işaretle
+            </Text>
           </Pressable>
         ) : null}
       </View>
 
       {loading ? (
-        <ActivityIndicator style={styles.spacing} />
+        <ActivityIndicator style={styles.spacing} color={colors.primary} />
       ) : error ? (
-        <Text style={styles.error}>{error}</Text>
+        <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
       ) : (
         <FlatList
           data={notifications}
           keyExtractor={(item) => String(item.id)}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={<Text style={styles.empty}>Bildirim yok.</Text>}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <Text style={[styles.empty, { color: colors.textMuted }]}>Bildirim yok.</Text>
+          }
           contentContainerStyle={notifications.length === 0 ? styles.emptyList : undefined}
           renderItem={({ item }) => (
             <Pressable
-              style={[styles.item, !item.isRead && styles.itemUnread]}
+              style={[
+                styles.item,
+                { borderColor: colors.border },
+                !item.isRead && { backgroundColor: colors.surfaceAlt, borderColor: colors.primary },
+              ]}
               onPress={() => onOpen(item)}
               disabled={openingId === item.id}
             >
-              {!item.isRead ? <View style={styles.dot} /> : null}
+              {!item.isRead ? (
+                <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+              ) : null}
               <View style={styles.itemContent}>
-                <Text style={styles.message}>{item.message}</Text>
-                <Text style={styles.date}>{formatDateTime(item.createdAt)}</Text>
+                <Text style={[styles.message, { color: colors.text }]}>{item.message}</Text>
+                <Text style={[styles.date, { color: colors.textMuted }]}>
+                  {formatDateTime(item.createdAt)}
+                </Text>
               </View>
             </Pressable>
           )}
@@ -103,7 +123,6 @@ export default function NotificationsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
     paddingHorizontal: 16,
     paddingTop: 16,
   },
@@ -118,7 +137,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   markAllLink: {
-    color: "#1d4ed8",
     fontSize: 13,
     fontWeight: "600",
   },
@@ -127,11 +145,9 @@ const styles = StyleSheet.create({
   },
   error: {
     marginTop: 16,
-    color: "#dc2626",
   },
   empty: {
     textAlign: "center",
-    color: "#999",
   },
   emptyList: {
     flexGrow: 1,
@@ -142,20 +158,14 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
     borderWidth: 1,
-    borderColor: "#eee",
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
-  },
-  itemUnread: {
-    backgroundColor: "#eff4ff",
-    borderColor: "#dbe6ff",
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#1d4ed8",
     marginTop: 5,
   },
   itemContent: {
@@ -163,11 +173,9 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 14,
-    color: "#222",
   },
   date: {
     marginTop: 4,
     fontSize: 11,
-    color: "#999",
   },
 });

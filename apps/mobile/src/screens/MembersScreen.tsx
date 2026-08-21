@@ -14,7 +14,9 @@ import {
 import type { WorkspaceInvitePerson } from "@taskflow/shared";
 import { useAuth } from "../context/AuthContext";
 import useWorkspaceMembers from "../hooks/useWorkspaceMembers";
-import { acceptInvitation } from "../lib/api";
+import { acceptInvitation, deleteWorkspace, renameWorkspace } from "../lib/api";
+import { extractInviteTokenFromInput } from "../lib/inviteToken";
+import { useTheme } from "../theme/ThemeContext";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Members">;
@@ -24,26 +26,10 @@ function inviteName(invite: WorkspaceInvitePerson) {
   return fullName || invite.email;
 }
 
-function extractInviteToken(input: string) {
-  const trimmed = input.trim();
-  const marker = "inviteToken=";
-  const index = trimmed.indexOf(marker);
-  if (index === -1) {
-    return trimmed;
-  }
-  const rest = trimmed.slice(index + marker.length);
-  const ampersandIndex = rest.indexOf("&");
-  const raw = ampersandIndex === -1 ? rest : rest.slice(0, ampersandIndex);
-  try {
-    return decodeURIComponent(raw);
-  } catch {
-    return raw;
-  }
-}
-
-export default function MembersScreen({ route }: Props) {
+export default function MembersScreen({ route, navigation }: Props) {
   const { workspaceId, workspaceName, isOwner } = route.params;
   const { idToken, user } = useAuth();
+  const { colors } = useTheme();
   const { members, invitations, loading, error, sending, removingId, invite, removeMember } =
     useWorkspaceMembers(idToken, workspaceId);
 
@@ -53,6 +39,51 @@ export default function MembersScreen({ route }: Props) {
 
   const [joinInput, setJoinInput] = useState("");
   const [joining, setJoining] = useState(false);
+
+  const [nameDraft, setNameDraft] = useState(workspaceName);
+  const [renaming, setRenaming] = useState(false);
+  const [deletingWorkspace, setDeletingWorkspace] = useState(false);
+
+  const onRename = async () => {
+    const trimmed = nameDraft.trim();
+    if (!trimmed) {
+      Alert.alert("Eksik bilgi", "Çalışma alanı adı boş olamaz.");
+      return;
+    }
+    setRenaming(true);
+    try {
+      const updated = await renameWorkspace(idToken, workspaceId, trimmed);
+      navigation.setParams({ workspaceName: updated.name });
+    } catch {
+      Alert.alert("Hata", "Çalışma alanı güncellenemedi.");
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const onDeleteWorkspace = () => {
+    Alert.alert(
+      "Çalışma alanını sil",
+      `"${workspaceName}" çalışma alanı ve içindeki tüm görevler silinsin mi?`,
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: async () => {
+            setDeletingWorkspace(true);
+            try {
+              await deleteWorkspace(idToken, workspaceId);
+              navigation.goBack();
+            } catch {
+              Alert.alert("Hata", "Çalışma alanı silinemedi.");
+              setDeletingWorkspace(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const onSendInvite = async () => {
     if (!inviteEmail.trim()) {
@@ -85,7 +116,7 @@ export default function MembersScreen({ route }: Props) {
   };
 
   const onJoin = async () => {
-    const token = extractInviteToken(joinInput);
+    const token = extractInviteTokenFromInput(joinInput);
     if (!token) {
       Alert.alert("Eksik bilgi", "Davet kodu veya linki girin.");
       return;
@@ -107,24 +138,61 @@ export default function MembersScreen({ route }: Props) {
     }
   };
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.workspaceName}>{workspaceName}</Text>
+  const inputStyle = [
+    styles.input,
+    { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+  ];
 
-      <Text style={styles.sectionTitle}>Davet Gönder</Text>
+  return (
+    <ScrollView
+      style={{ backgroundColor: colors.bg }}
+      contentContainerStyle={styles.container}
+    >
+      <Text style={[styles.workspaceName, { color: colors.text }]}>{workspaceName}</Text>
+
+      {isOwner ? (
+        <>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Çalışma Alanını Yönet
+          </Text>
+          <TextInput style={inputStyle} value={nameDraft} onChangeText={setNameDraft} />
+          <View style={styles.manageRow}>
+            <View style={styles.inlineButton}>
+              <Button
+                title={renaming ? "Kaydediliyor..." : "Adı Kaydet"}
+                onPress={onRename}
+                disabled={renaming || deletingWorkspace}
+                color={colors.primary}
+              />
+            </View>
+            <View style={styles.inlineButton}>
+              <Button
+                title={deletingWorkspace ? "Siliniyor..." : "Çalışma Alanını Sil"}
+                color={colors.danger}
+                onPress={onDeleteWorkspace}
+                disabled={renaming || deletingWorkspace}
+              />
+            </View>
+          </View>
+        </>
+      ) : null}
+
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Davet Gönder</Text>
       <TextInput
-        style={styles.input}
+        style={inputStyle}
         value={inviteEmail}
         onChangeText={setInviteEmail}
         placeholder="ornek@firma.com"
+        placeholderTextColor={colors.textMuted}
         keyboardType="email-address"
         autoCapitalize="none"
       />
       <TextInput
-        style={[styles.input, styles.multiline]}
+        style={[inputStyle, styles.multiline]}
         value={inviteMessage}
         onChangeText={setInviteMessage}
         placeholder="Kısa not (opsiyonel)"
+        placeholderTextColor={colors.textMuted}
         multiline
       />
       <View style={styles.inlineButton}>
@@ -132,55 +200,64 @@ export default function MembersScreen({ route }: Props) {
           title={sending ? "Gönderiliyor..." : "Davet Gönder"}
           onPress={onSendInvite}
           disabled={sending}
+          color={colors.primary}
         />
       </View>
-      {inviteStatus ? <Text style={styles.status}>{inviteStatus}</Text> : null}
+      {inviteStatus ? (
+        <Text style={[styles.status, { color: colors.primary }]}>{inviteStatus}</Text>
+      ) : null}
 
-      <Text style={styles.sectionTitle}>Davet Kodu ile Katıl</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Davet Kodu ile Katıl</Text>
       <TextInput
-        style={styles.input}
+        style={inputStyle}
         value={joinInput}
         onChangeText={setJoinInput}
         placeholder="Davet linki veya kodu"
+        placeholderTextColor={colors.textMuted}
         autoCapitalize="none"
       />
       <View style={styles.inlineButton}>
-        <Button title={joining ? "Katılıyor..." : "Katıl"} onPress={onJoin} disabled={joining} />
+        <Button
+          title={joining ? "Katılıyor..." : "Katıl"}
+          onPress={onJoin}
+          disabled={joining}
+          color={colors.primary}
+        />
       </View>
 
-      <Text style={styles.sectionTitle}>Üyeler ve Davetler</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Üyeler ve Davetler</Text>
       {loading ? (
-        <ActivityIndicator style={styles.spacing} />
+        <ActivityIndicator style={styles.spacing} color={colors.primary} />
       ) : error ? (
-        <Text style={styles.error}>{error}</Text>
+        <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
       ) : (
         <>
-          <Text style={styles.subTitle}>Bekleyen Davetler</Text>
+          <Text style={[styles.subTitle, { color: colors.textMuted }]}>Bekleyen Davetler</Text>
           {invitations.pending.length === 0 ? (
-            <Text style={styles.empty}>Bekleyen davet yok.</Text>
+            <Text style={[styles.empty, { color: colors.textMuted }]}>Bekleyen davet yok.</Text>
           ) : (
             invitations.pending.map((item) => (
-              <View key={item.id} style={styles.row}>
-                <Text style={styles.rowName}>{inviteName(item)}</Text>
-                <Text style={styles.rowMeta}>{item.email}</Text>
+              <View key={item.id} style={[styles.row, { borderColor: colors.border }]}>
+                <Text style={[styles.rowName, { color: colors.text }]}>{inviteName(item)}</Text>
+                <Text style={[styles.rowMeta, { color: colors.textMuted }]}>{item.email}</Text>
               </View>
             ))
           )}
 
-          <Text style={styles.subTitle}>Üyeler</Text>
+          <Text style={[styles.subTitle, { color: colors.textMuted }]}>Üyeler</Text>
           {members.length === 0 ? (
-            <Text style={styles.empty}>Üye yok.</Text>
+            <Text style={[styles.empty, { color: colors.textMuted }]}>Üye yok.</Text>
           ) : (
             members.map((member) => {
               const isSelf = member.email.toLowerCase() === (user?.email ?? "").toLowerCase();
               return (
-                <View key={member.id} style={styles.row}>
+                <View key={member.id} style={[styles.row, { borderColor: colors.border }]}>
                   <View style={styles.rowContent}>
-                    <Text style={styles.rowName}>
+                    <Text style={[styles.rowName, { color: colors.text }]}>
                       {[member.firstName, member.lastName].filter(Boolean).join(" ") ||
                         member.email}
                     </Text>
-                    <Text style={styles.rowMeta}>
+                    <Text style={[styles.rowMeta, { color: colors.textMuted }]}>
                       {member.email} · {member.role === "OWNER" ? "Yönetici" : "Üye"}
                     </Text>
                   </View>
@@ -195,7 +272,7 @@ export default function MembersScreen({ route }: Props) {
                       }
                       hitSlop={8}
                     >
-                      <Text style={styles.removeLink}>
+                      <Text style={[styles.removeLink, { color: colors.danger }]}>
                         {removingId === member.id ? "..." : "Çıkar"}
                       </Text>
                     </Pressable>
@@ -229,14 +306,12 @@ const styles = StyleSheet.create({
   subTitle: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#666",
     marginTop: 16,
     marginBottom: 6,
     textTransform: "uppercase",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -251,19 +326,19 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     marginTop: 4,
   },
+  manageRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
   status: {
     marginTop: 8,
     fontSize: 13,
-    color: "#1d4ed8",
   },
   spacing: {
     marginTop: 16,
   },
-  error: {
-    color: "#dc2626",
-  },
+  error: {},
   empty: {
-    color: "#999",
     fontSize: 13,
   },
   row: {
@@ -271,7 +346,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: "#eee",
     borderRadius: 8,
     padding: 10,
     marginBottom: 8,
@@ -286,10 +360,8 @@ const styles = StyleSheet.create({
   rowMeta: {
     marginTop: 2,
     fontSize: 12,
-    color: "#666",
   },
   removeLink: {
-    color: "#dc2626",
     fontSize: 12,
     fontWeight: "600",
   },

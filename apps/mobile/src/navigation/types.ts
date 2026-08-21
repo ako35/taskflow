@@ -6,4 +6,5 @@ export type RootStackParamList = {
   Notifications: undefined;
   Profile: undefined;
   Members: { workspaceId: string; workspaceName: string; isOwner: boolean };
+  WorkspaceCreate: undefined;
 };

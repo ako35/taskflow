@@ -6,3 +6,13 @@ export function formatDateTime(value: string): string {
     minute: "2-digit",
   });
 }
+
+function pad2(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+export function formatReminderInput(date: Date): string {
+  return `${pad2(date.getDate())}.${pad2(date.getMonth() + 1)}.${date.getFullYear()} ${pad2(
+    date.getHours(),
+  )}:${pad2(date.getMinutes())}`;
+}

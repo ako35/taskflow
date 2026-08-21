@@ -55,6 +55,28 @@ export async function fetchWorkspaces(idToken: string): Promise<Workspace[]> {
   return authRequest<Workspace[]>(idToken, "/workspaces");
 }
 
+export async function createWorkspace(idToken: string, name: string): Promise<Workspace> {
+  return authRequest<Workspace>(idToken, "/workspaces", {
+    method: "POST",
+    body: JSON.stringify({ name, type: "TASKS" }),
+  });
+}
+
+export async function renameWorkspace(
+  idToken: string,
+  workspaceId: string,
+  name: string,
+): Promise<Workspace> {
+  return authRequest<Workspace>(idToken, `/workspaces/${workspaceId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function deleteWorkspace(idToken: string, workspaceId: string): Promise<void> {
+  await authRequest<void>(idToken, `/workspaces/${workspaceId}`, { method: "DELETE" });
+}
+
 export async function fetchTasks(
   idToken: string,
   workspaceId?: string,
@@ -65,6 +87,7 @@ export async function fetchTasks(
 
 export type CreateTaskPayload = Pick<TaskForm, "title" | "description" | "priority" | "status"> & {
   workspaceId: string;
+  remindAt?: string | null;
 };
 
 export async function createTask(idToken: string, payload: CreateTaskPayload): Promise<Task> {
@@ -76,7 +99,9 @@ export async function createTask(idToken: string, payload: CreateTaskPayload): P
 
 export type UpdateTaskPayload = Partial<
   Pick<TaskForm, "title" | "description" | "priority" | "status">
->;
+> & {
+  remindAt?: string | null;
+};
 
 export async function updateTask(
   idToken: string,
@@ -212,6 +237,13 @@ export async function acceptInvitation(
   token: string,
 ): Promise<{ success: boolean; workspace: Workspace; alreadyAccepted?: boolean }> {
   return authRequest(idToken, "/invitations/accept", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function registerPushToken(idToken: string, token: string): Promise<void> {
+  await authRequest<void>(idToken, "/push-tokens", {
     method: "POST",
     body: JSON.stringify({ token }),
   });

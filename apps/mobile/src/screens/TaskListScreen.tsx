@@ -19,6 +19,8 @@ import useTasks from "../hooks/useTasks";
 import useNotifications from "../hooks/useNotifications";
 import WorkspaceSwitcher from "../components/WorkspaceSwitcher";
 import NotificationBell from "../components/NotificationBell";
+import { formatDateTime } from "../lib/format";
+import { useTheme } from "../theme/ThemeContext";
 import { PRIORITY_COLORS, STATUS_COLORS, STATUSES } from "../constants";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -26,6 +28,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "TaskList">;
 
 export default function TaskListScreen({ navigation }: Props) {
   const { idToken, user, signOut } = useAuth();
+  const { colors } = useTheme();
   const {
     workspaces,
     activeWorkspaceId,
@@ -95,9 +98,11 @@ export default function TaskListScreen({ navigation }: Props) {
   const error = workspacesError || tasksError;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>{user?.name ?? user?.email ?? "TaskFlow"}</Text>
+        <Text style={[styles.greeting, { color: colors.text }]}>
+          {user?.name ?? user?.email ?? "TaskFlow"}
+        </Text>
         <View style={styles.headerActions}>
           {activeWorkspace ? (
             <Pressable
@@ -128,21 +133,30 @@ export default function TaskListScreen({ navigation }: Props) {
         workspaces={workspaces}
         activeWorkspaceId={activeWorkspaceId}
         onSelect={setActiveWorkspaceId}
+        onCreatePress={() => navigation.navigate("WorkspaceCreate")}
       />
 
       {loading ? (
-        <ActivityIndicator style={styles.spacing} />
+        <ActivityIndicator style={styles.spacing} color={colors.primary} />
       ) : error ? (
-        <Text style={styles.error}>{error}</Text>
+        <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
       ) : (
         <FlatList
           data={tasks}
           keyExtractor={(item) => String(item.id)}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={<Text style={styles.empty}>Henüz görev yok.</Text>}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <Text style={[styles.empty, { color: colors.textMuted }]}>Henüz görev yok.</Text>
+          }
           contentContainerStyle={tasks.length === 0 ? styles.emptyList : undefined}
           renderItem={({ item }) => (
-            <View style={styles.taskCard}>
+            <View style={[styles.taskCard, { borderColor: colors.border }]}>
               <Pressable
                 onPress={() =>
                   activeWorkspaceId &&
@@ -152,9 +166,12 @@ export default function TaskListScreen({ navigation }: Props) {
                   })
                 }
               >
-                <Text style={styles.taskTitle}>{item.title}</Text>
+                <Text style={[styles.taskTitle, { color: colors.text }]}>{item.title}</Text>
                 {item.description ? (
-                  <Text style={styles.taskDescription} numberOfLines={2}>
+                  <Text
+                    style={[styles.taskDescription, { color: colors.textMuted }]}
+                    numberOfLines={2}
+                  >
                     {item.description}
                   </Text>
                 ) : null}
@@ -170,16 +187,21 @@ export default function TaskListScreen({ navigation }: Props) {
                   <Text style={[styles.badge, { color: PRIORITY_COLORS[item.priority] }]}>
                     {item.priority}
                   </Text>
+                  {item.remindAt ? (
+                    <Text style={[styles.reminderBadge, { color: colors.textMuted }]}>
+                      ⏰ {formatDateTime(item.remindAt)}
+                    </Text>
+                  ) : null}
                 </View>
               </Pressable>
-              <View style={styles.actionRow}>
+              <View style={[styles.actionRow, { borderTopColor: colors.border }]}>
                 <Pressable onPress={() => toggleStatus(item)} hitSlop={8}>
-                  <Text style={styles.actionLink}>
+                  <Text style={[styles.actionLink, { color: colors.primary }]}>
                     {item.status === "Tamamlandı" ? "Yapılacak yap" : "Tamamlandı yap"}
                   </Text>
                 </Pressable>
                 <Pressable onPress={() => confirmDelete(item)} hitSlop={8}>
-                  <Text style={styles.actionLinkDanger}>Sil</Text>
+                  <Text style={[styles.actionLinkDanger, { color: colors.danger }]}>Sil</Text>
                 </Pressable>
               </View>
             </View>
@@ -189,7 +211,7 @@ export default function TaskListScreen({ navigation }: Props) {
 
       {activeWorkspaceId ? (
         <Pressable
-          style={styles.fab}
+          style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={() =>
             navigation.navigate("TaskForm", { workspaceId: activeWorkspaceId })
           }
@@ -204,7 +226,6 @@ export default function TaskListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
     paddingTop: 60,
     paddingHorizontal: 16,
   },
@@ -231,11 +252,9 @@ const styles = StyleSheet.create({
   },
   error: {
     marginTop: 16,
-    color: "#dc2626",
   },
   empty: {
     textAlign: "center",
-    color: "#999",
   },
   emptyList: {
     flexGrow: 1,
@@ -243,7 +262,6 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     borderWidth: 1,
-    borderColor: "#eee",
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -254,7 +272,6 @@ const styles = StyleSheet.create({
   },
   taskDescription: {
     marginTop: 4,
-    color: "#555",
     fontSize: 13,
   },
   badgeRow: {
@@ -266,21 +283,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
+  reminderBadge: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#f2f2f2",
   },
   actionLink: {
-    color: "#1d4ed8",
     fontSize: 13,
     fontWeight: "600",
   },
   actionLinkDanger: {
-    color: "#dc2626",
     fontSize: 13,
     fontWeight: "600",
   },
@@ -291,7 +309,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#1d4ed8",
     alignItems: "center",
     justifyContent: "center",
     elevation: 4,

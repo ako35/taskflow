@@ -1,4 +1,5 @@
 import { Button, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../theme/ThemeContext";
 
 type LoginScreenProps = {
   canSignIn: boolean;
@@ -11,10 +12,12 @@ export default function LoginScreen({
   error,
   onSignIn,
 }: LoginScreenProps) {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>TaskFlow</Text>
-      <Text style={styles.subtitle}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <Text style={[styles.title, { color: colors.text }]}>TaskFlow</Text>
+      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
         Devam etmek için Google ile giriş yapın
       </Text>
       <View style={styles.spacing}>
@@ -22,11 +25,12 @@ export default function LoginScreen({
           title="Google ile Giriş Yap"
           onPress={onSignIn}
           disabled={!canSignIn}
+          color={colors.primary}
         />
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
       {!canSignIn ? (
-        <Text style={styles.hint}>
+        <Text style={[styles.hint, { color: colors.textMuted }]}>
           Google OAuth istemci kimlikleri henüz yapılandırılmadı (app.json{" "}
           {"->"} extra).
         </Text>
@@ -38,7 +42,6 @@ export default function LoginScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
@@ -49,7 +52,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 8,
-    color: "#666",
     textAlign: "center",
   },
   spacing: {
@@ -57,12 +59,10 @@ const styles = StyleSheet.create({
   },
   error: {
     marginTop: 16,
-    color: "#dc2626",
     textAlign: "center",
   },
   hint: {
     marginTop: 16,
-    color: "#999",
     fontSize: 12,
     textAlign: "center",
   },

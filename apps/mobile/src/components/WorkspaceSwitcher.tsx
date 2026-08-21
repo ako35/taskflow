@@ -1,20 +1,21 @@
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import type { Workspace } from "@taskflow/shared";
+import { useTheme } from "../theme/ThemeContext";
 
 type WorkspaceSwitcherProps = {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
   onSelect: (workspaceId: string) => void;
+  onCreatePress: () => void;
 };
 
 export default function WorkspaceSwitcher({
   workspaces,
   activeWorkspaceId,
   onSelect,
+  onCreatePress,
 }: WorkspaceSwitcherProps) {
-  if (workspaces.length === 0) {
-    return null;
-  }
+  const { colors } = useTheme();
 
   return (
     <ScrollView
@@ -34,12 +35,24 @@ export default function WorkspaceSwitcher({
               active && { backgroundColor: workspace.color },
             ]}
           >
-            <Text style={[styles.chipText, active && styles.chipTextActive]}>
+            <Text
+              style={[
+                styles.chipText,
+                { color: colors.text },
+                active && styles.chipTextActive,
+              ]}
+            >
               {workspace.name}
             </Text>
           </Pressable>
         );
       })}
+      <Pressable
+        onPress={onCreatePress}
+        style={[styles.chip, styles.createChip, { borderColor: colors.textMuted }]}
+      >
+        <Text style={[styles.chipText, { color: colors.text }]}>+ Yeni</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -58,9 +71,11 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#333",
   },
   chipTextActive: {
     color: "#fff",
+  },
+  createChip: {
+    borderStyle: "dashed",
   },
 });

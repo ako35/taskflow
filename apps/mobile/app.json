@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "taskflow",
+    "scheme": ["taskflow", "com.taskflow.mobile"],
     "extra": {
       "apiUrl": "https://taskflow-mu-lac.vercel.app/api",
       "googleWebClientId": "625073924200-3m8cpgu35qtc2mf1jnfg9aet24verhqk.apps.googleusercontent.com",
@@ -35,8 +35,16 @@
     },
     "plugins": [
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-community/datetimepicker",
+      "expo-notifications"
     ],
-    "owner": "alikcn35"
+    "owner": "alikcn35",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/49961ed9-2bbb-490a-8de3-d95904a9e3ff"
+    }
   }
 }
