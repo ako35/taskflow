@@ -4,7 +4,6 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   ActivityIndicator,
   Alert,
-  Button,
   FlatList,
   Pressable,
   RefreshControl,
@@ -12,12 +11,14 @@ import {
   Text,
   View,
 } from "react-native";
+import { CheckCheck } from "lucide-react-native";
 import type { UserNotification } from "@taskflow/shared";
 import { useAuth } from "../context/AuthContext";
 import useNotifications from "../hooks/useNotifications";
 import { fetchTask } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Notifications">;
@@ -66,8 +67,13 @@ export default function NotificationsScreen({ navigation }: Props) {
           Bildirimler{unreadCount > 0 ? ` (${unreadCount})` : ""}
         </Text>
         {unreadCount > 0 ? (
-          <Pressable onPress={() => markAllRead().catch(() => undefined)} hitSlop={8}>
-            <Text style={[styles.markAllLink, { color: colors.primary }]}>
+          <Pressable
+            onPress={() => markAllRead().catch(() => undefined)}
+            hitSlop={8}
+            style={styles.markAllLink}
+          >
+            <CheckCheck color={colors.primary} size={14} strokeWidth={2} />
+            <Text style={[styles.markAllLinkText, { color: colors.primary }]}>
               Tümünü okundu işaretle
             </Text>
           </Pressable>
@@ -133,12 +139,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 17,
+    fontFamily: fonts.displayBold,
   },
   markAllLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  markAllLinkText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
   },
   spacing: {
     marginTop: 16,
@@ -158,7 +169,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 12,
     marginBottom: 8,
   },
@@ -173,9 +184,11 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 14,
+    fontFamily: fonts.sansMedium,
   },
   date: {
     marginTop: 4,
     fontSize: 11,
+    fontFamily: fonts.sansRegular,
   },
 });

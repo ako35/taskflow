@@ -1,9 +1,11 @@
 import { useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Alert, Button, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { createWorkspace } from "../lib/api";
 import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
+import AppButton from "../components/Button";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "WorkspaceCreate">;
@@ -46,12 +48,7 @@ export default function WorkspaceCreateScreen({ navigation }: Props) {
         autoFocus
       />
       <View style={styles.button}>
-        <Button
-          title={creating ? "Oluşturuluyor..." : "Oluştur"}
-          onPress={onCreate}
-          disabled={creating}
-          color={colors.primary}
-        />
+        <AppButton title="Oluştur" onPress={onCreate} loading={creating} disabled={creating} />
       </View>
     </View>
   );
@@ -64,15 +61,16 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
+    fontFamily: fonts.sansRegular,
   },
   button: {
     marginTop: 20,

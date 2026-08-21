@@ -248,3 +248,15 @@ export async function registerPushToken(idToken: string, token: string): Promise
     body: JSON.stringify({ token }),
   });
 }
+
+export async function refineText(
+  idToken: string,
+  field: "title" | "description",
+  text: string,
+): Promise<string> {
+  const result = await authRequest<{ text: string }>(idToken, "/ai/refine-text", {
+    method: "POST",
+    body: JSON.stringify({ field, text }),
+  });
+  return result.text;
+}

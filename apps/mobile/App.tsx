@@ -14,6 +14,7 @@ import useAuthSession from "./src/hooks/useAuthSession";
 import usePushNotifications from "./src/hooks/usePushNotifications";
 import { AuthProvider } from "./src/context/AuthContext";
 import { ThemeProvider, useTheme } from "./src/theme/ThemeContext";
+import { useAppFonts, fonts } from "./src/theme/fonts";
 import { acceptInvitation, fetchTask } from "./src/lib/api";
 import { extractInviteTokenFromUrl } from "./src/lib/inviteToken";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -23,6 +24,7 @@ import NotificationsScreen from "./src/screens/NotificationsScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import MembersScreen from "./src/screens/MembersScreen";
 import WorkspaceCreateScreen from "./src/screens/WorkspaceCreateScreen";
+import ArchivedWorkspacesScreen from "./src/screens/ArchivedWorkspacesScreen";
 import type { RootStackParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -53,6 +55,7 @@ function AppContent() {
   const { idToken, user, restoring, error, canSignIn, signIn, signOut } =
     useAuthSession();
   const { mode, colors } = useTheme();
+  const fontsLoaded = useAppFonts();
   const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
 
   usePushNotifications(idToken);
@@ -118,7 +121,7 @@ function AppContent() {
     },
   };
 
-  if (restoring) {
+  if (restoring || !fontsLoaded) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.bg }]}>
         <ActivityIndicator color={colors.primary} />
@@ -131,7 +134,12 @@ function AppContent() {
     <NavigationContainer ref={navigationRef} theme={navigationTheme}>
       {idToken ? (
         <AuthProvider value={{ idToken, user, signOut }}>
-          <Stack.Navigator>
+          <Stack.Navigator
+            screenOptions={{
+              headerTitleStyle: { fontFamily: fonts.displayBold },
+              headerBackTitleStyle: { fontFamily: fonts.sansMedium },
+            }}
+          >
             <Stack.Screen
               name="TaskList"
               component={TaskListScreen}
@@ -163,6 +171,11 @@ function AppContent() {
               name="WorkspaceCreate"
               component={WorkspaceCreateScreen}
               options={{ title: "Yeni Çalışma Alanı" }}
+            />
+            <Stack.Screen
+              name="ArchivedWorkspaces"
+              component={ArchivedWorkspacesScreen}
+              options={{ title: "Arşivlenmiş Alanlar" }}
             />
           </Stack.Navigator>
         </AuthProvider>

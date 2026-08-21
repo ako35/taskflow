@@ -4,7 +4,6 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   ActivityIndicator,
   Alert,
-  Button,
   FlatList,
   Pressable,
   RefreshControl,
@@ -12,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { LogOut, Plus, User, Users } from "lucide-react-native";
 import type { Task } from "@taskflow/shared";
 import { useAuth } from "../context/AuthContext";
 import useWorkspaces from "../hooks/useWorkspaces";
@@ -21,6 +21,7 @@ import WorkspaceSwitcher from "../components/WorkspaceSwitcher";
 import NotificationBell from "../components/NotificationBell";
 import { formatDateTime } from "../lib/format";
 import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
 import { PRIORITY_COLORS, STATUS_COLORS, STATUSES } from "../constants";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -30,12 +31,14 @@ export default function TaskListScreen({ navigation }: Props) {
   const { idToken, user, signOut } = useAuth();
   const { colors } = useTheme();
   const {
-    workspaces,
+    activeWorkspaces,
+    archivedWorkspaces,
     activeWorkspaceId,
     setActiveWorkspaceId,
     loading: workspacesLoading,
     error: workspacesError,
     reload: reloadWorkspaces,
+    reloadArchived,
   } = useWorkspaces(idToken);
   const {
     tasks,
@@ -46,7 +49,9 @@ export default function TaskListScreen({ navigation }: Props) {
     deleteTask,
   } = useTasks(idToken, activeWorkspaceId);
   const { unreadCount, reload: reloadNotifications } = useNotifications(idToken);
-  const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId);
+  const activeWorkspace = activeWorkspaces.find(
+    (workspace) => workspace.id === activeWorkspaceId,
+  );
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -54,16 +59,20 @@ export default function TaskListScreen({ navigation }: Props) {
     useCallback(() => {
       reloadTasks();
       reloadWorkspaces();
+      reloadArchived();
       reloadNotifications();
-    }, [reloadTasks, reloadWorkspaces, reloadNotifications]),
+    }, [reloadTasks, reloadWorkspaces, reloadArchived, reloadNotifications]),
   );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([reloadTasks(), reloadWorkspaces(), reloadNotifications()]).finally(() =>
-      setRefreshing(false),
-    );
-  }, [reloadTasks, reloadWorkspaces, reloadNotifications]);
+    Promise.all([
+      reloadTasks(),
+      reloadWorkspaces(),
+      reloadArchived(),
+      reloadNotifications(),
+    ]).finally(() => setRefreshing(false));
+  }, [reloadTasks, reloadWorkspaces, reloadArchived, reloadNotifications]);
 
   const toggleStatus = useCallback(
     (task: Task) => {
@@ -115,26 +124,39 @@ export default function TaskListScreen({ navigation }: Props) {
                 })
               }
             >
-              <Text style={styles.iconButton}>👥</Text>
+              <Users color={colors.text} size={20} strokeWidth={2} />
             </Pressable>
           ) : null}
           <Pressable hitSlop={8} onPress={() => navigation.navigate("Profile")}>
-            <Text style={styles.iconButton}>👤</Text>
+            <User color={colors.text} size={20} strokeWidth={2} />
           </Pressable>
           <NotificationBell
             unreadCount={unreadCount}
             onPress={() => navigation.navigate("Notifications")}
           />
-          <Button title="Çıkış" onPress={signOut} />
+          <Pressable hitSlop={8} onPress={signOut}>
+            <LogOut color={colors.danger} size={20} strokeWidth={2} />
+          </Pressable>
         </View>
       </View>
 
       <WorkspaceSwitcher
-        workspaces={workspaces}
+        workspaces={activeWorkspaces}
         activeWorkspaceId={activeWorkspaceId}
         onSelect={setActiveWorkspaceId}
         onCreatePress={() => navigation.navigate("WorkspaceCreate")}
       />
+
+      {archivedWorkspaces.length > 0 ? (
+        <Pressable
+          onPress={() => navigation.navigate("ArchivedWorkspaces", { archivedWorkspaces })}
+          style={styles.archivedLink}
+        >
+          <Text style={[styles.archivedLinkText, { color: colors.textMuted }]}>
+            Arşivlenmiş alanlar ({archivedWorkspaces.length})
+          </Text>
+        </Pressable>
+      ) : null}
 
       {loading ? (
         <ActivityIndicator style={styles.spacing} color={colors.primary} />
@@ -216,7 +238,7 @@ export default function TaskListScreen({ navigation }: Props) {
             navigation.navigate("TaskForm", { workspaceId: activeWorkspaceId })
           }
         >
-          <Text style={styles.fabText}>+</Text>
+          <Plus color="#fff" size={26} strokeWidth={2.5} />
         </Pressable>
       ) : null}
     </View>
@@ -236,16 +258,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   greeting: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 19,
+    fontFamily: fonts.displayBold,
   },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 16,
   },
-  iconButton: {
-    fontSize: 20,
+  archivedLink: {
+    marginBottom: 12,
+  },
+  archivedLinkText: {
+    fontSize: 12,
+    fontFamily: fonts.sansSemiBold,
   },
   spacing: {
     marginTop: 16,
@@ -262,17 +288,18 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 10,
+    padding: 14,
     marginBottom: 8,
   },
   taskTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
   },
   taskDescription: {
     marginTop: 4,
     fontSize: 13,
+    fontFamily: fonts.sansRegular,
   },
   badgeRow: {
     flexDirection: "row",
@@ -281,11 +308,11 @@ const styles = StyleSheet.create({
   },
   badge: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
   },
   reminderBadge: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
   },
   actionRow: {
     flexDirection: "row",
@@ -296,11 +323,11 @@ const styles = StyleSheet.create({
   },
   actionLink: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
   },
   actionLinkDanger: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
   },
   fab: {
     position: "absolute",
@@ -316,11 +343,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-  },
-  fabText: {
-    color: "#fff",
-    fontSize: 28,
-    lineHeight: 30,
-    fontWeight: "400",
   },
 });

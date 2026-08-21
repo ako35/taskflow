@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   Alert,
-  Button,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,11 +10,14 @@ import {
   View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { Sparkles, Trash2 } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
-import { createTask, deleteTask, updateTask } from "../lib/api";
+import { createTask, deleteTask, refineText, updateTask } from "../lib/api";
 import { PRIORITIES, STATUSES } from "../constants";
 import { formatReminderInput } from "../lib/format";
 import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
+import AppButton from "../components/Button";
 import CommentSection from "../components/CommentSection";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -62,6 +64,30 @@ export default function TaskFormScreen({ route, navigation }: Props) {
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [aiImprovingField, setAiImprovingField] = useState<"title" | "description" | null>(
+    null,
+  );
+
+  const onAiImprove = async (field: "title" | "description") => {
+    const sourceText = field === "title" ? title : description;
+    if (!sourceText.trim()) {
+      Alert.alert("Eksik bilgi", "AI iyileştirme için önce metin oluşturun.");
+      return;
+    }
+    setAiImprovingField(field);
+    try {
+      const refined = await refineText(idToken, field, sourceText);
+      if (field === "title") {
+        setTitle(refined);
+      } else {
+        setDescription(refined);
+      }
+    } catch {
+      Alert.alert("Hata", "AI metin iyileştirme başarısız oldu.");
+    } finally {
+      setAiImprovingField(null);
+    }
+  };
 
   const onSave = async () => {
     if (!title.trim()) {
@@ -133,6 +159,16 @@ export default function TaskFormScreen({ route, navigation }: Props) {
         placeholder="Görev başlığı"
         placeholderTextColor={colors.textMuted}
       />
+      <Pressable
+        style={styles.aiLink}
+        onPress={() => onAiImprove("title")}
+        disabled={aiImprovingField !== null}
+      >
+        <Sparkles color={colors.primary} size={13} strokeWidth={2} />
+        <Text style={[styles.aiLinkText, { color: colors.primary }]}>
+          {aiImprovingField === "title" ? "AI iyileştiriyor..." : "AI ile metni iyileştir"}
+        </Text>
+      </Pressable>
 
       <Text style={[styles.label, { color: colors.textMuted }]}>Açıklama</Text>
       <TextInput
@@ -143,6 +179,16 @@ export default function TaskFormScreen({ route, navigation }: Props) {
         placeholderTextColor={colors.textMuted}
         multiline
       />
+      <Pressable
+        style={styles.aiLink}
+        onPress={() => onAiImprove("description")}
+        disabled={aiImprovingField !== null}
+      >
+        <Sparkles color={colors.primary} size={13} strokeWidth={2} />
+        <Text style={[styles.aiLinkText, { color: colors.primary }]}>
+          {aiImprovingField === "description" ? "AI iyileştiriyor..." : "AI ile metni iyileştir"}
+        </Text>
+      </Pressable>
 
       <Text style={[styles.label, { color: colors.textMuted }]}>Önem</Text>
       <View style={styles.segmentRow}>
@@ -262,20 +308,22 @@ export default function TaskFormScreen({ route, navigation }: Props) {
       ) : null}
 
       <View style={styles.saveButton}>
-        <Button
-          title={saving ? "Kaydediliyor..." : "Kaydet"}
+        <AppButton
+          title="Kaydet"
           onPress={onSave}
+          loading={saving}
           disabled={saving || deleting}
-          color={colors.primary}
         />
       </View>
 
       {task ? (
         <View style={styles.deleteButton}>
-          <Button
-            title={deleting ? "Siliniyor..." : "Görevi Sil"}
-            color={colors.danger}
+          <AppButton
+            title="Görevi Sil"
+            variant="danger"
+            icon={<Trash2 color="#fff" size={16} strokeWidth={2} />}
             onPress={onDelete}
+            loading={deleting}
             disabled={saving || deleting}
           />
         </View>
@@ -293,24 +341,37 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
     marginTop: 16,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
+    fontFamily: fonts.sansRegular,
   },
   multiline: {
     minHeight: 90,
     textAlignVertical: "top",
   },
+  aiLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 6,
+    alignSelf: "flex-start",
+  },
+  aiLinkText: {
+    fontSize: 12,
+    fontFamily: fonts.sansSemiBold,
+  },
   reminderValue: {
     fontSize: 14,
     marginBottom: 8,
+    fontFamily: fonts.sansRegular,
   },
   segmentRow: {
     flexDirection: "row",
@@ -325,7 +386,7 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
   },
   saveButton: {
     marginTop: 28,

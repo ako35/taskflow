@@ -1,4 +1,4 @@
-import type { Task } from "@taskflow/shared";
+import type { Task, Workspace } from "@taskflow/shared";
 
 export type RootStackParamList = {
   TaskList: undefined;
@@ -7,4 +7,5 @@ export type RootStackParamList = {
   Profile: undefined;
   Members: { workspaceId: string; workspaceName: string; isOwner: boolean };
   WorkspaceCreate: undefined;
+  ArchivedWorkspaces: { archivedWorkspaces: Workspace[] };
 };

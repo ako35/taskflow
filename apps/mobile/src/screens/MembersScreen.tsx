@@ -3,7 +3,6 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   ActivityIndicator,
   Alert,
-  Button,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,12 +10,19 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Archive, Mail, Trash2, UserPlus, X } from "lucide-react-native";
 import type { WorkspaceInvitePerson } from "@taskflow/shared";
 import { useAuth } from "../context/AuthContext";
 import useWorkspaceMembers from "../hooks/useWorkspaceMembers";
 import { acceptInvitation, deleteWorkspace, renameWorkspace } from "../lib/api";
 import { extractInviteTokenFromInput } from "../lib/inviteToken";
+import {
+  getStoredArchivedWorkspaceIds,
+  setStoredArchivedWorkspaceIds,
+} from "../lib/secureStorage";
 import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
+import AppButton from "../components/Button";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Members">;
@@ -43,6 +49,20 @@ export default function MembersScreen({ route, navigation }: Props) {
   const [nameDraft, setNameDraft] = useState(workspaceName);
   const [renaming, setRenaming] = useState(false);
   const [deletingWorkspace, setDeletingWorkspace] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+
+  const onArchive = async () => {
+    setArchiving(true);
+    try {
+      const current = await getStoredArchivedWorkspaceIds();
+      if (!current.includes(workspaceId)) {
+        await setStoredArchivedWorkspaceIds([...current, workspaceId]);
+      }
+      navigation.goBack();
+    } finally {
+      setArchiving(false);
+    }
+  };
 
   const onRename = async () => {
     const trimmed = nameDraft.trim();
@@ -150,6 +170,17 @@ export default function MembersScreen({ route, navigation }: Props) {
     >
       <Text style={[styles.workspaceName, { color: colors.text }]}>{workspaceName}</Text>
 
+      <View style={styles.inlineButton}>
+        <AppButton
+          title="Bu Alanı Arşivle"
+          variant="secondary"
+          icon={<Archive color={colors.text} size={16} strokeWidth={2} />}
+          onPress={onArchive}
+          loading={archiving}
+          disabled={archiving}
+        />
+      </View>
+
       {isOwner ? (
         <>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -158,18 +189,20 @@ export default function MembersScreen({ route, navigation }: Props) {
           <TextInput style={inputStyle} value={nameDraft} onChangeText={setNameDraft} />
           <View style={styles.manageRow}>
             <View style={styles.inlineButton}>
-              <Button
-                title={renaming ? "Kaydediliyor..." : "Adı Kaydet"}
+              <AppButton
+                title="Adı Kaydet"
                 onPress={onRename}
+                loading={renaming}
                 disabled={renaming || deletingWorkspace}
-                color={colors.primary}
               />
             </View>
             <View style={styles.inlineButton}>
-              <Button
-                title={deletingWorkspace ? "Siliniyor..." : "Çalışma Alanını Sil"}
-                color={colors.danger}
+              <AppButton
+                title="Çalışma Alanını Sil"
+                variant="danger"
+                icon={<Trash2 color="#fff" size={16} strokeWidth={2} />}
                 onPress={onDeleteWorkspace}
+                loading={deletingWorkspace}
                 disabled={renaming || deletingWorkspace}
               />
             </View>
@@ -196,11 +229,12 @@ export default function MembersScreen({ route, navigation }: Props) {
         multiline
       />
       <View style={styles.inlineButton}>
-        <Button
-          title={sending ? "Gönderiliyor..." : "Davet Gönder"}
+        <AppButton
+          title="Davet Gönder"
+          icon={<Mail color="#fff" size={16} strokeWidth={2} />}
           onPress={onSendInvite}
+          loading={sending}
           disabled={sending}
-          color={colors.primary}
         />
       </View>
       {inviteStatus ? (
@@ -217,11 +251,12 @@ export default function MembersScreen({ route, navigation }: Props) {
         autoCapitalize="none"
       />
       <View style={styles.inlineButton}>
-        <Button
-          title={joining ? "Katılıyor..." : "Katıl"}
+        <AppButton
+          title="Katıl"
+          icon={<UserPlus color="#fff" size={16} strokeWidth={2} />}
           onPress={onJoin}
+          loading={joining}
           disabled={joining}
-          color={colors.primary}
         />
       </View>
 
@@ -271,8 +306,10 @@ export default function MembersScreen({ route, navigation }: Props) {
                         )
                       }
                       hitSlop={8}
+                      style={styles.removeLink}
                     >
-                      <Text style={[styles.removeLink, { color: colors.danger }]}>
+                      <X color={colors.danger} size={14} strokeWidth={2} />
+                      <Text style={[styles.removeLinkText, { color: colors.danger }]}>
                         {removingId === member.id ? "..." : "Çıkar"}
                       </Text>
                     </Pressable>
@@ -293,29 +330,30 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   workspaceName: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 19,
+    fontFamily: fonts.displayBold,
     marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: fonts.displayBold,
     marginTop: 24,
     marginBottom: 8,
   },
   subTitle: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
     marginTop: 16,
     marginBottom: 6,
     textTransform: "uppercase",
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
+    fontFamily: fonts.sansRegular,
     marginBottom: 8,
   },
   multiline: {
@@ -333,6 +371,7 @@ const styles = StyleSheet.create({
   status: {
     marginTop: 8,
     fontSize: 13,
+    fontFamily: fonts.sansMedium,
   },
   spacing: {
     marginTop: 16,
@@ -340,13 +379,14 @@ const styles = StyleSheet.create({
   error: {},
   empty: {
     fontSize: 13,
+    fontFamily: fonts.sansRegular,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 10,
     marginBottom: 8,
   },
@@ -354,15 +394,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowName: {
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
     fontSize: 14,
   },
   rowMeta: {
     marginTop: 2,
     fontSize: 12,
+    fontFamily: fonts.sansRegular,
   },
   removeLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  removeLinkText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
   },
 });

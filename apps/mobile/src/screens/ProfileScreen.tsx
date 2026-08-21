@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Button,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,9 +9,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Moon, Sun } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import useProfile from "../hooks/useProfile";
 import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
+import AppButton from "../components/Button";
 
 export default function ProfileScreen() {
   const { idToken } = useAuth();
@@ -75,6 +77,7 @@ export default function ProfileScreen() {
       <View style={styles.segmentRow}>
         {(["dark", "light"] as const).map((option) => {
           const active = mode === option;
+          const Icon = option === "dark" ? Moon : Sun;
           return (
             <Pressable
               key={option}
@@ -85,7 +88,13 @@ export default function ProfileScreen() {
                 active && { backgroundColor: colors.primary, borderColor: colors.primary },
               ]}
             >
-              <Text style={{ color: active ? "#fff" : colors.text, fontWeight: "600", fontSize: 13 }}>
+              <Icon color={active ? "#fff" : colors.text} size={14} strokeWidth={2} />
+              <Text
+                style={[
+                  styles.segmentText,
+                  { color: active ? "#fff" : colors.text },
+                ]}
+              >
                 {option === "dark" ? "Koyu" : "Açık"}
               </Text>
             </Pressable>
@@ -133,12 +142,7 @@ export default function ProfileScreen() {
       />
 
       <View style={styles.saveButton}>
-        <Button
-          title={saving ? "Kaydediliyor..." : "Kaydet"}
-          onPress={onSave}
-          disabled={saving}
-          color={colors.primary}
-        />
+        <AppButton title="Kaydet" onPress={onSave} loading={saving} disabled={saving} />
       </View>
     </ScrollView>
   );
@@ -158,33 +162,43 @@ const styles = StyleSheet.create({
   },
   error: {
     marginBottom: 12,
+    fontFamily: fonts.sansMedium,
   },
   hint: {
     fontSize: 12,
     marginBottom: 16,
+    fontFamily: fonts.sansRegular,
   },
   label: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
     marginTop: 16,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
+    fontFamily: fonts.sansRegular,
   },
   segmentRow: {
     flexDirection: "row",
     gap: 8,
   },
   segment: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     borderWidth: 1,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 14,
+  },
+  segmentText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 13,
   },
   saveButton: {
     marginTop: 28,

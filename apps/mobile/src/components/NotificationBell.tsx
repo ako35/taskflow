@@ -1,4 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Bell } from "lucide-react-native";
+import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
 
 type NotificationBellProps = {
   unreadCount: number;
@@ -6,12 +9,16 @@ type NotificationBellProps = {
 };
 
 export default function NotificationBell({ unreadCount, onPress }: NotificationBellProps) {
+  const { colors } = useTheme();
+
   return (
     <Pressable onPress={onPress} style={styles.container} hitSlop={8}>
-      <Text style={styles.icon}>🔔</Text>
+      <Bell color={colors.text} size={22} strokeWidth={2} />
       {unreadCount > 0 ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+        <View style={[styles.badge, { backgroundColor: colors.danger }]}>
+          <Text style={[styles.badgeText, { fontFamily: fonts.sansBold }]}>
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </Text>
         </View>
       ) : null}
     </Pressable>
@@ -23,9 +30,6 @@ const styles = StyleSheet.create({
     position: "relative",
     padding: 4,
   },
-  icon: {
-    fontSize: 20,
-  },
   badge: {
     position: "absolute",
     top: -2,
@@ -33,7 +37,6 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#dc2626",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,
@@ -41,6 +44,5 @@ const styles = StyleSheet.create({
   badgeText: {
     color: "#fff",
     fontSize: 10,
-    fontWeight: "700",
   },
 });

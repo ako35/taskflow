@@ -8,11 +8,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Send, Trash2 } from "lucide-react-native";
 import type { TaskComment } from "@taskflow/shared";
 import { useAuth } from "../context/AuthContext";
 import useTaskComments from "../hooks/useTaskComments";
 import { formatDateTime } from "../lib/format";
 import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
 
 type CommentSectionProps = {
   taskId: number;
@@ -81,7 +83,11 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
           onPress={onSubmit}
           disabled={!draft.trim() || submitting}
         >
-          <Text style={styles.sendButtonText}>{submitting ? "..." : "Gönder"}</Text>
+          {submitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Send color="#fff" size={16} strokeWidth={2} />
+          )}
         </Pressable>
       </View>
 
@@ -104,8 +110,9 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
             </View>
             <Text style={[styles.commentContent, { color: colors.text }]}>{comment.content}</Text>
             {comment.author.email === user?.email ? (
-              <Pressable onPress={() => onDelete(comment)} hitSlop={8}>
-                <Text style={[styles.deleteLink, { color: colors.danger }]}>Sil</Text>
+              <Pressable onPress={() => onDelete(comment)} hitSlop={8} style={styles.deleteLink}>
+                <Trash2 color={colors.danger} size={13} strokeWidth={2} />
+                <Text style={[styles.deleteLinkText, { color: colors.danger }]}>Sil</Text>
               </Pressable>
             ) : null}
           </View>
@@ -123,7 +130,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: fonts.displayBold,
     marginBottom: 12,
   },
   composer: {
@@ -135,25 +142,23 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
+    fontFamily: fonts.sansRegular,
     minHeight: 40,
     maxHeight: 100,
   },
   sendButton: {
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    borderRadius: 10,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sendButtonDisabled: {
     opacity: 0.5,
-  },
-  sendButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 13,
   },
   spacing: {
     marginTop: 8,
@@ -164,7 +169,7 @@ const styles = StyleSheet.create({
   },
   comment: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 10,
     marginBottom: 8,
   },
@@ -174,7 +179,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   commentAuthor: {
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
     fontSize: 13,
   },
   commentDate: {
@@ -182,10 +187,17 @@ const styles = StyleSheet.create({
   },
   commentContent: {
     fontSize: 14,
+    fontFamily: fonts.sansRegular,
   },
   deleteLink: {
     marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+  },
+  deleteLinkText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: fonts.sansSemiBold,
   },
 });

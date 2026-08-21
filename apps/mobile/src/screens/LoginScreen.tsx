@@ -1,5 +1,8 @@
-import { Button, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { Compass } from "lucide-react-native";
+import AppButton from "../components/Button";
 import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
 
 type LoginScreenProps = {
   canSignIn: boolean;
@@ -16,21 +19,27 @@ export default function LoginScreen({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <Text style={[styles.title, { color: colors.text }]}>TaskFlow</Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+      <View style={[styles.logo, { backgroundColor: colors.primary }]}>
+        <Compass color="#fff" size={28} strokeWidth={2} />
+      </View>
+      <Text style={[styles.title, { color: colors.text, fontFamily: fonts.displayBold }]}>
+        TaskFlow
+      </Text>
+      <Text style={[styles.subtitle, { color: colors.textMuted, fontFamily: fonts.sansRegular }]}>
         Devam etmek için Google ile giriş yapın
       </Text>
       <View style={styles.spacing}>
-        <Button
-          title="Google ile Giriş Yap"
-          onPress={onSignIn}
-          disabled={!canSignIn}
-          color={colors.primary}
-        />
+        <AppButton title="Google ile Giriş Yap" onPress={onSignIn} disabled={!canSignIn} />
       </View>
-      {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
+      {error ? (
+        <Text
+          style={[styles.error, { color: colors.danger, fontFamily: fonts.sansMedium }]}
+        >
+          {error}
+        </Text>
+      ) : null}
       {!canSignIn ? (
-        <Text style={[styles.hint, { color: colors.textMuted }]}>
+        <Text style={[styles.hint, { color: colors.textMuted, fontFamily: fonts.sansRegular }]}>
           Google OAuth istemci kimlikleri henüz yapılandırılmadı (app.json{" "}
           {"->"} extra).
         </Text>
@@ -46,9 +55,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24,
   },
+  logo: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 30,
   },
   subtitle: {
     marginTop: 8,

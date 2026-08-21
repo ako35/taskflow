@@ -6,7 +6,10 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": ["taskflow", "com.taskflow.mobile"],
+    "scheme": [
+      "taskflow",
+      "com.taskflow.mobile"
+    ],
     "extra": {
       "apiUrl": "https://taskflow-mu-lac.vercel.app/api",
       "googleWebClientId": "625073924200-3m8cpgu35qtc2mf1jnfg9aet24verhqk.apps.googleusercontent.com",
@@ -37,7 +40,8 @@
       "expo-web-browser",
       "expo-secure-store",
       "@react-native-community/datetimepicker",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-font"
     ],
     "owner": "alikcn35",
     "runtimeVersion": {

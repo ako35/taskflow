@@ -1,6 +1,18 @@
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
-import type { Workspace } from "@taskflow/shared";
+import { Compass, Layers3, Orbit, Plus, Shield, Sparkles, Target } from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
+import type { Workspace, WorkspaceIcon } from "@taskflow/shared";
 import { useTheme } from "../theme/ThemeContext";
+import { fonts } from "../theme/fonts";
+
+const WORKSPACE_ICONS: Record<WorkspaceIcon, LucideIcon> = {
+  compass: Compass,
+  layers: Layers3,
+  target: Target,
+  spark: Sparkles,
+  shield: Shield,
+  orbit: Orbit,
+};
 
 type WorkspaceSwitcherProps = {
   workspaces: Workspace[];
@@ -25,6 +37,7 @@ export default function WorkspaceSwitcher({
     >
       {workspaces.map((workspace) => {
         const active = workspace.id === activeWorkspaceId;
+        const Icon = WORKSPACE_ICONS[workspace.icon] ?? Compass;
         return (
           <Pressable
             key={workspace.id}
@@ -35,6 +48,7 @@ export default function WorkspaceSwitcher({
               active && { backgroundColor: workspace.color },
             ]}
           >
+            <Icon color={active ? "#fff" : colors.text} size={14} strokeWidth={2} />
             <Text
               style={[
                 styles.chipText,
@@ -51,7 +65,8 @@ export default function WorkspaceSwitcher({
         onPress={onCreatePress}
         style={[styles.chip, styles.createChip, { borderColor: colors.textMuted }]}
       >
-        <Text style={[styles.chipText, { color: colors.text }]}>+ Yeni</Text>
+        <Plus color={colors.text} size={14} strokeWidth={2} />
+        <Text style={[styles.chipText, { color: colors.text }]}>Yeni</Text>
       </Pressable>
     </ScrollView>
   );
@@ -63,14 +78,17 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     borderWidth: 1.5,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
   chipText: {
+    fontFamily: fonts.sansSemiBold,
     fontSize: 13,
-    fontWeight: "600",
   },
   chipTextActive: {
     color: "#fff",

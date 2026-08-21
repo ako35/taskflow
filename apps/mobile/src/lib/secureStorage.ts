@@ -24,3 +24,22 @@ export async function getStoredThemeMode(): Promise<ThemeMode | null> {
 export async function setStoredThemeMode(mode: ThemeMode): Promise<void> {
   await SecureStore.setItemAsync(THEME_MODE_KEY, mode);
 }
+
+const ARCHIVED_WORKSPACES_KEY = "taskflow_archived_workspaces";
+
+export async function getStoredArchivedWorkspaceIds(): Promise<string[]> {
+  const value = await SecureStore.getItemAsync(ARCHIVED_WORKSPACES_KEY);
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function setStoredArchivedWorkspaceIds(ids: string[]): Promise<void> {
+  await SecureStore.setItemAsync(ARCHIVED_WORKSPACES_KEY, JSON.stringify(ids));
+}

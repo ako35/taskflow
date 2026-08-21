@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Workspace } from "@taskflow/shared";
 import { fetchWorkspaces } from "../lib/api";
+import { getStoredArchivedWorkspaceIds } from "../lib/secureStorage";
 
 export default function useWorkspaces(idToken: string) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [archivedIds, setArchivedIds] = useState<string[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,28 +15,49 @@ export default function useWorkspaces(idToken: string) {
       setError(null);
       const items = await fetchWorkspaces(idToken);
       setWorkspaces(items);
-      setActiveWorkspaceId((current) => {
-        if (current && items.some((workspace) => workspace.id === current)) {
-          return current;
-        }
-        return items[0]?.id ?? null;
-      });
     } catch {
       setError("Çalışma alanları yüklenemedi.");
     }
   }, [idToken]);
 
+  const loadArchived = useCallback(async () => {
+    setArchivedIds(await getStoredArchivedWorkspaceIds());
+  }, []);
+
   useEffect(() => {
     setLoading(true);
-    load().finally(() => setLoading(false));
-  }, [load]);
+    Promise.all([load(), loadArchived()]).finally(() => setLoading(false));
+  }, [load, loadArchived]);
+
+  const activeWorkspaces = useMemo(
+    () => workspaces.filter((workspace) => !archivedIds.includes(workspace.id)),
+    [workspaces, archivedIds],
+  );
+
+  const archivedWorkspaces = useMemo(
+    () => workspaces.filter((workspace) => archivedIds.includes(workspace.id)),
+    [workspaces, archivedIds],
+  );
+
+  useEffect(() => {
+    if (activeWorkspaces.length === 0) return;
+    const stillActive = activeWorkspaces.some(
+      (workspace) => workspace.id === activeWorkspaceId,
+    );
+    if (!stillActive) {
+      setActiveWorkspaceId(activeWorkspaces[0].id);
+    }
+  }, [activeWorkspaces, activeWorkspaceId]);
 
   return {
     workspaces,
+    activeWorkspaces,
+    archivedWorkspaces,
     activeWorkspaceId,
     setActiveWorkspaceId,
     loading,
     error,
     reload: load,
+    reloadArchived: loadArchived,
   };
 }

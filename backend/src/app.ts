@@ -43,7 +43,14 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL;
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com";
 
 const GEMINI_API_VERSIONS = ["v1beta", "v1"] as const;
-const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+const GEMINI_FALLBACK_MODELS = [
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+  "gemini-flash-latest",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+];
 
 const DEFAULT_WORKSPACE_COLOR = "#5b8cff";
 const DEFAULT_WORKSPACE_ICON = "compass";
