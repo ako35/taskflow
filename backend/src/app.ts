@@ -17,6 +17,16 @@ if (!effectiveGoogleClientId) {
   throw new Error("Missing GOOGLE_CLIENT_ID in backend .env");
 }
 
+// Mobil (iOS/Android/Expo) istemcileri web'den farklı OAuth client ID kullanır;
+// Google her client ID için ayrı bir "aud" claim'i olan idToken üretir, bu yüzden
+// hepsi kabul edilebilir audience listesine eklenmeli.
+const googleAudiences = [
+  effectiveGoogleClientId,
+  process.env.GOOGLE_IOS_CLIENT_ID,
+  process.env.GOOGLE_ANDROID_CLIENT_ID,
+  process.env.GOOGLE_EXPO_CLIENT_ID,
+].filter((value): value is string => Boolean(value));
+
 const googleClient = new OAuth2Client(effectiveGoogleClientId);
 const prisma = new PrismaClient();
 const app = express();
@@ -77,7 +87,7 @@ declare global {
 async function verifyGoogleToken(idToken: string) {
   const ticket = await googleClient.verifyIdToken({
     idToken,
-    audience: effectiveGoogleClientId,
+    audience: googleAudiences,
   });
   const payload = ticket.getPayload();
   if (!payload?.email || payload.email_verified !== true) {

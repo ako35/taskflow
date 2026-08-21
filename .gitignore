@@ -1,6 +1,11 @@
 # Node.js
 **/node_modules/
 
+# Root workspace lockfile: Windows'ta üretilen lockfile Vercel'in Linux build
+# ortamında @rollup/rollup-linux-x64-gnu gibi optional native paketleri eksik
+# bırakıyor (bkz. https://github.com/npm/cli/issues/4828), bu yüzden commitlenmiyor.
+/package-lock.json
+
 # Vite build
 **/dist/
 

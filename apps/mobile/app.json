@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "TaskFlow",
+    "slug": "taskflow-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "taskflow",
+    "extra": {
+      "apiUrl": "https://taskflow-mu-lac.vercel.app/api",
+      "googleWebClientId": "625073924200-3m8cpgu35qtc2mf1jnfg9aet24verhqk.apps.googleusercontent.com",
+      "googleIosClientId": "987631986372-5ok950venoqots212l0v34mim3g76gss.apps.googleusercontent.com",
+      "googleAndroidClientId": "987631986372-vocom9m0k8du3kqvlecodggi93avgj8b.apps.googleusercontent.com",
+      "eas": {
+        "projectId": "49961ed9-2bbb-490a-8de3-d95904a9e3ff"
+      }
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.taskflow.mobile"
+    },
+    "android": {
+      "package": "com.taskflow.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-web-browser",
+      "expo-secure-store"
+    ],
+    "owner": "alikcn35"
+  }
+}
