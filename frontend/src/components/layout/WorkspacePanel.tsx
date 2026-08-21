@@ -38,7 +38,9 @@ type WorkspacePanelProps = {
   taskUpdating: boolean;
   currentUser: User | null;
   isWorkspaceOwner: boolean;
+  idToken: string | null;
   onCloseTaskDetails: () => void;
+  onUnauthorized: () => void;
   onCommentDraftChange: (value: string) => void;
   onSubmitComment: () => void;
   onDeleteComment: (commentId: number) => void;
@@ -73,7 +75,9 @@ export default function WorkspacePanel({
   taskUpdating,
   currentUser,
   isWorkspaceOwner,
+  idToken,
   onCloseTaskDetails,
+  onUnauthorized,
   onCommentDraftChange,
   onSubmitComment,
   onDeleteComment,
@@ -140,7 +144,9 @@ export default function WorkspacePanel({
             commentDraft={commentDraft}
             commentSubmitting={commentSubmitting}
             taskUpdating={taskUpdating}
+            idToken={idToken}
             onClose={onCloseTaskDetails}
+            onUnauthorized={onUnauthorized}
             onCommentDraftChange={onCommentDraftChange}
             onSubmitComment={onSubmitComment}
             onDeleteComment={onDeleteComment}

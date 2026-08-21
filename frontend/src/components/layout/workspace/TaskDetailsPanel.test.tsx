@@ -35,9 +35,13 @@ describe("TaskDetailsPanel", () => {
         commentDraft=""
         commentSubmitting={false}
         taskUpdating={false}
+        isWorkspaceOwner={false}
+        idToken={null}
         onClose={() => {}}
+        onUnauthorized={() => {}}
         onCommentDraftChange={() => {}}
         onSubmitComment={() => {}}
+        onDeleteComment={() => {}}
         onSaveTaskDetails={onSaveTaskDetails}
       />,
     );
@@ -54,9 +58,13 @@ describe("TaskDetailsPanel", () => {
         commentDraft=""
         commentSubmitting={false}
         taskUpdating={false}
+        isWorkspaceOwner={false}
+        idToken={null}
         onClose={() => {}}
+        onUnauthorized={() => {}}
         onCommentDraftChange={() => {}}
         onSubmitComment={() => {}}
+        onDeleteComment={() => {}}
         onSaveTaskDetails={onSaveTaskDetails}
       />,
     );
@@ -78,9 +86,13 @@ describe("TaskDetailsPanel", () => {
         commentDraft=""
         commentSubmitting={false}
         taskUpdating={false}
+        isWorkspaceOwner={false}
+        idToken={null}
         onClose={() => {}}
+        onUnauthorized={() => {}}
         onCommentDraftChange={() => {}}
         onSubmitComment={() => {}}
+        onDeleteComment={() => {}}
         onSaveTaskDetails={onSaveTaskDetails}
       />,
     );
@@ -121,9 +133,13 @@ describe("TaskDetailsPanel", () => {
         commentDraft=""
         commentSubmitting={false}
         taskUpdating={false}
+        isWorkspaceOwner={false}
+        idToken={null}
         onClose={() => {}}
+        onUnauthorized={() => {}}
         onCommentDraftChange={() => {}}
         onSubmitComment={() => {}}
+        onDeleteComment={() => {}}
         onSaveTaskDetails={onSaveTaskDetails}
       />,
     );

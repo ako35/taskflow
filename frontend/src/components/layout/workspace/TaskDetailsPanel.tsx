@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import type { Task, TaskComment, User } from "../../../types";
 import { UiGlyph } from "../../ui/Icons";
-import { priorityClassNames, statusClassNames } from "../../../constants";
+import { API_URL, priorityClassNames, statusClassNames } from "../../../constants";
 import InlineSelectMenu from "../../tasks/InlineSelectMenu";
 
 type TaskDetailsPanelProps = {
@@ -20,7 +20,9 @@ type TaskDetailsPanelProps = {
   commentDraft: string;
   commentSubmitting: boolean;
   taskUpdating: boolean;
+  idToken: string | null;
   onClose: () => void;
+  onUnauthorized: () => void;
   onCommentDraftChange: (value: string) => void;
   onSubmitComment: () => void;
   onDeleteComment: (commentId: number) => void;
@@ -93,7 +95,9 @@ export default function TaskDetailsPanel({
   commentDraft,
   commentSubmitting,
   taskUpdating,
+  idToken,
   onClose,
+  onUnauthorized,
   onCommentDraftChange,
   onSubmitComment,
   onDeleteComment,
@@ -107,6 +111,8 @@ export default function TaskDetailsPanel({
     "status" | "priority" | null
   >(null);
   const [saveAcknowledged, setSaveAcknowledged] = useState(false);
+  const [aiImproving, setAiImproving] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const saveAckTimerRef = useRef<number | null>(null);
   const titleTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -120,6 +126,7 @@ export default function TaskDetailsPanel({
     setDraftPriority(task.priority || "Orta");
     setDraftRemindAt(toDateTimeLocal(task.remindAt));
     setSaveAcknowledged(false);
+    setAiError(null);
   }, [task]);
 
   useEffect(() => {
@@ -178,6 +185,66 @@ export default function TaskDetailsPanel({
       ? "✓ Kaydedildi"
       : "Degisiklikleri Kaydet";
 
+  const handleAiImprove = async () => {
+    if (!idToken) {
+      setAiError("Oturumunuzun süresi dolmuş olabilir. Lütfen tekrar giriş yapın.");
+      return;
+    }
+
+    const sourceText = draftTitle.trim();
+    if (!sourceText) {
+      setAiError("AI iyilestirme icin once metin olusturun.");
+      return;
+    }
+
+    setAiImproving(true);
+    setAiError(null);
+
+    try {
+      const refineResponse = await fetch(`${API_URL}/ai/refine-text`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          field: "title",
+          text: sourceText,
+        }),
+      });
+
+      const refinePayload = (await refineResponse
+        .json()
+        .catch(() => null)) as { text?: string; error?: string } | null;
+
+      if (refineResponse.status === 401) {
+        onUnauthorized();
+        return;
+      }
+
+      if (!refineResponse.ok || !refinePayload?.text) {
+        throw new Error(
+          refinePayload?.error || "AI metin iyilestirme basarisiz oldu.",
+        );
+      }
+
+      const refinedText = refinePayload.text.trim();
+      if (!refinedText) {
+        throw new Error("AI duzenleme sonucu bos dondu.");
+      }
+
+      setDraftTitle(refinedText);
+    } catch (error) {
+      setAiError(
+        error instanceof Error
+          ? error.message
+          : "AI metin iyilestirme sirasinda bir hata olustu.",
+      );
+    } finally {
+      setAiImproving(false);
+    }
+  };
+
   const handleSaveDetails = async () => {
     await onSaveTaskDetails({
       title: draftTitle.trim(),
@@ -216,7 +283,25 @@ export default function TaskDetailsPanel({
           <h4>Görevi Düzenle</h4>
 
           <label className="task-details-field">
-            <span>Görev Metni</span>
+            <span className="task-details-field-label-row">
+              Görev Metni
+              <button
+                type="button"
+                className="task-action-btn task-action-ai-btn task-details-ai-btn"
+                onClick={(event) => {
+                  event.preventDefault();
+                  void handleAiImprove();
+                }}
+                disabled={aiImproving}
+                aria-label="AI ile metni iyilestir"
+                title="AI ile metni iyilestir"
+              >
+                <span aria-hidden="true">
+                  <UiGlyph icon="spark" />
+                </span>
+                {aiImproving ? "AI iyilestiriyor..." : "AI ile iyilestir"}
+              </button>
+            </span>
             <textarea
               ref={titleTextareaRef}
               className="task-details-title-input"
@@ -226,6 +311,7 @@ export default function TaskDetailsPanel({
               aria-label="Görev metni"
               rows={2}
             />
+            {aiError ? <p className="task-details-ai-error">{aiError}</p> : null}
           </label>
 
           <p className="task-details-created-at">

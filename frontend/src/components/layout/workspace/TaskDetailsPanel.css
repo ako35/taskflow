@@ -191,6 +191,25 @@
   text-transform: uppercase;
 }
 
+.task-details-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.task-details-ai-btn {
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+
+.task-details-ai-error {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #fca5a5;
+}
+
 .task-details-field input,
 .task-details-field select {
   width: 100%;
