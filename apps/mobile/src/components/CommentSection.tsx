@@ -72,6 +72,12 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
           onChangeText={setDraft}
           placeholder="Bir yorum yaz..."
           placeholderTextColor={colors.textMuted}
+          selectionColor={colors.primary}
+          cursorColor={colors.primary}
+          underlineColorAndroid="transparent"
+          autoCorrect={false}
+          spellCheck={false}
+          importantForAutofill="no"
           multiline
         />
         <Pressable

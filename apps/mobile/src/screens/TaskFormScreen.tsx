@@ -152,6 +152,12 @@ export default function TaskFormScreen({ route, navigation }: Props) {
         onChangeText={setTitle}
         placeholder="Görev adını yazın"
         placeholderTextColor={colors.textMuted}
+        selectionColor={colors.primary}
+        cursorColor={colors.primary}
+        underlineColorAndroid="transparent"
+        autoCorrect={false}
+        spellCheck={false}
+        importantForAutofill="no"
         multiline
       />
       <Pressable

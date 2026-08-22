@@ -18,7 +18,6 @@ import { useAuth } from "../context/AuthContext";
 import useWorkspaces from "../hooks/useWorkspaces";
 import useTasks from "../hooks/useTasks";
 import useNotifications from "../hooks/useNotifications";
-import WorkspaceSwitcher from "../components/WorkspaceSwitcher";
 import NotificationBell from "../components/NotificationBell";
 import SideMenu from "../components/SideMenu";
 import Badge from "../components/Badge";
@@ -194,12 +193,19 @@ export default function TaskListScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <WorkspaceSwitcher
-        workspaces={activeWorkspaces}
-        activeWorkspaceId={activeWorkspaceId}
-        onSelect={setActiveWorkspaceId}
-        onCreatePress={() => navigation.navigate("WorkspaceCreate")}
-      />
+      {activeWorkspace ? (
+        <View style={styles.activeWorkspaceRow}>
+          <View
+            style={[styles.workspaceDot, { backgroundColor: activeWorkspace.color }]}
+          />
+          <Text
+            style={[styles.activeWorkspaceText, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {activeWorkspace.name}
+          </Text>
+        </View>
+      ) : null}
 
       {archivedWorkspaces.length > 0 ? (
         <Pressable
@@ -271,9 +277,8 @@ export default function TaskListScreen({ navigation }: Props) {
                 style={({ pressed }) => [
                   styles.row,
                   {
-                    backgroundColor: colors.surface,
+                    backgroundColor: pressed ? colors.surfaceAlt : "transparent",
                     borderColor: colors.border,
-                    opacity: pressed ? 0.85 : 1,
                   },
                 ]}
               >
@@ -391,6 +396,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 16,
   },
+  activeWorkspaceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    alignSelf: "flex-start",
+    marginBottom: 14,
+  },
+  workspaceDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  activeWorkspaceText: {
+    fontSize: 15,
+    fontFamily: fonts.sansBold,
+  },
   archivedLink: {
     marginBottom: 12,
   },
@@ -440,11 +461,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
-    shadowColor: "#020617",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    elevation: 2,
   },
   rowTopLine: {
     flexDirection: "row",
