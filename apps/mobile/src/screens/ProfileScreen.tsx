@@ -49,8 +49,17 @@ export default function ProfileScreen() {
 
   const inputStyle = [
     styles.input,
-    { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+    { backgroundColor: colors.surfaceAlt, borderColor: colors.border, color: colors.text },
   ];
+
+  const inputExtraProps = {
+    selectionColor: colors.primary,
+    cursorColor: colors.primary,
+    underlineColorAndroid: "transparent" as const,
+    autoCorrect: false,
+    spellCheck: false,
+    importantForAutofill: "no" as const,
+  };
 
   if (loading) {
     return (
@@ -109,6 +118,7 @@ export default function ProfileScreen() {
         onChangeText={setFirstName}
         placeholder="Adınız"
         placeholderTextColor={colors.textMuted}
+        {...inputExtraProps}
       />
 
       <Text style={[styles.label, { color: colors.textMuted }]}>Soyad</Text>
@@ -118,6 +128,7 @@ export default function ProfileScreen() {
         onChangeText={setLastName}
         placeholder="Soyadınız"
         placeholderTextColor={colors.textMuted}
+        {...inputExtraProps}
       />
 
       <Text style={[styles.label, { color: colors.textMuted }]}>Telefon</Text>
@@ -128,6 +139,7 @@ export default function ProfileScreen() {
         placeholder="05xx xxx xx xx"
         placeholderTextColor={colors.textMuted}
         keyboardType="phone-pad"
+        {...inputExtraProps}
       />
 
       <Text style={[styles.label, { color: colors.textMuted }]}>E-posta</Text>
@@ -139,6 +151,7 @@ export default function ProfileScreen() {
         placeholderTextColor={colors.textMuted}
         keyboardType="email-address"
         autoCapitalize="none"
+        {...inputExtraProps}
       />
 
       <View style={styles.saveButton}>

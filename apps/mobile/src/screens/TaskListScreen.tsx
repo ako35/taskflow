@@ -161,9 +161,11 @@ export default function TaskListScreen({ navigation }: Props) {
           <Pressable hitSlop={8} onPress={() => setMenuOpen(true)}>
             <Menu color={colors.text} size={22} strokeWidth={2} />
           </Pressable>
-          <Text style={[styles.greeting, { color: colors.text }]}>
-            {user?.name ?? user?.email ?? "TaskFlow"}
-          </Text>
+          <Pressable hitSlop={8} onPress={() => navigation.navigate("Profile")}>
+            <Text style={[styles.greeting, { color: colors.text }]}>
+              {user?.name ?? user?.email ?? "TaskFlow"}
+            </Text>
+          </Pressable>
         </View>
         <View style={styles.headerActions}>
           {activeWorkspace ? (
@@ -277,7 +279,7 @@ export default function TaskListScreen({ navigation }: Props) {
                 style={({ pressed }) => [
                   styles.row,
                   {
-                    backgroundColor: pressed ? colors.surfaceAlt : "transparent",
+                    backgroundColor: pressed ? colors.surfaceAlt : colors.surface,
                     borderColor: colors.border,
                   },
                 ]}

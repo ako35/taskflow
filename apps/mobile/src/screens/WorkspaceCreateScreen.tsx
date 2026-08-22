@@ -39,13 +39,19 @@ export default function WorkspaceCreateScreen({ navigation }: Props) {
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+          { backgroundColor: colors.surfaceAlt, borderColor: colors.border, color: colors.text },
         ]}
         value={name}
         onChangeText={setName}
         placeholder="ör. Pazarlama"
         placeholderTextColor={colors.textMuted}
         autoFocus
+        selectionColor={colors.primary}
+        cursorColor={colors.primary}
+        underlineColorAndroid="transparent"
+        autoCorrect={false}
+        spellCheck={false}
+        importantForAutofill="no"
       />
       <View style={styles.button}>
         <AppButton title="Oluştur" onPress={onCreate} loading={creating} disabled={creating} />

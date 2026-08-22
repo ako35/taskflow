@@ -160,8 +160,17 @@ export default function MembersScreen({ route, navigation }: Props) {
 
   const inputStyle = [
     styles.input,
-    { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+    { backgroundColor: colors.surfaceAlt, borderColor: colors.border, color: colors.text },
   ];
+
+  const inputExtraProps = {
+    selectionColor: colors.primary,
+    cursorColor: colors.primary,
+    underlineColorAndroid: "transparent" as const,
+    autoCorrect: false,
+    spellCheck: false,
+    importantForAutofill: "no" as const,
+  };
 
   return (
     <ScrollView
@@ -186,7 +195,12 @@ export default function MembersScreen({ route, navigation }: Props) {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Çalışma Alanını Yönet
           </Text>
-          <TextInput style={inputStyle} value={nameDraft} onChangeText={setNameDraft} />
+          <TextInput
+            style={inputStyle}
+            value={nameDraft}
+            onChangeText={setNameDraft}
+            {...inputExtraProps}
+          />
           <View style={styles.manageRow}>
             <View style={styles.inlineButton}>
               <AppButton
@@ -219,6 +233,7 @@ export default function MembersScreen({ route, navigation }: Props) {
         placeholderTextColor={colors.textMuted}
         keyboardType="email-address"
         autoCapitalize="none"
+        {...inputExtraProps}
       />
       <TextInput
         style={[inputStyle, styles.multiline]}
@@ -227,6 +242,7 @@ export default function MembersScreen({ route, navigation }: Props) {
         placeholder="Kısa not (opsiyonel)"
         placeholderTextColor={colors.textMuted}
         multiline
+        {...inputExtraProps}
       />
       <View style={styles.inlineButton}>
         <AppButton
@@ -249,6 +265,7 @@ export default function MembersScreen({ route, navigation }: Props) {
         placeholder="Davet linki veya kodu"
         placeholderTextColor={colors.textMuted}
         autoCapitalize="none"
+        {...inputExtraProps}
       />
       <View style={styles.inlineButton}>
         <AppButton
