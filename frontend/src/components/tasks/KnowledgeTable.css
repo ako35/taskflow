@@ -75,6 +75,11 @@
   text-align: center;
 }
 .knowledge-editable-cell {
+  cursor: pointer;
+}
+
+.knowledge-editable-cell input,
+.knowledge-editable-cell textarea {
   cursor: text;
 }
 .knowledge-title-cell {
