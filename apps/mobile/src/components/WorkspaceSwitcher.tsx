@@ -1,18 +1,9 @@
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
-import { Compass, Layers3, Orbit, Plus, Shield, Sparkles, Target } from "lucide-react-native";
-import type { LucideIcon } from "lucide-react-native";
-import type { Workspace, WorkspaceIcon } from "@taskflow/shared";
+import { Compass, Plus } from "lucide-react-native";
+import type { Workspace } from "@taskflow/shared";
 import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
-
-const WORKSPACE_ICONS: Record<WorkspaceIcon, LucideIcon> = {
-  compass: Compass,
-  layers: Layers3,
-  target: Target,
-  spark: Sparkles,
-  shield: Shield,
-  orbit: Orbit,
-};
+import { WORKSPACE_ICONS } from "../lib/workspaceIcons";
 
 type WorkspaceSwitcherProps = {
   workspaces: Workspace[];
@@ -74,6 +65,7 @@ export default function WorkspaceSwitcher({
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: "center",
     gap: 8,
     paddingBottom: 12,
   },

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Task } from "@taskflow/shared";
 import {
+  ApiError,
   createTask as createTaskRequest,
   deleteTask as deleteTaskRequest,
   fetchTasks,
@@ -9,7 +10,11 @@ import {
   type UpdateTaskPayload,
 } from "../lib/api";
 
-export default function useTasks(idToken: string, workspaceId: string | null) {
+export default function useTasks(
+  idToken: string,
+  workspaceId: string | null,
+  onUnauthorized?: () => void,
+) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +28,14 @@ export default function useTasks(idToken: string, workspaceId: string | null) {
       setError(null);
       const items = await fetchTasks(idToken, workspaceId);
       setTasks(items);
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        onUnauthorized?.();
+        return;
+      }
       setError("Görevler yüklenemedi. Bağlantınızı kontrol edin.");
     }
-  }, [idToken, workspaceId]);
+  }, [idToken, workspaceId, onUnauthorized]);
 
   useEffect(() => {
     setLoading(true);

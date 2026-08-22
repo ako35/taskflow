@@ -1,4 +1,5 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, type ViewStyle } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 
@@ -23,41 +24,75 @@ export default function Button({
   icon,
   style,
 }: ButtonProps) {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const isDisabled = disabled || loading;
 
-  const backgroundColor =
-    variant === "primary"
-      ? colors.primary
-      : variant === "danger"
-        ? colors.danger
-        : colors.surfaceAlt;
   const textColor = variant === "secondary" ? colors.text : "#fff";
-  const borderColor = variant === "secondary" ? colors.border : "transparent";
+  const borderColor =
+    variant === "primary"
+      ? "rgba(125, 211, 252, 0.26)"
+      : variant === "secondary"
+        ? colors.border
+        : "transparent";
+  const shadowColor =
+    variant === "primary" ? "#1d4ed8" : variant === "danger" ? colors.danger : "#020617";
+
+  const content = loading ? (
+    <ActivityIndicator size="small" color={textColor} />
+  ) : (
+    <>
+      {icon}
+      <Text style={[styles.text, { color: textColor }]}>{title}</Text>
+    </>
+  );
 
   return (
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
       style={({ pressed }) => [
-        styles.button,
-        { backgroundColor, borderColor, opacity: isDisabled ? 0.55 : pressed ? 0.85 : 1 },
+        styles.shadowWrap,
+        {
+          shadowColor,
+          opacity: isDisabled ? 0.55 : pressed ? 0.85 : 1,
+          transform: [{ translateY: pressed && !isDisabled ? -1 : 0 }],
+        },
         style,
       ]}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={textColor} />
+      {variant === "danger" ? (
+        <View style={[styles.button, { backgroundColor: colors.danger, borderColor }]}>
+          {content}
+        </View>
       ) : (
-        <>
-          {icon}
-          <Text style={[styles.text, { color: textColor }]}>{title}</Text>
-        </>
+        <LinearGradient
+          colors={
+            variant === "primary"
+              ? ["#5b8cff", "#2d5ff0", "#1d4ed8"]
+              : mode === "light"
+                ? ["#ffffff", "#f8fbff", "#edf3ff"]
+                : ["rgba(25, 35, 55, 0.95)", "rgba(19, 28, 46, 0.95)", "rgba(13, 22, 39, 0.95)"]
+          }
+          locations={[0, 0.58, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.button, { borderColor }]}
+        >
+          {content}
+        </LinearGradient>
       )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  shadowWrap: {
+    borderRadius: 14,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.32,
+    shadowRadius: 18,
+    elevation: Platform.OS === "android" ? 6 : 0,
+  },
   button: {
     flexDirection: "row",
     alignItems: "center",

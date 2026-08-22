@@ -17,6 +17,16 @@ export type ApiHealth = {
   status: string;
 };
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 async function authRequest<T>(
   idToken: string,
   path: string,
@@ -33,7 +43,10 @@ async function authRequest<T>(
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new Error(body?.error || `İstek başarısız oldu: ${response.status}`);
+    throw new ApiError(
+      body?.error || `İstek başarısız oldu: ${response.status}`,
+      response.status,
+    );
   }
 
   if (response.status === 204) {

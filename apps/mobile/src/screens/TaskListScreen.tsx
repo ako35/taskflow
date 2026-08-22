@@ -1,17 +1,19 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   RefreshControl,
+  SectionList,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { LogOut, Plus, User, Users } from "lucide-react-native";
+import { ChevronDown, LogOut, Menu, Pencil, Plus, User, Users } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Task } from "@taskflow/shared";
 import { useAuth } from "../context/AuthContext";
 import useWorkspaces from "../hooks/useWorkspaces";
@@ -19,10 +21,14 @@ import useTasks from "../hooks/useTasks";
 import useNotifications from "../hooks/useNotifications";
 import WorkspaceSwitcher from "../components/WorkspaceSwitcher";
 import NotificationBell from "../components/NotificationBell";
+import SideMenu from "../components/SideMenu";
+import Badge from "../components/Badge";
 import { formatDateTime } from "../lib/format";
+import { groupTasksByStatus, isCompletedStatus } from "../lib/taskSort";
 import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
-import { PRIORITY_COLORS, STATUS_COLORS, STATUSES } from "../constants";
+import { priorityToBadgeTone, statusToBadgeTone } from "../theme/badgeColors";
+import { STATUSES } from "../constants";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "TaskList">;
@@ -30,6 +36,19 @@ type Props = NativeStackScreenProps<RootStackParamList, "TaskList">;
 export default function TaskListScreen({ navigation }: Props) {
   const { idToken, user, signOut } = useAuth();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const unauthorizedHandledRef = useRef(false);
+  const handleUnauthorized = useCallback(() => {
+    if (unauthorizedHandledRef.current) return;
+    unauthorizedHandledRef.current = true;
+    Alert.alert(
+      "Oturum süresi doldu",
+      "Devam etmek için lütfen tekrar giriş yapın.",
+    );
+    signOut();
+  }, [signOut]);
+
   const {
     activeWorkspaces,
     archivedWorkspaces,
@@ -39,21 +58,65 @@ export default function TaskListScreen({ navigation }: Props) {
     error: workspacesError,
     reload: reloadWorkspaces,
     reloadArchived,
-  } = useWorkspaces(idToken);
+  } = useWorkspaces(idToken, handleUnauthorized);
   const {
     tasks,
     loading: tasksLoading,
     error: tasksError,
     reload: reloadTasks,
     updateTask,
-    deleteTask,
-  } = useTasks(idToken, activeWorkspaceId);
-  const { unreadCount, reload: reloadNotifications } = useNotifications(idToken);
+  } = useTasks(idToken, activeWorkspaceId, handleUnauthorized);
+  const { unreadCount, reload: reloadNotifications } = useNotifications(
+    idToken,
+    handleUnauthorized,
+  );
   const activeWorkspace = activeWorkspaces.find(
     (workspace) => workspace.id === activeWorkspaceId,
   );
 
   const [refreshing, setRefreshing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [collapsedOverrides, setCollapsedOverrides] = useState<Record<string, boolean>>({});
+
+  const isGroupCollapsed = useCallback(
+    (status: string) => collapsedOverrides[status] ?? isCompletedStatus(status),
+    [collapsedOverrides],
+  );
+
+  const toggleGroup = useCallback(
+    (status: string) => {
+      setCollapsedOverrides((current) => ({
+        ...current,
+        [status]: !isGroupCollapsed(status),
+      }));
+    },
+    [isGroupCollapsed],
+  );
+
+  const sections = useMemo(() => groupTasksByStatus(tasks), [tasks]);
+
+  const indexById = useMemo(() => {
+    const map = new Map<number, number>();
+    let counter = 0;
+    for (const section of sections) {
+      if (isGroupCollapsed(section.status)) continue;
+      for (const task of section.data) {
+        counter += 1;
+        map.set(task.id, counter);
+      }
+    }
+    return map;
+  }, [sections, isGroupCollapsed]);
+
+  const visibleSections = useMemo(
+    () =>
+      sections.map((section) => ({
+        status: section.status,
+        count: section.data.length,
+        data: isGroupCollapsed(section.status) ? [] : section.data,
+      })),
+    [sections, isGroupCollapsed],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -85,33 +148,25 @@ export default function TaskListScreen({ navigation }: Props) {
     [updateTask],
   );
 
-  const confirmDelete = useCallback(
-    (task: Task) => {
-      Alert.alert("Görevi sil", `"${task.title}" silinsin mi?`, [
-        { text: "Vazgeç", style: "cancel" },
-        {
-          text: "Sil",
-          style: "destructive",
-          onPress: () => {
-            deleteTask(task.id).catch(() => {
-              Alert.alert("Hata", "Görev silinemedi.");
-            });
-          },
-        },
-      ]);
-    },
-    [deleteTask],
-  );
-
   const loading = workspacesLoading || tasksLoading;
   const error = workspacesError || tasksError;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.bg, paddingTop: insets.top + 16 },
+      ]}
+    >
       <View style={styles.header}>
-        <Text style={[styles.greeting, { color: colors.text }]}>
-          {user?.name ?? user?.email ?? "TaskFlow"}
-        </Text>
+        <View style={styles.headerLeft}>
+          <Pressable hitSlop={8} onPress={() => setMenuOpen(true)}>
+            <Menu color={colors.text} size={22} strokeWidth={2} />
+          </Pressable>
+          <Text style={[styles.greeting, { color: colors.text }]}>
+            {user?.name ?? user?.email ?? "TaskFlow"}
+          </Text>
+        </View>
         <View style={styles.headerActions}>
           {activeWorkspace ? (
             <Pressable
@@ -162,10 +217,14 @@ export default function TaskListScreen({ navigation }: Props) {
         <ActivityIndicator style={styles.spacing} color={colors.primary} />
       ) : error ? (
         <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+      ) : tasks.length === 0 ? (
+        <Text style={[styles.empty, { color: colors.textMuted }]}>Henüz görev yok.</Text>
       ) : (
-        <FlatList
-          data={tasks}
+        <SectionList
+          sections={visibleSections}
           keyExtractor={(item) => String(item.id)}
+          stickySectionHeadersEnabled={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -173,74 +232,135 @@ export default function TaskListScreen({ navigation }: Props) {
               tintColor={colors.primary}
             />
           }
-          ListEmptyComponent={
-            <Text style={[styles.empty, { color: colors.textMuted }]}>Henüz görev yok.</Text>
-          }
-          contentContainerStyle={tasks.length === 0 ? styles.emptyList : undefined}
-          renderItem={({ item }) => (
-            <View style={[styles.taskCard, { borderColor: colors.border }]}>
+          renderSectionHeader={({ section }) => {
+            const collapsed = isGroupCollapsed(section.status);
+            return (
               <Pressable
-                onPress={() =>
-                  activeWorkspaceId &&
-                  navigation.navigate("TaskForm", {
-                    task: item,
-                    workspaceId: activeWorkspaceId,
-                  })
-                }
+                onPress={() => toggleGroup(section.status)}
+                style={[styles.sectionHeader, { backgroundColor: colors.bg }]}
               >
-                <Text style={[styles.taskTitle, { color: colors.text }]}>{item.title}</Text>
-                {item.description ? (
+                <View
+                  style={[
+                    styles.chevron,
+                    { transform: [{ rotate: collapsed ? "-90deg" : "0deg" }] },
+                  ]}
+                >
+                  <ChevronDown color={colors.textMuted} size={16} strokeWidth={2.25} />
+                </View>
+                <View style={[styles.countChip, { backgroundColor: colors.surfaceAlt }]}>
+                  <Text style={[styles.countChipText, { color: colors.textMuted }]}>
+                    {section.count}
+                  </Text>
+                </View>
+                <Text style={[styles.sectionLabel, { color: colors.text }]}>
+                  {section.status}
+                </Text>
+              </Pressable>
+            );
+          }}
+          renderItem={({ item }) => {
+            const openEdit = () =>
+              activeWorkspaceId &&
+              navigation.navigate("TaskForm", {
+                task: item,
+                workspaceId: activeWorkspaceId,
+              });
+
+            return (
+              <Pressable
+                onPress={openEdit}
+                style={({ pressed }) => [
+                  styles.row,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <View style={styles.rowTopLine}>
+                  <Text style={[styles.indexText, { color: colors.textMuted }]}>
+                    {indexById.get(item.id)}
+                  </Text>
                   <Text
-                    style={[styles.taskDescription, { color: colors.textMuted }]}
+                    style={[styles.taskTitle, { color: colors.text }]}
                     numberOfLines={2}
                   >
-                    {item.description}
+                    {item.title}
+                  </Text>
+                </View>
+
+                {item.remindAt ? (
+                  <Text style={[styles.reminderText, { color: colors.textMuted }]}>
+                    ⏰ {formatDateTime(item.remindAt)}
                   </Text>
                 ) : null}
-                <View style={styles.badgeRow}>
-                  <Text
-                    style={[
-                      styles.badge,
-                      { color: STATUS_COLORS[item.status ?? "Yapılacak"] },
-                    ]}
+
+                <View style={styles.rowBottomLine}>
+                  <View style={styles.badgesGroup}>
+                    <Pressable onPress={() => toggleStatus(item)} hitSlop={6}>
+                      <Badge
+                        label={item.status ?? "Yapılacak"}
+                        tone={statusToBadgeTone(item.status ?? "Yapılacak")}
+                      />
+                    </Pressable>
+                    <Badge label={item.priority} tone={priorityToBadgeTone(item.priority)} />
+                  </View>
+
+                  <Pressable
+                    onPress={openEdit}
+                    hitSlop={8}
+                    style={[styles.editBtn, { borderColor: colors.border }]}
                   >
-                    {item.status ?? "Yapılacak"}
-                  </Text>
-                  <Text style={[styles.badge, { color: PRIORITY_COLORS[item.priority] }]}>
-                    {item.priority}
-                  </Text>
-                  {item.remindAt ? (
-                    <Text style={[styles.reminderBadge, { color: colors.textMuted }]}>
-                      ⏰ {formatDateTime(item.remindAt)}
+                    <Pencil color={colors.primary} size={13} strokeWidth={2} />
+                    <Text style={[styles.editBtnText, { color: colors.primary }]}>
+                      Düzenle
                     </Text>
-                  ) : null}
+                  </Pressable>
                 </View>
               </Pressable>
-              <View style={[styles.actionRow, { borderTopColor: colors.border }]}>
-                <Pressable onPress={() => toggleStatus(item)} hitSlop={8}>
-                  <Text style={[styles.actionLink, { color: colors.primary }]}>
-                    {item.status === "Tamamlandı" ? "Yapılacak yap" : "Tamamlandı yap"}
-                  </Text>
-                </Pressable>
-                <Pressable onPress={() => confirmDelete(item)} hitSlop={8}>
-                  <Text style={[styles.actionLinkDanger, { color: colors.danger }]}>Sil</Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
+            );
+          }}
         />
       )}
 
       {activeWorkspaceId ? (
         <Pressable
-          style={[styles.fab, { backgroundColor: colors.primary }]}
+          style={({ pressed }) => [
+            styles.fabShadow,
+            { bottom: 24 + insets.bottom, opacity: pressed ? 0.9 : 1 },
+          ]}
           onPress={() =>
             navigation.navigate("TaskForm", { workspaceId: activeWorkspaceId })
           }
         >
-          <Plus color="#fff" size={26} strokeWidth={2.5} />
+          <LinearGradient
+            colors={["#5b8cff", "#2d5ff0", "#1d4ed8"]}
+            locations={[0, 0.58, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fab}
+          >
+            <Plus color="#fff" size={26} strokeWidth={2.5} />
+          </LinearGradient>
         </Pressable>
       ) : null}
+
+      <SideMenu
+        visible={menuOpen}
+        user={user}
+        workspaces={activeWorkspaces}
+        activeWorkspaceId={activeWorkspaceId}
+        archivedCount={archivedWorkspaces.length}
+        onClose={() => setMenuOpen(false)}
+        onSelectWorkspace={setActiveWorkspaceId}
+        onCreateWorkspace={() => navigation.navigate("WorkspaceCreate")}
+        onOpenArchive={() =>
+          navigation.navigate("ArchivedWorkspaces", { archivedWorkspaces })
+        }
+        onOpenSettings={() => navigation.navigate("Profile")}
+        onSignOut={signOut}
+      />
     </View>
   );
 }
@@ -248,7 +368,6 @@ export default function TaskListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
     paddingHorizontal: 16,
   },
   header: {
@@ -257,9 +376,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 16,
   },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flexShrink: 1,
+  },
   greeting: {
     fontSize: 19,
     fontFamily: fonts.displayBold,
+    flexShrink: 1,
   },
   headerActions: {
     flexDirection: "row",
@@ -280,68 +406,106 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   empty: {
+    marginTop: 32,
     textAlign: "center",
   },
-  emptyList: {
-    flexGrow: 1,
-    justifyContent: "center",
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
   },
-  taskCard: {
+  chevron: {
+    width: 16,
+    alignItems: "center",
+  },
+  countChip: {
+    minWidth: 22,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    alignItems: "center",
+  },
+  countChipText: {
+    fontSize: 11,
+    fontFamily: fonts.sansBold,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontFamily: fonts.sansBold,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  row: {
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 14,
     padding: 14,
-    marginBottom: 8,
+    marginBottom: 10,
+    shadowColor: "#020617",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 2,
+  },
+  rowTopLine: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  indexText: {
+    marginTop: 2,
+    fontSize: 12,
+    fontFamily: fonts.sansSemiBold,
   },
   taskTitle: {
-    fontSize: 16,
+    flex: 1,
+    fontSize: 15,
     fontFamily: fonts.sansSemiBold,
   },
-  taskDescription: {
+  reminderText: {
     marginTop: 4,
-    fontSize: 13,
-    fontFamily: fonts.sansRegular,
+    fontSize: 11,
+    fontFamily: fonts.sansMedium,
   },
-  badgeRow: {
+  rowBottomLine: {
     flexDirection: "row",
-    gap: 12,
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 8,
   },
-  badge: {
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
-  },
-  reminderBadge: {
-    fontSize: 12,
-    fontFamily: fonts.sansSemiBold,
-  },
-  actionRow: {
+  badgesGroup: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
+    alignItems: "center",
+    gap: 8,
   },
-  actionLink: {
-    fontSize: 13,
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+  },
+  editBtnText: {
+    fontSize: 12,
     fontFamily: fonts.sansSemiBold,
   },
-  actionLinkDanger: {
-    fontSize: 13,
-    fontFamily: fonts.sansSemiBold,
-  },
-  fab: {
+  fabShadow: {
     position: "absolute",
     right: 20,
-    bottom: 32,
+    borderRadius: 28,
+    shadowColor: "#1d4ed8",
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
+  },
+  fab: {
     width: 56,
     height: 56,
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
   },
 });

@@ -54,7 +54,6 @@ export default function TaskFormScreen({ route, navigation }: Props) {
   const { idToken } = useAuth();
   const { colors, mode } = useTheme();
   const [title, setTitle] = useState(task?.title ?? "");
-  const [description, setDescription] = useState(task?.description ?? "");
   const [priority, setPriority] = useState(task?.priority ?? PRIORITIES[2]);
   const [status, setStatus] = useState(task?.status ?? STATUSES[0]);
   const [reminderDate, setReminderDate] = useState<Date | null>(
@@ -64,34 +63,27 @@ export default function TaskFormScreen({ route, navigation }: Props) {
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [aiImprovingField, setAiImprovingField] = useState<"title" | "description" | null>(
-    null,
-  );
+  const [aiImproving, setAiImproving] = useState(false);
 
-  const onAiImprove = async (field: "title" | "description") => {
-    const sourceText = field === "title" ? title : description;
-    if (!sourceText.trim()) {
+  const onAiImprove = async () => {
+    if (!title.trim()) {
       Alert.alert("Eksik bilgi", "AI iyileştirme için önce metin oluşturun.");
       return;
     }
-    setAiImprovingField(field);
+    setAiImproving(true);
     try {
-      const refined = await refineText(idToken, field, sourceText);
-      if (field === "title") {
-        setTitle(refined);
-      } else {
-        setDescription(refined);
-      }
+      const refined = await refineText(idToken, "title", title);
+      setTitle(refined);
     } catch {
       Alert.alert("Hata", "AI metin iyileştirme başarısız oldu.");
     } finally {
-      setAiImprovingField(null);
+      setAiImproving(false);
     }
   };
 
   const onSave = async () => {
     if (!title.trim()) {
-      Alert.alert("Eksik bilgi", "Görev başlığı zorunludur.");
+      Alert.alert("Eksik bilgi", "Görev metni zorunludur.");
       return;
     }
 
@@ -100,11 +92,11 @@ export default function TaskFormScreen({ route, navigation }: Props) {
     setSaving(true);
     try {
       if (task) {
-        await updateTask(idToken, task.id, { title, description, priority, status, remindAt });
+        await updateTask(idToken, task.id, { title, priority, status, remindAt });
       } else {
         await createTask(idToken, {
           title,
-          description,
+          description: "",
           priority,
           status,
           workspaceId,
@@ -151,42 +143,23 @@ export default function TaskFormScreen({ route, navigation }: Props) {
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={styles.container}
     >
-      <Text style={[styles.label, { color: colors.textMuted }]}>Başlık</Text>
-      <TextInput
-        style={inputStyle}
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Görev başlığı"
-        placeholderTextColor={colors.textMuted}
-      />
-      <Pressable
-        style={styles.aiLink}
-        onPress={() => onAiImprove("title")}
-        disabled={aiImprovingField !== null}
-      >
-        <Sparkles color={colors.primary} size={13} strokeWidth={2} />
-        <Text style={[styles.aiLinkText, { color: colors.primary }]}>
-          {aiImprovingField === "title" ? "AI iyileştiriyor..." : "AI ile metni iyileştir"}
-        </Text>
-      </Pressable>
-
-      <Text style={[styles.label, { color: colors.textMuted }]}>Açıklama</Text>
+      <Text style={[styles.label, { color: colors.textMuted }]}>Görev Metni</Text>
       <TextInput
         style={[inputStyle, styles.multiline]}
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Görev açıklaması (opsiyonel)"
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Görev adını yazın"
         placeholderTextColor={colors.textMuted}
         multiline
       />
       <Pressable
         style={styles.aiLink}
-        onPress={() => onAiImprove("description")}
-        disabled={aiImprovingField !== null}
+        onPress={onAiImprove}
+        disabled={aiImproving}
       >
         <Sparkles color={colors.primary} size={13} strokeWidth={2} />
         <Text style={[styles.aiLinkText, { color: colors.primary }]}>
-          {aiImprovingField === "description" ? "AI iyileştiriyor..." : "AI ile metni iyileştir"}
+          {aiImproving ? "AI iyileştiriyor..." : "AI ile metni iyileştir"}
         </Text>
       </Pressable>
 

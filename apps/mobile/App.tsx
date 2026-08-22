@@ -9,6 +9,7 @@ import {
   type Theme,
 } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Notifications from "expo-notifications";
 import useAuthSession from "./src/hooks/useAuthSession";
 import usePushNotifications from "./src/hooks/usePushNotifications";
@@ -17,6 +18,7 @@ import { ThemeProvider, useTheme } from "./src/theme/ThemeContext";
 import { useAppFonts, fonts } from "./src/theme/fonts";
 import { acceptInvitation, fetchTask } from "./src/lib/api";
 import { extractInviteTokenFromUrl } from "./src/lib/inviteToken";
+import LandingScreen from "./src/screens/LandingScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import TaskListScreen from "./src/screens/TaskListScreen";
 import TaskFormScreen from "./src/screens/TaskFormScreen";
@@ -45,9 +47,11 @@ async function openTaskFromNotification(idToken: string, data: unknown) {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
 
@@ -57,6 +61,7 @@ function AppContent() {
   const { mode, colors } = useTheme();
   const fontsLoaded = useAppFonts();
   const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
+  const [guestView, setGuestView] = useState<"landing" | "login">("landing");
 
   usePushNotifications(idToken);
 
@@ -179,8 +184,15 @@ function AppContent() {
             />
           </Stack.Navigator>
         </AuthProvider>
+      ) : guestView === "landing" ? (
+        <LandingScreen onGoToLogin={() => setGuestView("login")} />
       ) : (
-        <LoginScreen canSignIn={canSignIn} error={error} onSignIn={signIn} />
+        <LoginScreen
+          canSignIn={canSignIn}
+          error={error}
+          onSignIn={signIn}
+          onBack={() => setGuestView("landing")}
+        />
       )}
       <StatusBar style={mode === "dark" ? "light" : "dark"} />
     </NavigationContainer>

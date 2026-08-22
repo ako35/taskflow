@@ -127,7 +127,8 @@ export default function TaskDetailsPanel({
     setDraftRemindAt(toDateTimeLocal(task.remindAt));
     setSaveAcknowledged(false);
     setAiError(null);
-  }, [task]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-sync drafts when switching tasks; a save updates `task`'s reference too and must not cut off the "Kaydedildi" acknowledgment below
+  }, [task?.id]);
 
   useEffect(() => {
     return () => {

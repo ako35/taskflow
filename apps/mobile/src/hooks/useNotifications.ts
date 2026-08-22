@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { UserNotification } from "@taskflow/shared";
 import {
+  ApiError,
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
 } from "../lib/api";
 
-export default function useNotifications(idToken: string) {
+export default function useNotifications(idToken: string, onUnauthorized?: () => void) {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -18,10 +19,14 @@ export default function useNotifications(idToken: string) {
       const response = await fetchNotifications(idToken);
       setNotifications(response.items);
       setUnreadCount(response.unreadCount);
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        onUnauthorized?.();
+        return;
+      }
       setError("Bildirimler yüklenemedi.");
     }
-  }, [idToken]);
+  }, [idToken, onUnauthorized]);
 
   useEffect(() => {
     setLoading(true);
