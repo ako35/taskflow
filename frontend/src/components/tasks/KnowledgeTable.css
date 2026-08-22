@@ -88,16 +88,56 @@
 .knowledge-description-form textarea {
   flex: 1;
 }
+
+.knowledge-table .icon-button,
+.knowledge-delete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    border-color 0.18s;
+}
+
+.knowledge-table .icon-button svg,
+.knowledge-delete-button svg {
+  width: 1rem;
+  height: 1rem;
+  stroke: currentColor;
+  fill: none;
+}
+
+.knowledge-table .icon-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-color: var(--border);
+}
+
 .knowledge-delete-button {
   position: absolute;
-  top: 50%;
-  right: 0.7rem;
-  transform: translateY(-50%);
+  top: 0.6rem;
+  right: 0.6rem;
   opacity: 0;
 }
 .knowledge-table tr:hover .knowledge-delete-button,
+.knowledge-table tr:focus-within .knowledge-delete-button,
 .knowledge-delete-button:focus-visible {
   opacity: 1;
+}
+.knowledge-delete-button:hover:not(:disabled) {
+  background: rgba(251, 113, 133, 0.14);
+  color: #fb7185;
+  border-color: rgba(251, 113, 133, 0.35);
 }
 
 :root[data-theme="light"] .knowledge-table td {
@@ -121,5 +161,8 @@
   }
   .knowledge-subject-column {
     width: 38%;
+  }
+  .knowledge-delete-button {
+    opacity: 1;
   }
 }

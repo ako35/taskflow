@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   ActivityIndicator,
   Alert,
@@ -19,9 +18,9 @@ import { fetchTask } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
-import type { RootStackParamList } from "../navigation/types";
+import type { MainTabScreenProps } from "../navigation/types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Notifications">;
+type Props = MainTabScreenProps<"Notifications">;
 
 export default function NotificationsScreen({ navigation }: Props) {
   const { idToken } = useAuth();

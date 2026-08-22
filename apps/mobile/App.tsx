@@ -9,7 +9,9 @@ import {
   type Theme,
 } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Bell, ClipboardList, User as UserIcon } from "lucide-react-native";
 import * as Notifications from "expo-notifications";
 import useAuthSession from "./src/hooks/useAuthSession";
 import usePushNotifications from "./src/hooks/usePushNotifications";
@@ -27,10 +29,56 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import MembersScreen from "./src/screens/MembersScreen";
 import WorkspaceCreateScreen from "./src/screens/WorkspaceCreateScreen";
 import ArchivedWorkspacesScreen from "./src/screens/ArchivedWorkspacesScreen";
-import type { RootStackParamList } from "./src/navigation/types";
+import type { MainTabParamList, RootStackParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+function MainTabs() {
+  const { colors } = useTheme();
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerTitleStyle: { fontFamily: fonts.displayBold },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+      }}
+    >
+      <Tab.Screen
+        name="TaskList"
+        component={TaskListScreen}
+        options={{
+          headerShown: false,
+          title: "Görevler",
+          tabBarIcon: ({ color, size }) => (
+            <ClipboardList color={color} size={size} strokeWidth={2} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{
+          title: "Bildirimler",
+          tabBarIcon: ({ color, size }) => <Bell color={color} size={size} strokeWidth={2} />,
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: "Profilim",
+          tabBarIcon: ({ color, size }) => (
+            <UserIcon color={color} size={size} strokeWidth={2} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 async function openTaskFromNotification(idToken: string, data: unknown) {
   const record = data as Record<string, unknown> | undefined;
@@ -145,27 +193,13 @@ function AppContent() {
               headerBackTitleStyle: { fontFamily: fonts.sansMedium },
             }}
           >
-            <Stack.Screen
-              name="TaskList"
-              component={TaskListScreen}
-              options={{ headerShown: false }}
-            />
+            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
             <Stack.Screen
               name="TaskForm"
               component={TaskFormScreen}
               options={({ route }) => ({
                 title: route.params.task ? "Görevi Düzenle" : "Yeni Görev",
               })}
-            />
-            <Stack.Screen
-              name="Notifications"
-              component={NotificationsScreen}
-              options={{ title: "Bildirimler" }}
-            />
-            <Stack.Screen
-              name="Profile"
-              component={ProfileScreen}
-              options={{ title: "Profilim" }}
             />
             <Stack.Screen
               name="Members"

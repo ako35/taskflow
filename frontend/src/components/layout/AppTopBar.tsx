@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { SidebarGlyph, UiGlyph } from "../ui/Icons";
 import type { User, UserNotification } from "../../types";
 import type { ThemeMode } from "../../types";
@@ -17,7 +18,7 @@ type AppTopBarProps = {
   onToggleProfileMenu: () => void;
   onToggleNotificationsMenu: () => void;
   onMarkNotificationsRead: () => void;
-  onOpenInviteModal: () => void;
+  onOpenMembersPanel: () => void;
   onOpenProfileDetails: () => void;
   onSetThemeMode: (mode: ThemeMode) => void;
   onSignOut: () => void;
@@ -50,12 +51,140 @@ export default function AppTopBar({
   onToggleProfileMenu,
   onToggleNotificationsMenu,
   onMarkNotificationsRead,
-  onOpenInviteModal,
+  onOpenMembersPanel,
   onOpenProfileDetails,
   onSetThemeMode,
   onSignOut,
   onNavigateToNotification,
 }: AppTopBarProps) {
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const themeTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const themeFlyoutRef = useRef<HTMLDivElement | null>(null);
+  const [themeFlyoutStyle, setThemeFlyoutStyle] = useState<React.CSSProperties>(
+    {
+      position: "fixed",
+      top: -9999,
+      left: -9999,
+      visibility: "hidden",
+    },
+  );
+
+  useLayoutEffect(() => {
+    if (!themeMenuOpen) {
+      return;
+    }
+
+    const updateThemeFlyoutPosition = () => {
+      const trigger = themeTriggerRef.current;
+      const flyout = themeFlyoutRef.current;
+      if (!trigger || !flyout) {
+        return;
+      }
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const flyoutRect = flyout.getBoundingClientRect();
+      const viewportPadding = 8;
+      const gap = 2;
+      const viewportWidth = document.documentElement.clientWidth;
+      const viewportHeight = document.documentElement.clientHeight;
+      const fitsOnLeft =
+        triggerRect.left - gap - flyoutRect.width >= viewportPadding;
+      const requestedLeft = fitsOnLeft
+        ? triggerRect.left - gap - flyoutRect.width
+        : triggerRect.right + gap;
+      const left = Math.min(
+        Math.max(requestedLeft, viewportPadding),
+        Math.max(
+          viewportPadding,
+          viewportWidth - flyoutRect.width - viewportPadding,
+        ),
+      );
+      const top = Math.min(
+        Math.max(triggerRect.top, viewportPadding),
+        Math.max(
+          viewportPadding,
+          viewportHeight - flyoutRect.height - viewportPadding,
+        ),
+      );
+
+      setThemeFlyoutStyle({
+        position: "fixed",
+        top: Math.round(top),
+        left: Math.round(left),
+        visibility: "visible",
+      });
+    };
+
+    updateThemeFlyoutPosition();
+    window.addEventListener("resize", updateThemeFlyoutPosition);
+    window.addEventListener("scroll", updateThemeFlyoutPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateThemeFlyoutPosition);
+      window.removeEventListener("scroll", updateThemeFlyoutPosition, true);
+    };
+  }, [themeMenuOpen]);
+
+  useLayoutEffect(() => {
+    if (!profileMenuOpen) {
+      setThemeMenuOpen(false);
+    }
+  }, [profileMenuOpen]);
+
+  const themeFlyoutOptions = themeMenuOpen ? (
+    <div
+      ref={themeFlyoutRef}
+      id="profile-theme-flyout-options"
+      className="theme-menu-options profile-theme-flyout"
+      role="group"
+      aria-label="Tema seçenekleri"
+      style={themeFlyoutStyle}
+    >
+      <button
+        type="button"
+        className={`theme-option ${themeMode === "light" ? "active" : ""}`}
+        aria-pressed={themeMode === "light"}
+        onClick={() => {
+          onSetThemeMode("light");
+          setThemeMenuOpen(false);
+        }}
+      >
+        <span className="theme-option-label">
+          <span className="sidebar-link-icon" aria-hidden="true">
+            <UiGlyph icon="sun" />
+          </span>
+          <span>Açık</span>
+        </span>
+        {themeMode === "light" ? (
+          <span className="theme-option-check" aria-hidden="true">
+            <UiGlyph icon="check" />
+          </span>
+        ) : null}
+      </button>
+      <button
+        type="button"
+        className={`theme-option ${themeMode === "dark" ? "active" : ""}`}
+        aria-pressed={themeMode === "dark"}
+        onClick={() => {
+          onSetThemeMode("dark");
+          setThemeMenuOpen(false);
+        }}
+      >
+        <span className="theme-option-label">
+          <span className="sidebar-link-icon" aria-hidden="true">
+            <UiGlyph icon="moon" />
+          </span>
+          <span>Koyu</span>
+        </span>
+        {themeMode === "dark" ? (
+          <span className="theme-option-check" aria-hidden="true">
+            <UiGlyph icon="check" />
+          </span>
+        ) : null}
+      </button>
+    </div>
+  ) : null;
+
   return (
     <div className="topbar">
       <div className="topbar-brand" aria-label="TaskFlow">
@@ -134,6 +263,16 @@ export default function AppTopBar({
           </div>
         </div>
 
+        <button
+          type="button"
+          className="notifications-trigger"
+          aria-label="Üye davet et"
+          title="Üye davet et"
+          onClick={onOpenMembersPanel}
+        >
+          <UiGlyph icon="mail" />
+        </button>
+
         <div className="user-bar" ref={profileMenuRef}>
           <button
             type="button"
@@ -169,7 +308,7 @@ export default function AppTopBar({
             <button
               type="button"
               className="dropdown-item"
-              onClick={onOpenInviteModal}
+              onClick={onOpenMembersPanel}
             >
               <span className="dropdown-item-content">
                 <span className="sidebar-link-icon" aria-hidden="true">
@@ -178,45 +317,27 @@ export default function AppTopBar({
                 <span>E-posta ile Davet Et</span>
               </span>
             </button>
-            <div className="profile-theme-block">
-              <span className="profile-theme-label">Tema</span>
-              <div className="theme-menu-options profile-theme-options">
-                <button
-                  type="button"
-                  className={`theme-option ${themeMode === "light" ? "active" : ""}`}
-                  onClick={() => onSetThemeMode("light")}
-                >
-                  <span className="theme-option-label">
-                    <span className="sidebar-link-icon" aria-hidden="true">
-                      <UiGlyph icon="sun" />
-                    </span>
-                    <span>Açık</span>
-                  </span>
-                  {themeMode === "light" ? (
-                    <span className="theme-option-check" aria-hidden="true">
-                      <UiGlyph icon="check" />
-                    </span>
-                  ) : null}
-                </button>
-                <button
-                  type="button"
-                  className={`theme-option ${themeMode === "dark" ? "active" : ""}`}
-                  onClick={() => onSetThemeMode("dark")}
-                >
-                  <span className="theme-option-label">
-                    <span className="sidebar-link-icon" aria-hidden="true">
-                      <UiGlyph icon="moon" />
-                    </span>
-                    <span>Koyu</span>
-                  </span>
-                  {themeMode === "dark" ? (
-                    <span className="theme-option-check" aria-hidden="true">
-                      <UiGlyph icon="check" />
-                    </span>
-                  ) : null}
-                </button>
-              </div>
-            </div>
+            <button
+              ref={themeTriggerRef}
+              type="button"
+              className="dropdown-item profile-theme-trigger"
+              onClick={() => setThemeMenuOpen((current) => !current)}
+              aria-expanded={themeMenuOpen}
+              aria-controls="profile-theme-flyout-options"
+            >
+              <span className="dropdown-item-content">
+                <span className="sidebar-link-icon" aria-hidden="true">
+                  <UiGlyph icon={themeMode === "light" ? "sun" : "moon"} />
+                </span>
+                <span>Tema</span>
+              </span>
+              <span className="settings-popover-chevron" aria-hidden="true">
+                <UiGlyph icon="chevron-right" />
+              </span>
+            </button>
+            {themeFlyoutOptions && typeof document !== "undefined"
+              ? createPortal(themeFlyoutOptions, document.body)
+              : themeFlyoutOptions}
             <button
               type="button"
               className="dropdown-item danger-link"

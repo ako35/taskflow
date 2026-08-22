@@ -6,7 +6,6 @@
 @import "./components/auth/LoginView.css";
 @import "./components/layout/AppSidebar.css";
 @import "./components/layout/AppTopBar.css";
-@import "./components/layout/InviteTeammateModal.css";
 @import "./components/layout/MembersPanelModal.css";
 @import "./components/layout/ProfileDetailsModal.css";
 @import "./components/layout/WorkspacePanel.css";

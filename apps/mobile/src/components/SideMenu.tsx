@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -9,7 +9,15 @@ import {
   Text,
   View,
 } from "react-native";
-import { Archive, Compass, LogOut, Plus, Settings, X } from "lucide-react-native";
+import {
+  Archive,
+  ChevronDown,
+  Compass,
+  LogOut,
+  Plus,
+  Settings,
+  X,
+} from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { User, Workspace } from "@taskflow/shared";
@@ -19,6 +27,14 @@ import { WORKSPACE_ICONS } from "../lib/workspaceIcons";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PANEL_WIDTH = Math.min(300, SCREEN_WIDTH * 0.8);
+
+function getInitials(user: User): string {
+  const first = user.firstName?.trim()?.[0];
+  const last = user.lastName?.trim()?.[0];
+  if (first && last) return `${first}${last}`.toUpperCase();
+  const name = (user.name ?? user.email ?? "").trim();
+  return name.slice(0, 2).toUpperCase();
+}
 
 type SideMenuProps = {
   visible: boolean;
@@ -51,6 +67,7 @@ export default function SideMenu({
   const insets = useSafeAreaInsets();
   const translateX = useRef(new Animated.Value(-PANEL_WIDTH)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const [workspacesExpanded, setWorkspacesExpanded] = useState(true);
 
   useEffect(() => {
     Animated.parallel([
@@ -99,64 +116,100 @@ export default function SideMenu({
         ]}
       >
         <View style={styles.header}>
-          <View style={styles.brand}>
-            <View style={[styles.logo, { backgroundColor: colors.primary }]}>
-              <Compass color="#fff" size={16} strokeWidth={2} />
+          {user ? (
+            <View style={styles.profileRow}>
+              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                <Text style={styles.avatarText}>{getInitials(user)}</Text>
+              </View>
+              <View style={styles.profileTextCol}>
+                <Text
+                  style={[styles.profileName, { color: colors.text }]}
+                  numberOfLines={1}
+                >
+                  {user.name ?? user.email}
+                </Text>
+                <Text
+                  style={[styles.profileEmail, { color: colors.textMuted }]}
+                  numberOfLines={1}
+                >
+                  {user.email}
+                </Text>
+              </View>
             </View>
-            <Text style={[styles.brandText, { color: colors.text }]}>TaskFlow</Text>
-          </View>
+          ) : (
+            <View style={styles.brand}>
+              <View style={[styles.logo, { backgroundColor: colors.primary }]}>
+                <Compass color="#fff" size={16} strokeWidth={2} />
+              </View>
+              <Text style={[styles.brandText, { color: colors.text }]}>TaskFlow</Text>
+            </View>
+          )}
           <Pressable onPress={onClose} hitSlop={8}>
             <X color={colors.textMuted} size={20} strokeWidth={2} />
           </Pressable>
         </View>
 
-        {user ? (
-          <Text style={[styles.userLine, { color: colors.textMuted }]} numberOfLines={1}>
-            {user.name ?? user.email}
-          </Text>
-        ) : null}
-
         <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
-            ÇALIŞMA ALANLARI
-          </Text>
+          <Pressable
+            onPress={() => setWorkspacesExpanded((current) => !current)}
+            style={styles.accordionHeader}
+          >
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
+              ÇALIŞMA ALANLARI
+            </Text>
+            <View
+              style={{
+                transform: [{ rotate: workspacesExpanded ? "0deg" : "-90deg" }],
+              }}
+            >
+              <ChevronDown color={colors.textMuted} size={15} strokeWidth={2.25} />
+            </View>
+          </Pressable>
 
-          {workspaces.map((workspace) => {
-            const active = workspace.id === activeWorkspaceId;
-            const Icon = WORKSPACE_ICONS[workspace.icon] ?? Compass;
-            return (
+          {workspacesExpanded ? (
+            <>
+              {workspaces.map((workspace) => {
+                const active = workspace.id === activeWorkspaceId;
+                const Icon = WORKSPACE_ICONS[workspace.icon] ?? Compass;
+                return (
+                  <Pressable
+                    key={workspace.id}
+                    onPress={() => runAndClose(() => onSelectWorkspace(workspace.id))}
+                    style={[
+                      styles.workspaceRow,
+                      active && { backgroundColor: colors.surfaceAlt },
+                    ]}
+                  >
+                    <View
+                      style={[styles.workspaceIcon, { backgroundColor: workspace.color }]}
+                    >
+                      <Icon color="#fff" size={14} strokeWidth={2} />
+                    </View>
+                    <Text
+                      style={[styles.workspaceName, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {workspace.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+
               <Pressable
-                key={workspace.id}
-                onPress={() => runAndClose(() => onSelectWorkspace(workspace.id))}
-                style={[
-                  styles.workspaceRow,
-                  active && { backgroundColor: colors.surfaceAlt },
-                ]}
+                onPress={() => runAndClose(onCreateWorkspace)}
+                style={styles.workspaceRow}
               >
-                <View style={[styles.workspaceIcon, { backgroundColor: workspace.color }]}>
-                  <Icon color="#fff" size={14} strokeWidth={2} />
-                </View>
-                <Text
-                  style={[styles.workspaceName, { color: colors.text }]}
-                  numberOfLines={1}
+                <View
+                  style={[styles.workspaceIcon, styles.createIcon, { borderColor: colors.border }]}
                 >
-                  {workspace.name}
+                  <Plus color={colors.textMuted} size={14} strokeWidth={2} />
+                </View>
+                <Text style={[styles.workspaceName, { color: colors.textMuted }]}>
+                  Yeni çalışma alanı
                 </Text>
               </Pressable>
-            );
-          })}
-
-          <Pressable
-            onPress={() => runAndClose(onCreateWorkspace)}
-            style={styles.workspaceRow}
-          >
-            <View style={[styles.workspaceIcon, styles.createIcon, { borderColor: colors.border }]}>
-              <Plus color={colors.textMuted} size={14} strokeWidth={2} />
-            </View>
-            <Text style={[styles.workspaceName, { color: colors.textMuted }]}>
-              Yeni çalışma alanı
-            </Text>
-          </Pressable>
+            </>
+          ) : null}
         </ScrollView>
 
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
@@ -218,10 +271,35 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: fonts.displayBold,
   },
-  userLine: {
-    marginTop: 10,
-    paddingHorizontal: 18,
-    fontSize: 12,
+  profileRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginRight: 10,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    color: "#fff",
+    fontSize: 15,
+    fontFamily: fonts.sansBold,
+  },
+  profileTextCol: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 14,
+    fontFamily: fonts.sansBold,
+  },
+  profileEmail: {
+    marginTop: 1,
+    fontSize: 11,
     fontFamily: fonts.sansMedium,
   },
   body: {
@@ -229,9 +307,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 12,
   },
-  sectionLabel: {
+  accordionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 6,
-    marginBottom: 8,
+    paddingVertical: 6,
+    marginBottom: 4,
+  },
+  sectionLabel: {
     fontSize: 10,
     fontFamily: fonts.sansBold,
     letterSpacing: 0.6,

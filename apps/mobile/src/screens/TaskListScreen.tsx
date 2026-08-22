@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   ActivityIndicator,
   Alert,
@@ -29,9 +28,9 @@ import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import { priorityToBadgeTone, statusToBadgeTone } from "../theme/badgeColors";
 import { STATUSES } from "../constants";
-import type { RootStackParamList } from "../navigation/types";
+import type { MainTabScreenProps } from "../navigation/types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "TaskList">;
+type Props = MainTabScreenProps<"TaskList">;
 
 export default function TaskListScreen({ navigation }: Props) {
   const { idToken, user, signOut } = useAuth();

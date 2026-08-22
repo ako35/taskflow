@@ -489,22 +489,32 @@
   background: rgba(91, 140, 255, 0.14);
 }
 
-.profile-theme-block {
-  padding: 0.8rem 1rem 0.4rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-  display: grid;
-  gap: 0.45rem;
+.profile-theme-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
-.profile-theme-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
+.profile-theme-flyout {
+  min-width: 188px;
+  padding: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 12, 26, 0.98),
+    rgba(10, 18, 34, 0.98)
+  );
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  z-index: 80;
+  backdrop-filter: blur(18px);
 }
 
-.profile-theme-options {
-  padding-top: 0;
+:root[data-theme="light"] .profile-theme-flyout {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16);
 }
 
 @media (max-width: 660px) {

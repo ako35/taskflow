@@ -9,7 +9,6 @@ import ContactView from "./components/auth/ContactView";
 import LandingPage from "./components/auth/LandingPage";
 import LoginView from "./components/auth/LoginView";
 import AppSidebar from "./components/layout/AppSidebar";
-import InviteTeammateModal from "./components/layout/InviteTeammateModal";
 import MembersPanelModal from "./components/layout/MembersPanelModal";
 import ProfileDetailsModal from "./components/layout/ProfileDetailsModal";
 import AppTopBar from "./components/layout/AppTopBar";
@@ -42,11 +41,6 @@ type ProfileFormState = {
   phone: string;
 };
 
-type InviteStatus = {
-  type: "success" | "error";
-  message: string;
-} | null;
-
 export default function App() {
   const {
     user,
@@ -68,11 +62,6 @@ export default function App() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  const [inviteeEmail, setInviteeEmail] = useState("");
-  const [inviteMessage, setInviteMessage] = useState("");
-  const [inviteSending, setInviteSending] = useState(false);
-  const [inviteStatus, setInviteStatus] = useState<InviteStatus>(null);
   const [inviteAccepting, setInviteAccepting] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileFormState>({
     firstName: "",
@@ -803,21 +792,6 @@ export default function App() {
     setProfileDetailsOpen(true);
   }, []);
 
-  const handleOpenInviteModal = useCallback(() => {
-    setProfileMenuOpen(false);
-    setInviteStatus(null);
-    setInviteModalOpen(true);
-  }, []);
-
-  const handleCloseInviteModal = useCallback(() => {
-    if (inviteSending) {
-      return;
-    }
-
-    setInviteModalOpen(false);
-    setInviteStatus(null);
-  }, [inviteSending]);
-
   const handleCloseProfileDetails = useCallback(() => {
     setProfileDetailsOpen(false);
   }, []);
@@ -906,94 +880,6 @@ export default function App() {
       setProfileSaving(false);
     }
   }, [handleUnauthorized, idToken, profileForm, setUser, user]);
-
-  const handleSendInvitation = useCallback(async () => {
-    if (!idToken || !user) {
-      handleUnauthorized();
-      return;
-    }
-
-    const email = inviteeEmail.trim();
-    if (!email) {
-      setInviteStatus({
-        type: "error",
-        message: "Lütfen davet edilecek e-posta adresini girin.",
-      });
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setInviteStatus({
-        type: "error",
-        message: "Lütfen geçerli bir e-posta adresi girin.",
-      });
-      return;
-    }
-
-    setInviteSending(true);
-    setInviteStatus(null);
-
-    try {
-      const response = await fetch(`${API_URL}/invitations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          inviteeEmail: email,
-          message: inviteMessage,
-          workspaceId: selectedWorkspace.id,
-        }),
-      });
-
-      const text = await response.text();
-      const responseBody = safeParseJson<Record<string, any> | null>(
-        text,
-        null,
-      );
-
-      if (response.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          responseBody?.error ||
-            text ||
-            "Davet gönderilemedi. Lütfen tekrar deneyin.",
-        );
-      }
-
-      setInviteStatus({
-        type: "success",
-        message: responseBody?.immediateAccessGranted
-          ? "Davet gönderildi. Bu hesap zaten kayıtlı olduğu için erişim anında tanımlandı."
-          : "Davet e-postası başarıyla gönderildi.",
-      });
-      setInviteeEmail("");
-      setInviteMessage("");
-    } catch (err) {
-      setInviteStatus({
-        type: "error",
-        message:
-          err instanceof Error
-            ? err.message
-            : "Davet gönderilemedi. Lütfen tekrar deneyin.",
-      });
-    } finally {
-      setInviteSending(false);
-    }
-  }, [
-    handleUnauthorized,
-    idToken,
-    inviteMessage,
-    inviteeEmail,
-    selectedWorkspace.id,
-    user,
-  ]);
 
   const loadInvitationsOverview = useCallback(async () => {
     if (!idToken || !user || !selectedWorkspace.id) {
@@ -1610,7 +1496,7 @@ export default function App() {
     onToggleProfileMenu: handleToggleProfileMenu,
     onToggleNotificationsMenu: handleToggleNotificationsMenu,
     onMarkNotificationsRead: handleMarkNotificationsRead,
-    onOpenInviteModal: handleOpenInviteModal,
+    onOpenMembersPanel: handleOpenMembersPanel,
     onOpenProfileDetails: handleOpenProfileDetails,
     onSetThemeMode: handleSetThemeMode,
     onSignOut: handleSignOut,
@@ -1668,19 +1554,6 @@ export default function App() {
         onFieldChange={handleProfileFieldChange}
         onSave={handleSaveProfile}
         onClose={handleCloseProfileDetails}
-      />
-
-      <InviteTeammateModal
-        open={inviteModalOpen}
-        workspaceName={selectedWorkspace.name}
-        inviteeEmail={inviteeEmail}
-        message={inviteMessage}
-        sending={inviteSending || inviteAccepting}
-        status={inviteStatus}
-        onInviteeEmailChange={setInviteeEmail}
-        onMessageChange={setInviteMessage}
-        onSend={handleSendInvitation}
-        onClose={handleCloseInviteModal}
       />
 
       <MembersPanelModal
