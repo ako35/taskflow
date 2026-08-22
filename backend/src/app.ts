@@ -658,7 +658,7 @@ async function refineTextWithGemini(text: string, field: AiRefineField) {
             ],
             generationConfig: {
               temperature: 0.35,
-              maxOutputTokens: 220,
+              maxOutputTokens: 2048,
             },
           }),
         },
