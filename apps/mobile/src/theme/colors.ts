@@ -4,6 +4,7 @@ export type ThemeColors = {
   bg: string;
   surface: string;
   surfaceAlt: string;
+  surfaceHighlight: string;
   text: string;
   textMuted: string;
   border: string;
@@ -17,6 +18,7 @@ export const darkColors: ThemeColors = {
   bg: "#0a1225",
   surface: "rgba(15, 23, 42, 0.95)",
   surfaceAlt: "rgba(30, 41, 59, 0.9)",
+  surfaceHighlight: "rgba(51, 65, 90, 0.92)",
   text: "#f8fafc",
   textMuted: "#94a3b8",
   border: "rgba(148, 163, 184, 0.18)",
@@ -30,6 +32,7 @@ export const lightColors: ThemeColors = {
   bg: "#f3f6fc",
   surface: "#ffffff",
   surfaceAlt: "#eef3ff",
+  surfaceHighlight: "#dbe6ff",
   text: "#0f172a",
   textMuted: "#475569",
   border: "rgba(15, 23, 42, 0.14)",

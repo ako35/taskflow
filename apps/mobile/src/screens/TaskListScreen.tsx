@@ -279,7 +279,7 @@ export default function TaskListScreen({ navigation }: Props) {
                 style={({ pressed }) => [
                   styles.row,
                   {
-                    backgroundColor: pressed ? colors.surfaceAlt : colors.surface,
+                    backgroundColor: pressed ? colors.surfaceHighlight : colors.surfaceAlt,
                     borderColor: colors.border,
                   },
                 ]}
