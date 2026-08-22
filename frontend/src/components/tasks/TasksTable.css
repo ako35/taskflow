@@ -4,9 +4,6 @@
   padding: 0;
   border: none;
   background: transparent;
-  width: 0 !important;
-  min-width: 0;
-  max-width: 0;
 }
 
 .table-spacer-head {

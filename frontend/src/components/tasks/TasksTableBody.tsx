@@ -161,12 +161,11 @@ export default function TasksTableBody({
                                 ? "centered-head"
                                 : undefined
                         }
-                        style={{
-                          width:
-                            column.field === "__spacer"
-                              ? 0
-                              : columnWidths[column.field],
-                        }}
+                        style={
+                          column.field === "__spacer"
+                            ? undefined
+                            : { width: columnWidths[column.field] }
+                        }
                       >
                         {column.field === "__spacer" ? null : (
                           <div className="header-cell">
@@ -226,12 +225,11 @@ export default function TasksTableBody({
                               ? "true"
                               : "false"
                           }
-                          style={{
-                            width:
-                              column.field === "__spacer"
-                                ? 0
-                                : columnWidths[column.field],
-                          }}
+                          style={
+                            column.field === "__spacer"
+                              ? undefined
+                              : { width: columnWidths[column.field] }
+                          }
                           onClick={() => {
                             if (column.field === "title") {
                               onOpenTaskDetails(task);

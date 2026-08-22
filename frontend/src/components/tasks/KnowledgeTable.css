@@ -11,6 +11,28 @@
   border-spacing: 0 5px;
 }
 
+:root[data-table-density="dense"] .knowledge-table {
+  border-spacing: 0 3px;
+}
+
+:root[data-table-density="dense"] .knowledge-table th {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.68rem;
+}
+
+:root[data-table-density="dense"] .knowledge-table td {
+  padding: 0.5rem 0.6rem;
+}
+
+:root[data-table-density="dense"] .knowledge-title-cell {
+  font-size: 0.86rem;
+}
+
+:root[data-table-density="dense"] .knowledge-description-cell,
+:root[data-table-density="dense"] .knowledge-number-cell {
+  font-size: 0.8rem;
+}
+
 .knowledge-number-column {
   width: 72px;
 }

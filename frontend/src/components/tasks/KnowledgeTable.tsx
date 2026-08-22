@@ -142,7 +142,11 @@ export default function KnowledgeTable({
                   <td
                     key={field}
                     className={`knowledge-editable-cell knowledge-${field}-cell`}
-                    onDoubleClick={() => onStartEditingCell(item, field)}
+                    onClick={() => {
+                      if (editingCell?.id !== item.id || editingCell.field !== field) {
+                        onStartEditingCell(item, field);
+                      }
+                    }}
                   >
                     {editingCell?.id === item.id &&
                     editingCell.field === field ? (
