@@ -158,4 +158,66 @@ describe("TaskDetailsPanel", () => {
       }),
     );
   });
+
+  it("shows a 'Kaydedildi' acknowledgment after the parent updates the task prop post-save", async () => {
+    const user = userEvent.setup();
+    const initialTask = buildTask({ title: "Mevcut görev" });
+
+    const onSaveTaskDetails = vi.fn().mockImplementation(async () => {
+      rerender(
+        <TaskDetailsPanel
+          open
+          task={{ ...initialTask, title: "Güncel görev başlığı" }}
+          currentUser={null}
+          comments={[]}
+          commentsLoading={false}
+          commentDraft=""
+          commentSubmitting={false}
+          taskUpdating={false}
+          isWorkspaceOwner={false}
+          idToken={null}
+          onClose={() => {}}
+          onUnauthorized={() => {}}
+          onCommentDraftChange={() => {}}
+          onSubmitComment={() => {}}
+          onDeleteComment={() => {}}
+          onSaveTaskDetails={onSaveTaskDetails}
+        />,
+      );
+    });
+
+    const { rerender } = render(
+      <TaskDetailsPanel
+        open
+        task={initialTask}
+        currentUser={null}
+        comments={[]}
+        commentsLoading={false}
+        commentDraft=""
+        commentSubmitting={false}
+        taskUpdating={false}
+        isWorkspaceOwner={false}
+        idToken={null}
+        onClose={() => {}}
+        onUnauthorized={() => {}}
+        onCommentDraftChange={() => {}}
+        onSubmitComment={() => {}}
+        onDeleteComment={() => {}}
+        onSaveTaskDetails={onSaveTaskDetails}
+      />,
+    );
+
+    const titleInput = screen.getByLabelText("Görev metni");
+    await user.clear(titleInput);
+    await user.type(titleInput, "Güncel görev başlığı");
+
+    const saveButton = screen.getByRole("button", {
+      name: "Degisiklikleri Kaydet",
+    });
+    await user.click(saveButton);
+
+    expect(
+      await screen.findByRole("button", { name: "✓ Kaydedildi" }),
+    ).toBeInTheDocument();
+  });
 });

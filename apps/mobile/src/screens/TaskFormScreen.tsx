@@ -62,6 +62,7 @@ export default function TaskFormScreen({ route, navigation }: Props) {
   const [pickerStep, setPickerStep] = useState<"idle" | "date" | "time">("idle");
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveAcknowledged, setSaveAcknowledged] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [aiImproving, setAiImproving] = useState(false);
 
@@ -103,11 +104,12 @@ export default function TaskFormScreen({ route, navigation }: Props) {
           remindAt,
         });
       }
-      navigation.goBack();
-    } catch {
-      Alert.alert("Hata", "Görev kaydedilemedi. Lütfen tekrar deneyin.");
-    } finally {
       setSaving(false);
+      setSaveAcknowledged(true);
+      setTimeout(() => navigation.goBack(), 900);
+    } catch {
+      setSaving(false);
+      Alert.alert("Hata", "Görev kaydedilemedi. Lütfen tekrar deneyin.");
     }
   };
 
@@ -282,10 +284,10 @@ export default function TaskFormScreen({ route, navigation }: Props) {
 
       <View style={styles.saveButton}>
         <AppButton
-          title="Kaydet"
+          title={saveAcknowledged ? "✓ Kaydedildi" : "Kaydet"}
           onPress={onSave}
           loading={saving}
-          disabled={saving || deleting}
+          disabled={saving || deleting || saveAcknowledged}
         />
       </View>
 
