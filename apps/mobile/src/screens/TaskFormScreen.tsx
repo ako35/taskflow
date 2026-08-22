@@ -137,7 +137,7 @@ export default function TaskFormScreen({ route, navigation }: Props) {
 
   const inputStyle = [
     styles.input,
-    { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+    { backgroundColor: colors.surfaceAlt, borderColor: colors.border, color: colors.text },
   ];
 
   return (

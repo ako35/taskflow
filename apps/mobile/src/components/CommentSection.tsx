@@ -66,7 +66,7 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
         <TextInput
           style={[
             styles.input,
-            { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+            { backgroundColor: colors.surfaceAlt, borderColor: colors.border, color: colors.text },
           ]}
           value={draft}
           onChangeText={setDraft}
