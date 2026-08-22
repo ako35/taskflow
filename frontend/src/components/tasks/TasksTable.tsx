@@ -94,7 +94,10 @@ export default function TasksTable({
 
   return (
     <div className="tasks-table-wrapper" ref={tableWrapperRef}>
-      <table className="tasks-table" style={{ width: `${tableWidth}px` }}>
+      <table
+        className="tasks-table"
+        style={{ width: "100%", minWidth: `${tableWidth}px` }}
+      >
         <colgroup>
           {tableDisplayColumns.map((column) => (
             <col
