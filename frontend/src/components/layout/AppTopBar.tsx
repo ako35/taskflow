@@ -307,6 +307,25 @@ export default function AppTopBar({
             </button>
             <button
               type="button"
+              className="dropdown-item dropdown-item-notifications"
+              onClick={onToggleNotificationsMenu}
+            >
+              <span className="dropdown-item-content">
+                <span className="sidebar-link-icon" aria-hidden="true">
+                  <UiGlyph icon="bell" />
+                </span>
+                <span>Bildirimler</span>
+              </span>
+              {notificationsUnreadCount > 0 ? (
+                <span className="notifications-count" aria-hidden="true">
+                  {notificationsUnreadCount > 99
+                    ? "99+"
+                    : notificationsUnreadCount}
+                </span>
+              ) : null}
+            </button>
+            <button
+              type="button"
               className="dropdown-item"
               onClick={onOpenMembersPanel}
             >

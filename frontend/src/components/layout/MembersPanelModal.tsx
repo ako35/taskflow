@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { UiGlyph } from "../ui/Icons";
+import ConfirmDialog from "../ui/ConfirmDialog";
 import type { WorkspaceInvitationsOverview } from "../../types";
 
 type MembersPanelModalProps = {
@@ -35,6 +36,11 @@ export default function MembersPanelModal({
   onRemoveWorkspaceMember,
   onClose,
 }: MembersPanelModalProps) {
+  const [confirmRemoveTarget, setConfirmRemoveTarget] = useState<{
+    userProfileId: number;
+    name: string;
+  } | null>(null);
+
   if (!open) {
     return null;
   }
@@ -55,6 +61,7 @@ export default function MembersPanelModal({
   const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
   return (
+    <>
     <div
       className="workspace-create-overlay"
       role="dialog"
@@ -144,7 +151,7 @@ export default function MembersPanelModal({
                 </section>
 
                 <section className="settings-invitation-group">
-                  <h5>Daveti Kabul Edenler</h5>
+                  <h5>Üye Listesi</h5>
                   {invitationsOverview.accepted.length === 0 ? (
                     <p className="settings-members-note">
                       Kabul edilen davet yok.
@@ -171,9 +178,10 @@ export default function MembersPanelModal({
                                   type="button"
                                   className="settings-member-remove-btn"
                                   onClick={() =>
-                                    onRemoveWorkspaceMember(
-                                      invite.userProfileId as number,
-                                    )
+                                    setConfirmRemoveTarget({
+                                      userProfileId: invite.userProfileId as number,
+                                      name: renderInviteName(invite),
+                                    })
                                   }
                                   disabled={
                                     removingMemberUserId ===
@@ -199,5 +207,21 @@ export default function MembersPanelModal({
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      open={confirmRemoveTarget !== null}
+      title="Üye Çıkar"
+      message={`${confirmRemoveTarget?.name ?? ""} adlı üyeyi çalışma alanından çıkarmak istediğinizden emin misiniz?`}
+      confirmLabel="Üye Çıkar"
+      cancelLabel="Vazgeç"
+      onConfirm={() => {
+        if (confirmRemoveTarget) {
+          onRemoveWorkspaceMember(confirmRemoveTarget.userProfileId);
+        }
+        setConfirmRemoveTarget(null);
+      }}
+      onCancel={() => setConfirmRemoveTarget(null)}
+    />
+    </>
   );
 }

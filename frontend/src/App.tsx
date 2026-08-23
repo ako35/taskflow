@@ -14,6 +14,7 @@ import ProfileDetailsModal from "./components/layout/ProfileDetailsModal";
 import AppTopBar from "./components/layout/AppTopBar";
 import WorkspacePanel from "./components/layout/WorkspacePanel";
 import WorkspaceCreateModal from "./components/layout/sidebar/WorkspaceCreateModal";
+import ConfirmDialog from "./components/ui/ConfirmDialog";
 import { UiGlyph } from "./components/ui/Icons";
 import { API_URL } from "./constants";
 import useAppUiEffects from "./hooks/useAppUiEffects";
@@ -95,6 +96,7 @@ export default function App() {
     string | null
   >(null);
   const [membersPanelOpen, setMembersPanelOpen] = useState(false);
+  const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   const [removingMemberUserId, setRemovingMemberUserId] = useState<
     number | null
   >(null);
@@ -696,6 +698,19 @@ export default function App() {
     setViewMode("workspaces");
     localStorage.removeItem("taskflow_user");
     localStorage.removeItem("taskflow_id_token");
+  }, []);
+
+  const handleRequestSignOut = useCallback(() => {
+    setSignOutConfirmOpen(true);
+  }, []);
+
+  const handleConfirmSignOut = useCallback(() => {
+    setSignOutConfirmOpen(false);
+    handleSignOut();
+  }, [handleSignOut]);
+
+  const handleCancelSignOut = useCallback(() => {
+    setSignOutConfirmOpen(false);
   }, []);
 
   const {
@@ -1351,7 +1366,7 @@ export default function App() {
       onSettingsInviteEmailChange: setSettingsInviteEmail,
       onSendSettingsInvite: handleSendSettingsInvite,
       onRemoveWorkspaceMember: handleRemoveWorkspaceMember,
-      onSignOut: handleSignOut,
+      onSignOut: handleRequestSignOut,
     }),
     [
       activeWorkspaces,
@@ -1366,7 +1381,7 @@ export default function App() {
       handleSetArchiveView,
       handleSetThemeMode,
       handleOpenMembersPanel,
-      handleSignOut,
+      handleRequestSignOut,
       handleToggleSidebar,
       handleToggleSettingsMenu,
       handleToggleThemeMenu,
@@ -1499,7 +1514,7 @@ export default function App() {
     onOpenMembersPanel: handleOpenMembersPanel,
     onOpenProfileDetails: handleOpenProfileDetails,
     onSetThemeMode: handleSetThemeMode,
-    onSignOut: handleSignOut,
+    onSignOut: handleRequestSignOut,
     onNavigateToNotification: handleNavigateToNotification,
   };
 
@@ -1536,6 +1551,16 @@ export default function App() {
           onClick={() => setSidebarOpen(false)}
         />
       ) : null}
+
+      <ConfirmDialog
+        open={signOutConfirmOpen}
+        title="Çıkış Yap"
+        message="Çıkış yapmak istediğinizden emin misiniz?"
+        confirmLabel="Çıkış Yap"
+        cancelLabel="Vazgeç"
+        onConfirm={handleConfirmSignOut}
+        onCancel={handleCancelSignOut}
+      />
 
       <WorkspaceCreateModal
         open={showWorkspaceInput}

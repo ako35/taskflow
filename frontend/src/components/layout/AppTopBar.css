@@ -496,6 +496,18 @@
   gap: 0.75rem;
 }
 
+.dropdown-item-notifications {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dropdown-item-notifications .notifications-count {
+  position: static;
+  border: none;
+}
+
 .profile-theme-flyout {
   min-width: 188px;
   padding: 0.45rem;
