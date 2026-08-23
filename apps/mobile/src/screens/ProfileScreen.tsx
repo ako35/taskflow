@@ -2,14 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { LogOut, Moon, Sun } from "lucide-react-native";
+import { LogOut } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import useProfile from "../hooks/useProfile";
 import { useTheme } from "../theme/ThemeContext";
@@ -19,7 +18,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 
 export default function ProfileScreen() {
   const { idToken, signOut } = useAuth();
-  const { colors, mode, setMode } = useTheme();
+  const { colors } = useTheme();
   const { profile, loading, error, saving, save } = useProfile(idToken);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -84,38 +83,9 @@ export default function ProfileScreen() {
 
       {profile?.authEmail ? (
         <Text style={[styles.hint, { color: colors.textMuted }]}>
-          Google hesabı: {profile.authEmail}
+          Hesap: {profile.authEmail}
         </Text>
       ) : null}
-
-      <Text style={[styles.label, { color: colors.textMuted }]}>Görünüm</Text>
-      <View style={styles.segmentRow}>
-        {(["dark", "light"] as const).map((option) => {
-          const active = mode === option;
-          const Icon = option === "dark" ? Moon : Sun;
-          return (
-            <Pressable
-              key={option}
-              onPress={() => setMode(option)}
-              style={[
-                styles.segment,
-                { borderColor: colors.border },
-                active && { backgroundColor: colors.primary, borderColor: colors.primary },
-              ]}
-            >
-              <Icon color={active ? "#fff" : colors.text} size={14} strokeWidth={2} />
-              <Text
-                style={[
-                  styles.segmentText,
-                  { color: active ? "#fff" : colors.text },
-                ]}
-              >
-                {option === "dark" ? "Koyu" : "Açık"}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
 
       <Text style={[styles.label, { color: colors.textMuted }]}>Ad</Text>
       <TextInput
@@ -223,23 +193,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     fontFamily: fonts.sansRegular,
-  },
-  segmentRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  segment: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  segmentText: {
-    fontFamily: fonts.sansSemiBold,
-    fontSize: 13,
   },
   saveButton: {
     marginTop: 28,

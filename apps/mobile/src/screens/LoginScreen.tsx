@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Compass } from "lucide-react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Compass, Eye, EyeOff } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AppButton from "../components/Button";
 import GoogleIcon from "../components/GoogleIcon";
@@ -33,6 +33,7 @@ export default function LoginScreen({
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const inputStyle = [
     styles.input,
@@ -129,15 +130,28 @@ export default function LoginScreen({
         />
 
         <Text style={[styles.label, { color: colors.textMuted }]}>Parolayı girin</Text>
-        <TextInput
-          style={inputStyle}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Şifre"
-          placeholderTextColor={colors.textMuted}
-          selectionColor={colors.primary}
-          secureTextEntry
-        />
+        <View style={styles.passwordRow}>
+          <TextInput
+            style={[inputStyle, styles.passwordInput]}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Şifre"
+            placeholderTextColor={colors.textMuted}
+            selectionColor={colors.primary}
+            secureTextEntry={!showPassword}
+          />
+          <Pressable
+            style={styles.passwordToggle}
+            onPress={() => setShowPassword((current) => !current)}
+            hitSlop={10}
+          >
+            {showPassword ? (
+              <EyeOff color={colors.textMuted} size={18} strokeWidth={2} />
+            ) : (
+              <Eye color={colors.textMuted} size={18} strokeWidth={2} />
+            )}
+          </Pressable>
+        </View>
 
         {formError ? (
           <Text style={[styles.error, { color: colors.danger }]}>{formError}</Text>
@@ -229,6 +243,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 15,
     fontFamily: fonts.sansRegular,
+  },
+  passwordRow: {
+    justifyContent: "center",
+  },
+  passwordInput: {
+    paddingRight: 44,
+  },
+  passwordToggle: {
+    position: "absolute",
+    right: 14,
+    height: 46,
+    justifyContent: "center",
   },
   submitButton: {
     marginTop: 16,
