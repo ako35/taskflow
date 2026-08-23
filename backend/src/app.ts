@@ -1130,9 +1130,9 @@ workspacesRouter.get("/:id/invitations", async (req, res) => {
     prisma.workspaceMember.findMany({
       where: {
         workspaceId,
-        role: "MEMBER",
       },
       select: {
+        role: true,
         createdAt: true,
         userProfile: {
           select: {
@@ -1145,6 +1145,10 @@ workspacesRouter.get("/:id/invitations", async (req, res) => {
       },
     }),
   ]);
+
+  const currentMemberIds = new Set(
+    workspaceMembers.map((membership) => membership.userProfile.id),
+  );
 
   const acceptedByAccount = new Map<
     string,
@@ -1187,36 +1191,43 @@ workspacesRouter.get("/:id/invitations", async (req, res) => {
       }
     });
 
-  workspaceMembers.forEach((membership) => {
-    const accountKey = `user:${membership.userProfile.id}`;
-    const membershipEmailKey = canonicalizeEmailForInvite(
-      membership.userProfile.email,
-    );
-    const legacyEntry = Array.from(acceptedByAccount.entries()).find(
-      ([, invite]) =>
-        canonicalizeEmailForInvite(invite.email) === membershipEmailKey,
-    );
-    const existing = acceptedByAccount.get(accountKey) || legacyEntry?.[1];
+  workspaceMembers
+    .filter((membership) => membership.role === "MEMBER")
+    .forEach((membership) => {
+      const accountKey = `user:${membership.userProfile.id}`;
+      const membershipEmailKey = canonicalizeEmailForInvite(
+        membership.userProfile.email,
+      );
+      const legacyEntry = Array.from(acceptedByAccount.entries()).find(
+        ([, invite]) =>
+          canonicalizeEmailForInvite(invite.email) === membershipEmailKey,
+      );
+      const existing = acceptedByAccount.get(accountKey) || legacyEntry?.[1];
 
-    if (legacyEntry && legacyEntry[0] !== accountKey) {
-      acceptedByAccount.delete(legacyEntry[0]);
-    }
+      if (legacyEntry && legacyEntry[0] !== accountKey) {
+        acceptedByAccount.delete(legacyEntry[0]);
+      }
 
-    acceptedByAccount.set(accountKey, {
-      id: existing?.id || `member:${membership.userProfile.id}`,
-      userProfileId: membership.userProfile.id,
-      email: membership.userProfile.email,
-      firstName: membership.userProfile.firstName,
-      lastName: membership.userProfile.lastName,
-      invitedAt: existing?.invitedAt || membership.createdAt,
-      acceptedAt: existing?.acceptedAt || membership.createdAt,
+      acceptedByAccount.set(accountKey, {
+        id: existing?.id || `member:${membership.userProfile.id}`,
+        userProfileId: membership.userProfile.id,
+        email: membership.userProfile.email,
+        firstName: membership.userProfile.firstName,
+        lastName: membership.userProfile.lastName,
+        invitedAt: existing?.invitedAt || membership.createdAt,
+        acceptedAt: existing?.acceptedAt || membership.createdAt,
+      });
     });
-  });
+
+  // Drop stale ACCEPTED-invitation entries for users whose membership was
+  // since removed, so a removed member disappears from the list instead of
+  // lingering forever (invitation status itself is never reverted).
+  const acceptedValues = Array.from(acceptedByAccount.values()).filter(
+    (entry) => entry.userProfileId == null || currentMemberIds.has(entry.userProfileId),
+  );
 
   const acceptedEmailKeys = new Set(
-    Array.from(acceptedByAccount.values()).map((invite) =>
-      canonicalizeEmailForInvite(invite.email),
-    ),
+    acceptedValues.map((invite) => canonicalizeEmailForInvite(invite.email)),
   );
 
   const pendingByAccount = new Map<
@@ -1262,13 +1273,11 @@ workspacesRouter.get("/:id/invitations", async (req, res) => {
     pending: Array.from(pendingByAccount.values()).sort(
       (a, b) => b.invitedAt.getTime() - a.invitedAt.getTime(),
     ),
-    accepted: Array.from(acceptedByAccount.values()).sort(
-      (a, b) => {
-        const aTime = (a.acceptedAt || a.invitedAt).getTime();
-        const bTime = (b.acceptedAt || b.invitedAt).getTime();
-        return bTime - aTime;
-      },
-    ),
+    accepted: acceptedValues.sort((a, b) => {
+      const aTime = (a.acceptedAt || a.invitedAt).getTime();
+      const bTime = (b.acceptedAt || b.invitedAt).getTime();
+      return bTime - aTime;
+    }),
   });
 });
 
