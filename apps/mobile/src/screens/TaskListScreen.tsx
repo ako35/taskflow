@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { ChevronDown, LogOut, Menu, Pencil, Plus, User, Users } from "lucide-react-native";
+import { ChevronDown, Menu, Pencil, Plus, User, Users } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Task } from "@taskflow/shared";
@@ -45,6 +45,13 @@ export default function TaskListScreen({ navigation }: Props) {
       "Devam etmek için lütfen tekrar giriş yapın.",
     );
     signOut();
+  }, [signOut]);
+
+  const handleSignOutPress = useCallback(() => {
+    Alert.alert("Çıkış Yap", "Çıkış yapmak istediğinizden emin misiniz?", [
+      { text: "Vazgeç", style: "cancel" },
+      { text: "Çıkış Yap", style: "destructive", onPress: signOut },
+    ]);
   }, [signOut]);
 
   const {
@@ -189,9 +196,6 @@ export default function TaskListScreen({ navigation }: Props) {
             unreadCount={unreadCount}
             onPress={() => navigation.navigate("Notifications")}
           />
-          <Pressable hitSlop={8} onPress={signOut}>
-            <LogOut color={colors.danger} size={20} strokeWidth={2} />
-          </Pressable>
         </View>
       </View>
 
@@ -365,7 +369,7 @@ export default function TaskListScreen({ navigation }: Props) {
           navigation.navigate("ArchivedWorkspaces", { archivedWorkspaces })
         }
         onOpenSettings={() => navigation.navigate("Profile")}
-        onSignOut={signOut}
+        onSignOut={handleSignOutPress}
       />
     </View>
   );

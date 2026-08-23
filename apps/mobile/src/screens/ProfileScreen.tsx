@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Moon, Sun } from "lucide-react-native";
+import { LogOut, Moon, Sun } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import useProfile from "../hooks/useProfile";
 import { useTheme } from "../theme/ThemeContext";
@@ -17,7 +17,7 @@ import { fonts } from "../theme/fonts";
 import AppButton from "../components/Button";
 
 export default function ProfileScreen() {
-  const { idToken } = useAuth();
+  const { idToken, signOut } = useAuth();
   const { colors, mode, setMode } = useTheme();
   const { profile, loading, error, saving, save } = useProfile(idToken);
   const [firstName, setFirstName] = useState("");
@@ -33,6 +33,13 @@ export default function ProfileScreen() {
       setPhone(profile.phone ?? "");
     }
   }, [profile]);
+
+  const handleSignOutPress = useCallback(() => {
+    Alert.alert("Çıkış Yap", "Çıkış yapmak istediğinizden emin misiniz?", [
+      { text: "Vazgeç", style: "cancel" },
+      { text: "Çıkış Yap", style: "destructive", onPress: signOut },
+    ]);
+  }, [signOut]);
 
   const onSave = async () => {
     if (!firstName.trim() || !email.trim()) {
@@ -157,6 +164,15 @@ export default function ProfileScreen() {
       <View style={styles.saveButton}>
         <AppButton title="Kaydet" onPress={onSave} loading={saving} disabled={saving} />
       </View>
+
+      <View style={styles.signOutButton}>
+        <AppButton
+          title="Çıkış Yap"
+          variant="danger"
+          onPress={handleSignOutPress}
+          icon={<LogOut color="#fff" size={16} strokeWidth={2} />}
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -215,5 +231,8 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 28,
+  },
+  signOutButton: {
+    marginTop: 12,
   },
 });
