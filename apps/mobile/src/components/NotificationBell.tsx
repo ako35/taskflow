@@ -12,7 +12,7 @@ export default function NotificationBell({ unreadCount, onPress }: NotificationB
   const { colors } = useTheme();
 
   return (
-    <Pressable onPress={onPress} style={styles.container} hitSlop={8}>
+    <Pressable onPress={onPress} style={styles.container} hitSlop={10}>
       <Bell color={colors.text} size={22} strokeWidth={2} />
       {unreadCount > 0 ? (
         <View style={[styles.badge, { backgroundColor: colors.danger }]}>
@@ -32,17 +32,17 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: -2,
-    right: -2,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -4,
+    right: -4,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
   },
   badgeText: {
     color: "#fff",
-    fontSize: 10,
+    fontSize: 11,
   },
 });

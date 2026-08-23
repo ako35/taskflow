@@ -116,7 +116,7 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
             </View>
             <Text style={[styles.commentContent, { color: colors.text }]}>{comment.content}</Text>
             {comment.author.email === user?.email ? (
-              <Pressable onPress={() => onDelete(comment)} hitSlop={8} style={styles.deleteLink}>
+              <Pressable onPress={() => onDelete(comment)} hitSlop={16} style={styles.deleteLink}>
                 <Trash2 color={colors.danger} size={13} strokeWidth={2} />
                 <Text style={[styles.deleteLinkText, { color: colors.danger }]}>Sil</Text>
               </Pressable>

@@ -230,7 +230,7 @@ export default function TaskListScreen({ navigation }: Props) {
     >
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Pressable hitSlop={8} onPress={() => setMenuOpen(true)}>
+          <Pressable hitSlop={14} onPress={() => setMenuOpen(true)}>
             <Menu color={colors.text} size={22} strokeWidth={2} />
           </Pressable>
           <Pressable hitSlop={8} onPress={() => navigation.navigate("Profile")}>
@@ -242,7 +242,7 @@ export default function TaskListScreen({ navigation }: Props) {
         <View style={styles.headerActions}>
           {activeWorkspace ? (
             <Pressable
-              hitSlop={8}
+              hitSlop={14}
               onPress={() =>
                 navigation.navigate("Members", {
                   workspaceId: activeWorkspace.id,
@@ -254,7 +254,7 @@ export default function TaskListScreen({ navigation }: Props) {
               <Users color={colors.text} size={20} strokeWidth={2} />
             </Pressable>
           ) : null}
-          <Pressable hitSlop={8} onPress={() => navigation.navigate("Profile")}>
+          <Pressable hitSlop={14} onPress={() => navigation.navigate("Profile")}>
             <User color={colors.text} size={20} strokeWidth={2} />
           </Pressable>
           <NotificationBell
@@ -278,11 +278,11 @@ export default function TaskListScreen({ navigation }: Props) {
             </Text>
           </View>
           <Pressable
-            hitSlop={8}
+            hitSlop={14}
             onPress={onOpenWorkspaceMenu}
             disabled={archivingWorkspace}
           >
-            <MoreHorizontal color={colors.textMuted} size={18} strokeWidth={2} />
+            <MoreHorizontal color={colors.textMuted} size={20} strokeWidth={2} />
           </Pressable>
         </View>
       ) : null}
@@ -382,7 +382,7 @@ export default function TaskListScreen({ navigation }: Props) {
 
                 <View style={styles.rowBottomLine}>
                   <View style={styles.badgesGroup}>
-                    <Pressable onPress={() => toggleStatus(item)} hitSlop={6}>
+                    <Pressable onPress={() => toggleStatus(item)} hitSlop={13}>
                       <Badge
                         label={item.status ?? "Yapılacak"}
                         tone={statusToBadgeTone(item.status ?? "Yapılacak")}
@@ -393,7 +393,7 @@ export default function TaskListScreen({ navigation }: Props) {
 
                   <Pressable
                     onPress={openEdit}
-                    hitSlop={8}
+                    hitSlop={12}
                     style={[styles.editBtn, { borderColor: colors.border }]}
                   >
                     <Pencil color={colors.primary} size={13} strokeWidth={2} />

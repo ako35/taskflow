@@ -322,7 +322,7 @@ export default function MembersScreen({ route, navigation }: Props) {
                             member.email,
                         )
                       }
-                      hitSlop={8}
+                      hitSlop={16}
                       style={styles.removeLink}
                     >
                       <X color={colors.danger} size={14} strokeWidth={2} />

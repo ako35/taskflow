@@ -142,7 +142,7 @@ export default function SideMenu({
               <Text style={[styles.brandText, { color: colors.text }]}>TaskFlow</Text>
             </View>
           )}
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable onPress={onClose} hitSlop={14}>
             <X color={colors.textMuted} size={20} strokeWidth={2} />
           </Pressable>
         </View>
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: fonts.sansBold,
     letterSpacing: 0.6,
   },

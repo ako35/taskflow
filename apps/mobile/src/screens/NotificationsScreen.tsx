@@ -68,7 +68,7 @@ export default function NotificationsScreen({ navigation }: Props) {
         {unreadCount > 0 ? (
           <Pressable
             onPress={() => markAllRead().catch(() => undefined)}
-            hitSlop={8}
+            hitSlop={16}
             style={styles.markAllLink}
           >
             <CheckCheck color={colors.primary} size={14} strokeWidth={2} />

@@ -164,6 +164,7 @@ export default function TaskFormScreen({ route, navigation }: Props) {
         style={styles.aiLink}
         onPress={onAiImprove}
         disabled={aiImproving}
+        hitSlop={16}
       >
         <Sparkles color={colors.primary} size={13} strokeWidth={2} />
         <Text style={[styles.aiLinkText, { color: colors.primary }]}>

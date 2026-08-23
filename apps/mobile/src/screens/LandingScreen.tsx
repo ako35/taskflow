@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   previewChipText: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: fonts.sansBold,
     letterSpacing: 0.4,
   },
