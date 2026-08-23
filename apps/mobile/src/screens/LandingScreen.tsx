@@ -1,9 +1,8 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Compass } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Button from "../components/Button";
-import Badge from "../components/Badge";
-import { priorityToBadgeTone, statusToBadgeTone } from "../theme/badgeColors";
 import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 
@@ -11,104 +10,62 @@ type LandingScreenProps = {
   onGoToLogin: () => void;
 };
 
-const previewTasks = [
-  { status: "Yapılacak", title: "Mobil onboarding akışını yayına al", priority: "Acil" },
-  { status: "Yapılacak", title: "Satış paneli KPI kartlarını güncelle", priority: "Yüksek" },
-  { status: "Tamamlandı", title: "Müşteri geri bildirim etiketlerini temizle", priority: "Orta" },
-  { status: "Tamamlandı", title: "Sprint planı ve teslim tarihlerini eşitle", priority: "Düşük" },
-];
-
 export default function LandingScreen({ onGoToLogin }: LandingScreenProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.bg }}
-      contentContainerStyle={[
+    <View
+      style={[
         styles.container,
-        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 48 },
+        { backgroundColor: colors.bg, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
       ]}
     >
-      <View style={styles.header}>
-        <View style={styles.brand}>
-          <View style={[styles.logo, { backgroundColor: colors.primary }]}>
-            <Compass color="#fff" size={18} strokeWidth={2} />
-          </View>
-          <Text style={[styles.brandText, { color: colors.text }]}>TaskFlow</Text>
+      <View style={styles.brand}>
+        <View style={[styles.logo, { backgroundColor: colors.primary }]}>
+          <Compass color="#fff" size={18} strokeWidth={2} />
         </View>
-        <Text
-          style={[styles.headerLink, { color: colors.textMuted }]}
-          onPress={onGoToLogin}
-        >
-          Giriş yap
-        </Text>
+        <Text style={[styles.brandText, { color: colors.text }]}>TaskFlow</Text>
       </View>
 
       <View style={styles.hero}>
+        <LinearGradient
+          colors={["#5b8cff", "#2d5ff0", "#1d4ed8"]}
+          locations={[0, 0.58, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroBadge}
+        >
+          <Compass color="#fff" size={52} strokeWidth={1.75} />
+        </LinearGradient>
+
         <Text style={[styles.eyebrow, { color: colors.primary }]}>YAPAY ZEKA TABANLI</Text>
         <Text style={[styles.title, { color: colors.text }]}>
           Kod Gerektirmeyen İş Yönetim Platformu
         </Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Ekibinizin iş birliği ihtiyaçları için hızlı, esnek ve tamamen özelleştirilebilir bir
-          görev yönetim deneyimi.
+          Ekibinizle görevleri hızlı ve esnek şekilde yönetin.
         </Text>
-        <View style={styles.ctaRow}>
-          <Button title="Şimdi başlayın" onPress={onGoToLogin} />
-          <Button title="TaskFlow'a giriş yap" variant="secondary" onPress={onGoToLogin} />
-        </View>
       </View>
 
-      <View
-        style={[
-          styles.previewCard,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
-      >
-        <View style={styles.previewHeader}>
-          <View style={styles.previewHeaderText}>
-            <Text style={[styles.previewTitle, { color: colors.text }]}>Görev görünümü</Text>
-            <Text style={[styles.previewSubtitle, { color: colors.textMuted }]}>
-              Ekibinizin önceliklerini tek ekranda yönetin.
-            </Text>
-          </View>
-          <View style={[styles.previewChip, { borderColor: colors.border }]}>
-            <Text style={[styles.previewChipText, { color: colors.textMuted }]}>
-              CANLI İŞ AKIŞI
-            </Text>
-          </View>
-        </View>
-
-        {previewTasks.map((task) => (
-          <View
-            key={task.title}
-            style={[styles.previewRow, { borderTopColor: colors.border }]}
-          >
-            <Badge label={task.status} tone={statusToBadgeTone(task.status)} />
-            <Text
-              style={[styles.previewRowTitle, { color: colors.text }]}
-              numberOfLines={1}
-            >
-              {task.title}
-            </Text>
-            <Badge label={task.priority} tone={priorityToBadgeTone(task.priority)} />
-          </View>
-        ))}
+      <View style={styles.actions}>
+        <Button title="Hemen Başla" onPress={onGoToLogin} />
+        <Pressable onPress={onGoToLogin} hitSlop={8} style={styles.secondaryLink}>
+          <Text style={styles.secondaryLinkText}>
+            <Text style={{ color: colors.textMuted }}>Zaten hesabınız var mı? </Text>
+            <Text style={{ color: colors.primary, fontFamily: fonts.sansBold }}>Giriş Yap</Text>
+          </Text>
+        </Pressable>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
+    flex: 1,
+    paddingHorizontal: 24,
     justifyContent: "space-between",
-    marginBottom: 32,
   },
   brand: {
     flexDirection: "row",
@@ -126,13 +83,23 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: fonts.displayBold,
   },
-  headerLink: {
-    fontSize: 14,
-    fontFamily: fonts.sansSemiBold,
-  },
   hero: {
+    flex: 1,
     alignItems: "center",
-    marginBottom: 32,
+    justifyContent: "center",
+  },
+  heroBadge: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+    shadowColor: "#1d4ed8",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 6,
   },
   eyebrow: {
     fontSize: 12,
@@ -141,73 +108,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 28,
+    lineHeight: 34,
     textAlign: "center",
     fontFamily: fonts.displayBold,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
     textAlign: "center",
     fontFamily: fonts.sansRegular,
-    marginBottom: 24,
-  },
-  ctaRow: {
-    gap: 12,
-    width: "100%",
-  },
-  previewCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#020617",
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.22,
-    shadowRadius: 28,
-    elevation: 4,
-  },
-  previewHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 16,
-  },
-  previewHeaderText: {
-    flexShrink: 1,
-  },
-  previewTitle: {
-    fontSize: 16,
-    fontFamily: fonts.sansBold,
-  },
-  previewSubtitle: {
-    fontSize: 12,
-    fontFamily: fonts.sansRegular,
-    marginTop: 2,
-  },
-  previewChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 4,
     paddingHorizontal: 12,
   },
-  previewChipText: {
-    fontSize: 11,
-    fontFamily: fonts.sansBold,
-    letterSpacing: 0.4,
+  actions: {
+    gap: 12,
   },
-  previewRow: {
-    flexDirection: "row",
+  secondaryLink: {
     alignItems: "center",
-    gap: 8,
     paddingVertical: 12,
-    borderTopWidth: 1,
   },
-  previewRowTitle: {
-    flex: 1,
-    fontSize: 13,
+  secondaryLinkText: {
+    fontSize: 14,
     fontFamily: fonts.sansSemiBold,
   },
 });
