@@ -325,13 +325,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: fonts.sansSemiBold,
     marginTop: 16,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 15,
     fontFamily: fonts.sansRegular,
   },
@@ -342,8 +342,8 @@ const styles = StyleSheet.create({
   aiLink: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    marginTop: 6,
+    gap: 4,
+    marginTop: 8,
     alignSelf: "flex-start",
   },
   aiLinkText: {
@@ -363,8 +363,8 @@ const styles = StyleSheet.create({
   segment: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
   segmentText: {
     fontSize: 13,

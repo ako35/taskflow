@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 16,
   },
   activeWorkspaceInfo: {
     flexDirection: "row",
@@ -563,26 +563,26 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 20,
     padding: 16,
   },
   renameLabel: {
     fontSize: 13,
     fontFamily: fonts.sansSemiBold,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   renameInput: {
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 15,
     fontFamily: fonts.sansRegular,
   },
   renameActions: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 14,
+    gap: 12,
+    marginTop: 16,
   },
   archivedLink: {
     marginBottom: 12,
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   chevron: {
     width: 16,
@@ -613,8 +613,8 @@ const styles = StyleSheet.create({
   },
   countChip: {
     minWidth: 22,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 999,
     alignItems: "center",
   },
@@ -630,9 +630,9 @@ const styles = StyleSheet.create({
   },
   row: {
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
   },
   rowTopLine: {
     flexDirection: "row",
@@ -668,11 +668,11 @@ const styles = StyleSheet.create({
   editBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 4,
     borderWidth: 1,
     borderRadius: 999,
-    paddingVertical: 5,
-    paddingHorizontal: 11,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   editBtnText: {
     fontSize: 12,

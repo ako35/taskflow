@@ -175,8 +175,8 @@ const styles = StyleSheet.create({
   },
   comment: {
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: 16,
+    padding: 12,
     marginBottom: 8,
   },
   commentHeader: {
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansRegular,
   },
   deleteLink: {
-    marginTop: 6,
+    marginTop: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,

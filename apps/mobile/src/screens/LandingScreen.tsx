@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 36,
+    marginBottom: 32,
   },
   brand: {
     flexDirection: "row",
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 30,
     height: 30,
-    borderRadius: 9,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -132,27 +132,27 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: "center",
-    marginBottom: 36,
+    marginBottom: 32,
   },
   eyebrow: {
     fontSize: 12,
     fontFamily: fonts.sansBold,
     letterSpacing: 1.4,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   title: {
     fontSize: 30,
     lineHeight: 36,
     textAlign: "center",
     fontFamily: fonts.displayBold,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
     textAlign: "center",
     fontFamily: fonts.sansRegular,
-    marginBottom: 26,
+    marginBottom: 24,
   },
   ctaRow: {
     gap: 12,
@@ -172,8 +172,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 10,
-    marginBottom: 14,
+    gap: 12,
+    marginBottom: 16,
   },
   previewHeaderText: {
     flexShrink: 1,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 999,
     paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
   },
   previewChipText: {
     fontSize: 11,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderTopWidth: 1,
   },
   previewRowTitle: {

@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 16,
     padding: 12,
     marginBottom: 8,
   },

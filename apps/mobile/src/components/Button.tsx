@@ -87,7 +87,7 @@ export default function Button({
 
 const styles = StyleSheet.create({
   shadowWrap: {
-    borderRadius: 14,
+    borderRadius: 12,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.32,
     shadowRadius: 18,
@@ -98,10 +98,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     paddingVertical: 12,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
   },
   text: {
     fontFamily: fonts.sansBold,

@@ -68,13 +68,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontFamily: fonts.sansSemiBold,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 15,
     fontFamily: fonts.sansRegular,
   },
