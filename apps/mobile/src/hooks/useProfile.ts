@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchProfile, updateProfile, type UpdateProfilePayload } from "../lib/api";
+import { ApiError, fetchProfile, updateProfile, type UpdateProfilePayload } from "../lib/api";
 import type { UserProfile } from "../types";
 
 export default function useProfile(idToken: string) {
@@ -13,7 +13,10 @@ export default function useProfile(idToken: string) {
       setError(null);
       const item = await fetchProfile(idToken);
       setProfile(item);
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        return;
+      }
       setError("Profil yüklenemedi.");
     }
   }, [idToken]);

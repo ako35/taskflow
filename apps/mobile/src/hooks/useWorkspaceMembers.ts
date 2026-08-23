@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { WorkspaceInvitationsOverview, WorkspaceMemberInfo } from "@taskflow/shared";
 import {
+  ApiError,
   fetchWorkspaceInvitations,
   fetchWorkspaceMembers,
   removeWorkspaceMember,
@@ -27,7 +28,10 @@ export default function useWorkspaceMembers(idToken: string, workspaceId: string
       ]);
       setMembers(memberList);
       setInvitations(invitationsOverview);
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        return;
+      }
       setError("Üyeler yüklenemedi.");
     }
   }, [idToken, workspaceId]);

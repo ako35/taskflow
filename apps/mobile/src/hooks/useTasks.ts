@@ -10,11 +10,7 @@ import {
   type UpdateTaskPayload,
 } from "../lib/api";
 
-export default function useTasks(
-  idToken: string,
-  workspaceId: string | null,
-  onUnauthorized?: () => void,
-) {
+export default function useTasks(idToken: string, workspaceId: string | null) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,12 +26,11 @@ export default function useTasks(
       setTasks(items);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        onUnauthorized?.();
         return;
       }
       setError("Görevler yüklenemedi. Bağlantınızı kontrol edin.");
     }
-  }, [idToken, workspaceId, onUnauthorized]);
+  }, [idToken, workspaceId]);
 
   useEffect(() => {
     setLoading(true);

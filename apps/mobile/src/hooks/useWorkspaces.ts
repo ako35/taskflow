@@ -3,7 +3,7 @@ import type { Workspace } from "@taskflow/shared";
 import { ApiError, fetchWorkspaces } from "../lib/api";
 import { getStoredArchivedWorkspaceIds } from "../lib/secureStorage";
 
-export default function useWorkspaces(idToken: string, onUnauthorized?: () => void) {
+export default function useWorkspaces(idToken: string) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [archivedIds, setArchivedIds] = useState<string[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
@@ -17,12 +17,11 @@ export default function useWorkspaces(idToken: string, onUnauthorized?: () => vo
       setWorkspaces(items);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        onUnauthorized?.();
         return;
       }
       setError("Çalışma alanları yüklenemedi.");
     }
-  }, [idToken, onUnauthorized]);
+  }, [idToken]);
 
   const loadArchived = useCallback(async () => {
     setArchivedIds(await getStoredArchivedWorkspaceIds());

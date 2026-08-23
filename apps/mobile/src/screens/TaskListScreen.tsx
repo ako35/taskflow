@@ -1,16 +1,18 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   RefreshControl,
   SectionList,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
-import { ChevronDown, Menu, Pencil, Plus, User, Users } from "lucide-react-native";
+import { ChevronDown, Menu, MoreHorizontal, Pencil, Plus, User, Users } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Task } from "@taskflow/shared";
@@ -21,7 +23,13 @@ import useNotifications from "../hooks/useNotifications";
 import NotificationBell from "../components/NotificationBell";
 import SideMenu from "../components/SideMenu";
 import Badge from "../components/Badge";
+import AppButton from "../components/Button";
+import { renameWorkspace } from "../lib/api";
 import { formatDateTime } from "../lib/format";
+import {
+  getStoredArchivedWorkspaceIds,
+  setStoredArchivedWorkspaceIds,
+} from "../lib/secureStorage";
 import { groupTasksByStatus, isCompletedStatus } from "../lib/taskSort";
 import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
@@ -35,17 +43,6 @@ export default function TaskListScreen({ navigation }: Props) {
   const { idToken, user, signOut } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-
-  const unauthorizedHandledRef = useRef(false);
-  const handleUnauthorized = useCallback(() => {
-    if (unauthorizedHandledRef.current) return;
-    unauthorizedHandledRef.current = true;
-    Alert.alert(
-      "Oturum süresi doldu",
-      "Devam etmek için lütfen tekrar giriş yapın.",
-    );
-    signOut();
-  }, [signOut]);
 
   const handleSignOutPress = useCallback(() => {
     Alert.alert("Çıkış Yap", "Çıkış yapmak istediğinizden emin misiniz?", [
@@ -63,18 +60,15 @@ export default function TaskListScreen({ navigation }: Props) {
     error: workspacesError,
     reload: reloadWorkspaces,
     reloadArchived,
-  } = useWorkspaces(idToken, handleUnauthorized);
+  } = useWorkspaces(idToken);
   const {
     tasks,
     loading: tasksLoading,
     error: tasksError,
     reload: reloadTasks,
     updateTask,
-  } = useTasks(idToken, activeWorkspaceId, handleUnauthorized);
-  const { unreadCount, reload: reloadNotifications } = useNotifications(
-    idToken,
-    handleUnauthorized,
-  );
+  } = useTasks(idToken, activeWorkspaceId);
+  const { unreadCount, reload: reloadNotifications } = useNotifications(idToken);
   const activeWorkspace = activeWorkspaces.find(
     (workspace) => workspace.id === activeWorkspaceId,
   );
@@ -82,6 +76,77 @@ export default function TaskListScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsedOverrides, setCollapsedOverrides] = useState<Record<string, boolean>>({});
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [archivingWorkspace, setArchivingWorkspace] = useState(false);
+
+  const onArchiveActiveWorkspace = useCallback(async () => {
+    if (!activeWorkspace) return;
+    setArchivingWorkspace(true);
+    try {
+      const current = await getStoredArchivedWorkspaceIds();
+      if (!current.includes(activeWorkspace.id)) {
+        await setStoredArchivedWorkspaceIds([...current, activeWorkspace.id]);
+      }
+      await reloadArchived();
+    } finally {
+      setArchivingWorkspace(false);
+    }
+  }, [activeWorkspace, reloadArchived]);
+
+  const onOpenWorkspaceMenu = useCallback(() => {
+    if (!activeWorkspace) return;
+    const options: Array<{
+      text: string;
+      style?: "cancel" | "destructive" | "default";
+      onPress?: () => void;
+    }> = [];
+
+    if (activeWorkspace.role === "OWNER") {
+      options.push({
+        text: "Yeniden Adlandır",
+        onPress: () => {
+          setRenameDraft(activeWorkspace.name);
+          // Android needs the Alert's own dialog to finish tearing down
+          // before a new Modal can reliably mount; opening synchronously
+          // in the same tick silently fails to show it.
+          setTimeout(() => setRenameModalOpen(true), 300);
+        },
+      });
+    }
+
+    options.push({
+      text: "Arşive Kaldır",
+      onPress: () => {
+        onArchiveActiveWorkspace().catch(() => {
+          Alert.alert("Hata", "Çalışma alanı arşivlenemedi.");
+        });
+      },
+    });
+    options.push({ text: "Vazgeç", style: "cancel" });
+
+    Alert.alert(activeWorkspace.name, undefined, options);
+  }, [activeWorkspace, onArchiveActiveWorkspace]);
+
+  const onConfirmRename = useCallback(async () => {
+    if (!activeWorkspace) return;
+    const trimmed = renameDraft.trim();
+    if (!trimmed) {
+      Alert.alert("Eksik bilgi", "Çalışma alanı adı boş olamaz.");
+      return;
+    }
+    setRenaming(true);
+    try {
+      await renameWorkspace(idToken, activeWorkspace.id, trimmed);
+      setRenameModalOpen(false);
+      await reloadWorkspaces();
+    } catch {
+      Alert.alert("Hata", "Çalışma alanı güncellenemedi.");
+    } finally {
+      setRenaming(false);
+    }
+  }, [activeWorkspace, idToken, renameDraft, reloadWorkspaces]);
 
   const isGroupCollapsed = useCallback(
     (status: string) => collapsedOverrides[status] ?? isCompletedStatus(status),
@@ -201,15 +266,24 @@ export default function TaskListScreen({ navigation }: Props) {
 
       {activeWorkspace ? (
         <View style={styles.activeWorkspaceRow}>
-          <View
-            style={[styles.workspaceDot, { backgroundColor: activeWorkspace.color }]}
-          />
-          <Text
-            style={[styles.activeWorkspaceText, { color: colors.text }]}
-            numberOfLines={1}
+          <View style={styles.activeWorkspaceInfo}>
+            <View
+              style={[styles.workspaceDot, { backgroundColor: activeWorkspace.color }]}
+            />
+            <Text
+              style={[styles.activeWorkspaceText, { color: colors.text }]}
+              numberOfLines={1}
+            >
+              {activeWorkspace.name}
+            </Text>
+          </View>
+          <Pressable
+            hitSlop={8}
+            onPress={onOpenWorkspaceMenu}
+            disabled={archivingWorkspace}
           >
-            {activeWorkspace.name}
-          </Text>
+            <MoreHorizontal color={colors.textMuted} size={18} strokeWidth={2} />
+          </Pressable>
         </View>
       ) : null}
 
@@ -371,6 +445,61 @@ export default function TaskListScreen({ navigation }: Props) {
         onOpenSettings={() => navigation.navigate("Profile")}
         onSignOut={handleSignOutPress}
       />
+
+      <Modal
+        visible={renameModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRenameModalOpen(false)}
+      >
+        <Pressable
+          style={styles.renameOverlay}
+          onPress={() => setRenameModalOpen(false)}
+        >
+          <Pressable
+            style={[
+              styles.renameCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <Text style={[styles.renameLabel, { color: colors.textMuted }]}>Alan Adı</Text>
+            <TextInput
+              style={[
+                styles.renameInput,
+                {
+                  backgroundColor: colors.surfaceAlt,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={renameDraft}
+              onChangeText={setRenameDraft}
+              autoFocus
+              selectionColor={colors.primary}
+              cursorColor={colors.primary}
+              underlineColorAndroid="transparent"
+              autoCorrect={false}
+              spellCheck={false}
+              importantForAutofill="no"
+            />
+            <View style={styles.renameActions}>
+              <AppButton
+                title="Kaydet"
+                onPress={onConfirmRename}
+                loading={renaming}
+                disabled={renaming}
+              />
+              <AppButton
+                title="Vazgeç"
+                variant="secondary"
+                onPress={() => setRenameModalOpen(false)}
+                disabled={renaming}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -405,9 +534,14 @@ const styles = StyleSheet.create({
   activeWorkspaceRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    alignSelf: "flex-start",
+    justifyContent: "space-between",
     marginBottom: 14,
+  },
+  activeWorkspaceInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 1,
   },
   workspaceDot: {
     width: 10,
@@ -417,6 +551,38 @@ const styles = StyleSheet.create({
   activeWorkspaceText: {
     fontSize: 15,
     fontFamily: fonts.sansBold,
+  },
+  renameOverlay: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(2, 6, 23, 0.55)",
+    padding: 24,
+  },
+  renameCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 16,
+  },
+  renameLabel: {
+    fontSize: 13,
+    fontFamily: fonts.sansSemiBold,
+    marginBottom: 6,
+  },
+  renameInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    fontFamily: fonts.sansRegular,
+  },
+  renameActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
   },
   archivedLink: {
     marginBottom: 12,

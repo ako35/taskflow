@@ -27,6 +27,12 @@ export class ApiError extends Error {
   }
 }
 
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
+
 async function authRequest<T>(
   idToken: string,
   path: string,
@@ -43,6 +49,9 @@ async function authRequest<T>(
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);
+    if (response.status === 401) {
+      unauthorizedHandler?.();
+    }
     throw new ApiError(
       body?.error || `İstek başarısız oldu: ${response.status}`,
       response.status,

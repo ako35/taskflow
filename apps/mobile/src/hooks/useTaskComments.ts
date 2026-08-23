@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { TaskComment } from "@taskflow/shared";
 import {
+  ApiError,
   createTaskComment,
   deleteTaskComment,
   fetchTaskComments,
@@ -21,7 +22,10 @@ export default function useTaskComments(idToken: string, taskId: number | null) 
       setError(null);
       const items = await fetchTaskComments(idToken, taskId);
       setComments(items);
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        return;
+      }
       setError("Yorumlar yüklenemedi.");
     }
   }, [idToken, taskId]);

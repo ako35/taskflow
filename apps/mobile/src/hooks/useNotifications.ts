@@ -7,7 +7,7 @@ import {
   markNotificationRead,
 } from "../lib/api";
 
-export default function useNotifications(idToken: string, onUnauthorized?: () => void) {
+export default function useNotifications(idToken: string) {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -21,12 +21,11 @@ export default function useNotifications(idToken: string, onUnauthorized?: () =>
       setUnreadCount(response.unreadCount);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        onUnauthorized?.();
         return;
       }
       setError("Bildirimler yüklenemedi.");
     }
-  }, [idToken, onUnauthorized]);
+  }, [idToken]);
 
   useEffect(() => {
     setLoading(true);

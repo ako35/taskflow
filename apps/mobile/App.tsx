@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, Alert, Linking, StyleSheet, View } from "react-native";
 import {
@@ -18,7 +18,7 @@ import usePushNotifications from "./src/hooks/usePushNotifications";
 import { AuthProvider } from "./src/context/AuthContext";
 import { ThemeProvider, useTheme } from "./src/theme/ThemeContext";
 import { useAppFonts, fonts } from "./src/theme/fonts";
-import { acceptInvitation, fetchTask } from "./src/lib/api";
+import { acceptInvitation, fetchTask, setUnauthorizedHandler } from "./src/lib/api";
 import { extractInviteTokenFromUrl } from "./src/lib/inviteToken";
 import LandingScreen from "./src/screens/LandingScreen";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -110,8 +110,28 @@ function AppContent() {
   const fontsLoaded = useAppFonts();
   const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
   const [guestView, setGuestView] = useState<"landing" | "login">("landing");
+  const sessionExpiredRef = useRef(false);
 
   usePushNotifications(idToken);
+
+  useEffect(() => {
+    if (!idToken) {
+      sessionExpiredRef.current = false;
+      return;
+    }
+
+    setUnauthorizedHandler(() => {
+      if (sessionExpiredRef.current) return;
+      sessionExpiredRef.current = true;
+      Alert.alert(
+        "Oturum süresi doldu",
+        "Devam etmek için lütfen tekrar giriş yapın.",
+      );
+      signOut();
+    });
+
+    return () => setUnauthorizedHandler(null);
+  }, [idToken, signOut]);
 
   useEffect(() => {
     if (!idToken) return;

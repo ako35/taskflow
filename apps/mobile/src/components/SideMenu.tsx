@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   Animated,
   Dimensions,
@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import {
   Archive,
-  ChevronDown,
   Compass,
   LogOut,
   Plus,
@@ -67,7 +66,6 @@ export default function SideMenu({
   const insets = useSafeAreaInsets();
   const translateX = useRef(new Animated.Value(-PANEL_WIDTH)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const [workspacesExpanded, setWorkspacesExpanded] = useState(true);
 
   useEffect(() => {
     Animated.parallel([
@@ -150,80 +148,64 @@ export default function SideMenu({
         </View>
 
         <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-          <Pressable
-            onPress={() => setWorkspacesExpanded((current) => !current)}
-            style={styles.accordionHeader}
-          >
+          <View style={styles.accordionHeader}>
             <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
               ÇALIŞMA ALANLARI
             </Text>
-            <View
-              style={{
-                transform: [{ rotate: workspacesExpanded ? "0deg" : "-90deg" }],
-              }}
-            >
-              <ChevronDown color={colors.textMuted} size={15} strokeWidth={2.25} />
-            </View>
-          </Pressable>
+          </View>
 
-          {workspacesExpanded ? (
-            <>
-              {workspaces.map((workspace) => {
-                const active = workspace.id === activeWorkspaceId;
-                const Icon = WORKSPACE_ICONS[workspace.icon] ?? Compass;
-                return (
-                  <Pressable
-                    key={workspace.id}
-                    onPress={() => runAndClose(() => onSelectWorkspace(workspace.id))}
-                    style={[
-                      styles.workspaceRow,
-                      active && { backgroundColor: colors.surfaceAlt },
-                    ]}
-                  >
-                    <View
-                      style={[styles.workspaceIcon, { backgroundColor: workspace.color }]}
-                    >
-                      <Icon color="#fff" size={14} strokeWidth={2} />
-                    </View>
-                    <Text
-                      style={[styles.workspaceName, { color: colors.text }]}
-                      numberOfLines={1}
-                    >
-                      {workspace.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-
+          {workspaces.map((workspace) => {
+            const active = workspace.id === activeWorkspaceId;
+            const Icon = WORKSPACE_ICONS[workspace.icon] ?? Compass;
+            return (
               <Pressable
-                onPress={() => runAndClose(onCreateWorkspace)}
-                style={styles.workspaceRow}
+                key={workspace.id}
+                onPress={() => runAndClose(() => onSelectWorkspace(workspace.id))}
+                style={[
+                  styles.workspaceRow,
+                  active && { backgroundColor: colors.surfaceAlt },
+                ]}
               >
                 <View
-                  style={[styles.workspaceIcon, styles.createIcon, { borderColor: colors.border }]}
+                  style={[styles.workspaceIcon, { backgroundColor: workspace.color }]}
                 >
-                  <Plus color={colors.textMuted} size={14} strokeWidth={2} />
+                  <Icon color="#fff" size={14} strokeWidth={2} />
                 </View>
-                <Text style={[styles.workspaceName, { color: colors.textMuted }]}>
-                  Yeni çalışma alanı
+                <Text
+                  style={[styles.workspaceName, { color: colors.text }]}
+                  numberOfLines={1}
+                >
+                  {workspace.name}
                 </Text>
               </Pressable>
-            </>
-          ) : null}
+            );
+          })}
+
+          <Pressable
+            onPress={() => runAndClose(onCreateWorkspace)}
+            style={styles.workspaceRow}
+          >
+            <View
+              style={[styles.workspaceIcon, styles.createIcon, { borderColor: colors.border }]}
+            >
+              <Plus color={colors.textMuted} size={14} strokeWidth={2} />
+            </View>
+            <Text style={[styles.workspaceName, { color: colors.textMuted }]}>
+              Yeni çalışma alanı
+            </Text>
+          </Pressable>
         </ScrollView>
 
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
-          {archivedCount > 0 ? (
-            <Pressable
-              onPress={() => runAndClose(onOpenArchive)}
-              style={styles.footerRow}
-            >
-              <Archive color={colors.text} size={16} strokeWidth={2} />
-              <Text style={[styles.footerText, { color: colors.text }]}>
-                Arşiv ({archivedCount})
-              </Text>
-            </Pressable>
-          ) : null}
+          <Pressable
+            onPress={() => runAndClose(onOpenArchive)}
+            style={styles.footerRow}
+          >
+            <Archive color={colors.text} size={16} strokeWidth={2} />
+            <Text style={[styles.footerText, { color: colors.text }]}>
+              {archivedCount > 0 ? `Arşiv (${archivedCount})` : "Arşiv"}
+            </Text>
+          </Pressable>
           <Pressable onPress={() => runAndClose(onOpenSettings)} style={styles.footerRow}>
             <Settings color={colors.text} size={16} strokeWidth={2} />
             <Text style={[styles.footerText, { color: colors.text }]}>Ayarlar</Text>
