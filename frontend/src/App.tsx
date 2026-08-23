@@ -51,6 +51,7 @@ export default function App() {
     guestView,
     setGuestView,
     googleError,
+    applySession,
   } = useAuthSession();
 
   const [error, setError] = useState<string | null>(null);
@@ -1476,6 +1477,7 @@ export default function App() {
         <LoginView
           googleError={googleError}
           onBackToLanding={() => setGuestView("landing")}
+          onEmailAuthSuccess={applySession}
         />
       );
     }

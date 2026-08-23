@@ -34,6 +34,7 @@ import SideMenu from "../components/SideMenu";
 import Avatar from "../components/Avatar";
 import Badge from "../components/Badge";
 import AppButton from "../components/Button";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { renameWorkspace } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import {
@@ -54,12 +55,11 @@ export default function TaskListScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
+  const [signOutConfirmVisible, setSignOutConfirmVisible] = useState(false);
+
   const handleSignOutPress = useCallback(() => {
-    Alert.alert("Çıkış Yap", "Çıkış yapmak istediğinizden emin misiniz?", [
-      { text: "Vazgeç", style: "cancel" },
-      { text: "Çıkış Yap", style: "destructive", onPress: signOut },
-    ]);
-  }, [signOut]);
+    setSignOutConfirmVisible(true);
+  }, []);
 
   const {
     activeWorkspaces,
@@ -253,6 +253,10 @@ export default function TaskListScreen({ navigation }: Props) {
               <Users color={colors.text} size={20} strokeWidth={2} />
             </Pressable>
           ) : null}
+          <NotificationBell
+            unreadCount={unreadCount}
+            onPress={() => navigation.navigate("Notifications")}
+          />
           <Pressable hitSlop={8} onPress={() => navigation.navigate("Profile")}>
             {user ? (
               <Avatar user={user} size={32} />
@@ -260,10 +264,6 @@ export default function TaskListScreen({ navigation }: Props) {
               <User color={colors.text} size={20} strokeWidth={2} />
             )}
           </Pressable>
-          <NotificationBell
-            unreadCount={unreadCount}
-            onPress={() => navigation.navigate("Notifications")}
-          />
         </View>
       </View>
 
@@ -574,6 +574,19 @@ export default function TaskListScreen({ navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <ConfirmDialog
+        visible={signOutConfirmVisible}
+        title="Çıkış Yap"
+        message="Çıkış yapmak istediğinizden emin misiniz?"
+        confirmLabel="Çıkış Yap"
+        destructive
+        onCancel={() => setSignOutConfirmVisible(false)}
+        onConfirm={() => {
+          setSignOutConfirmVisible(false);
+          signOut();
+        }}
+      />
     </View>
   );
 }

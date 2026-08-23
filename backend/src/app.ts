@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { OAuth2Client } from "google-auth-library";
 
@@ -15,6 +17,12 @@ const effectiveGoogleClientId =
 
 if (!effectiveGoogleClientId) {
   throw new Error("Missing GOOGLE_CLIENT_ID in backend .env");
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("Missing JWT_SECRET in backend .env");
 }
 
 // Mobil (iOS/Android/Expo) istemcileri web'den farklı OAuth client ID kullanır;
@@ -108,6 +116,50 @@ async function verifyGoogleToken(idToken: string) {
   };
 }
 
+// TaskFlow'un kendi e-posta/sifre girisleri icin urettigi JWT'ler Google
+// idToken'i ile ayni "Bearer" header'indan gecer; hangi dogrulayiciyi
+// kullanacagimizi `iss` claim'ine bakarak ayirt ediyoruz.
+function signAppToken(profile: {
+  authEmail: string;
+  firstName: string;
+  lastName: string | null;
+  picture: string | null;
+}) {
+  const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.firstName;
+
+  return jwt.sign(
+    {
+      email: profile.authEmail,
+      name,
+      given_name: profile.firstName,
+      family_name: profile.lastName ?? undefined,
+      picture: profile.picture ?? undefined,
+    },
+    JWT_SECRET as string,
+    { expiresIn: "30d" },
+  );
+}
+
+async function verifyRequestToken(token: string) {
+  const decoded = jwt.decode(token, { complete: true }) as { payload?: Record<string, unknown> } | null;
+  const issuer = decoded?.payload?.iss;
+
+  if (typeof issuer === "string" && issuer.includes("accounts.google.com")) {
+    return verifyGoogleToken(token);
+  }
+
+  const payload = jwt.verify(token, JWT_SECRET as string) as jwt.JwtPayload;
+  if (!payload.email || typeof payload.email !== "string") {
+    throw new Error("Unauthorized");
+  }
+
+  return {
+    email: payload.email,
+    name: typeof payload.name === "string" ? payload.name : undefined,
+    picture: typeof payload.picture === "string" ? payload.picture : undefined,
+  };
+}
+
 const authenticate = async (
   req: express.Request,
   res: express.Response,
@@ -121,7 +173,7 @@ const authenticate = async (
   const token = authHeader.slice(7);
 
   try {
-    req.authUser = await verifyGoogleToken(token);
+    req.authUser = await verifyRequestToken(token);
     next();
   } catch (error) {
     console.error("Authentication failed", error);
@@ -860,10 +912,15 @@ async function createDueReminderNotifications() {
   }
 }
 
+function toSafeProfile<T extends { passwordHash: string | null }>(profile: T) {
+  const { passwordHash, ...safeProfile } = profile;
+  return safeProfile;
+}
+
 profileRouter.get("/", async (req, res) => {
   const profile = await upsertUserProfile(req.authUser!);
   await ensureDefaultWorkspaceForUser(profile.id);
-  res.json(profile);
+  res.json(toSafeProfile(profile));
 });
 
 profileRouter.put("/", async (req, res) => {
@@ -880,7 +937,7 @@ profileRouter.put("/", async (req, res) => {
     data: payload,
   });
 
-  res.json(profile);
+  res.json(toSafeProfile(profile));
 });
 
 notificationsRouter.get("/", async (req, res) => {
@@ -1759,6 +1816,92 @@ tasksRouter.delete("/:id", async (req, res) => {
 
   await prisma.task.delete({ where: { id } });
   res.status(204).end();
+});
+
+app.post(["/auth/register", "/api/auth/register"], async (req, res) => {
+  const email = normalizeEmail(sanitizeLine(req.body?.email));
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
+  const firstName = sanitizeLine(req.body?.firstName);
+  const lastName = sanitizeLine(req.body?.lastName);
+
+  const errors: string[] = [];
+  if (!email || !isValidEmail(email)) {
+    errors.push("Geçerli bir e-posta adresi girin.");
+  }
+  if (password.length < 8) {
+    errors.push("Şifre en az 8 karakter olmalı.");
+  }
+  if (!firstName) {
+    errors.push("Ad alanı zorunludur.");
+  }
+  if (errors.length) {
+    return res.status(400).json({ error: errors.join(" ") });
+  }
+
+  try {
+    const existingProfile = await prisma.userProfile.findUnique({ where: { authEmail: email } });
+
+    if (existingProfile?.passwordHash) {
+      return res.status(409).json({
+        error: "Bu e-posta ile zaten bir hesap var. Giriş yapmayı deneyin.",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const profile = existingProfile
+      ? await prisma.userProfile.update({
+          where: { id: existingProfile.id },
+          data: { passwordHash },
+        })
+      : await prisma.userProfile.create({
+          data: {
+            authEmail: email,
+            firstName,
+            lastName: lastName || null,
+            email,
+            passwordHash,
+          },
+        });
+
+    await ensureDefaultWorkspaceForUser(profile.id);
+
+    const token = signAppToken(profile);
+    res.status(201).json({ token });
+  } catch (error) {
+    console.error("Register failed", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post(["/auth/login", "/api/auth/login"], async (req, res) => {
+  const email = normalizeEmail(sanitizeLine(req.body?.email));
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "E-posta ve şifre zorunludur." });
+  }
+
+  try {
+    const profile = await prisma.userProfile.findUnique({ where: { authEmail: email } });
+
+    if (!profile?.passwordHash) {
+      return res.status(401).json({
+        error: "Bu e-posta için şifreyle giriş bulunamadı. Google ile giriş yapmayı deneyin.",
+      });
+    }
+
+    const valid = await bcrypt.compare(password, profile.passwordHash);
+    if (!valid) {
+      return res.status(401).json({ error: "E-posta veya şifre hatalı." });
+    }
+
+    const token = signAppToken(profile);
+    res.status(200).json({ token });
+  } catch (error) {
+    console.error("Login failed", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 app.use("/tasks", authenticate, tasksRouter);

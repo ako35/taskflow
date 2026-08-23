@@ -23,6 +23,7 @@ type UseAuthSessionResult = {
   guestView: GuestView;
   setGuestView: Dispatch<SetStateAction<GuestView>>;
   googleError: string | null;
+  applySession: (credential: string) => boolean;
 };
 
 const GOOGLE_IDENTITY_SCRIPT = "https://accounts.google.com/gsi/client";
@@ -124,16 +125,10 @@ export default function useAuthSession(): UseAuthSessionResult {
   const [guestView, setGuestView] = useState<GuestView>("landing");
   const [googleError, setGoogleError] = useState<string | null>(null);
 
-  const handleCredentialResponse = useCallback((response: any) => {
-    if (!response?.credential) {
-      setGoogleError("Google kimlik doğrulama başarısız oldu.");
-      return;
-    }
-
-    const profile = parseJwt(response.credential);
+  const applySession = useCallback((credential: string) => {
+    const profile = parseJwt(credential);
     if (!profile?.email) {
-      setGoogleError("Google hesabından kullanıcı bilgisi alınamadı.");
-      return;
+      return false;
     }
 
     const { firstName, lastName } = splitPersonName(profile.name || profile.email);
@@ -149,10 +144,25 @@ export default function useAuthSession(): UseAuthSessionResult {
     };
 
     setUser(nextUser);
-    setIdToken(response.credential);
+    setIdToken(credential);
     localStorage.setItem("taskflow_user", JSON.stringify(nextUser));
-    localStorage.setItem("taskflow_id_token", response.credential);
+    localStorage.setItem("taskflow_id_token", credential);
+    return true;
   }, []);
+
+  const handleCredentialResponse = useCallback(
+    (response: any) => {
+      if (!response?.credential) {
+        setGoogleError("Google kimlik doğrulama başarısız oldu.");
+        return;
+      }
+
+      if (!applySession(response.credential)) {
+        setGoogleError("Google hesabından kullanıcı bilgisi alınamadı.");
+      }
+    },
+    [applySession],
+  );
 
   const googleInitialized = useRef(false);
 
@@ -309,5 +319,6 @@ export default function useAuthSession(): UseAuthSessionResult {
     guestView,
     setGuestView,
     googleError,
+    applySession,
   };
 }

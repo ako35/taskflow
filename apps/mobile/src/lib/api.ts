@@ -73,6 +73,35 @@ export async function fetchHealth(): Promise<ApiHealth> {
   return (await response.json()) as ApiHealth;
 }
 
+async function emailAuthRequest(path: string, body: Record<string, unknown>): Promise<{ token: string }> {
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const data = (await response.json().catch(() => null)) as { token?: string; error?: string } | null;
+
+  if (!response.ok || !data?.token) {
+    throw new ApiError(data?.error || `İstek başarısız oldu: ${response.status}`, response.status);
+  }
+
+  return { token: data.token };
+}
+
+export async function registerWithEmail(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName?: string,
+): Promise<{ token: string }> {
+  return emailAuthRequest("/auth/register", { email, password, firstName, lastName });
+}
+
+export async function loginWithEmail(email: string, password: string): Promise<{ token: string }> {
+  return emailAuthRequest("/auth/login", { email, password });
+}
+
 export async function fetchWorkspaces(idToken: string): Promise<Workspace[]> {
   return authRequest<Workspace[]>(idToken, "/workspaces");
 }

@@ -55,22 +55,28 @@ export default function useAuthSession() {
     };
   }, []);
 
+  const applySession = useCallback((token: string) => {
+    const nextUser = buildUserFromIdToken(token);
+    if (!nextUser) return false;
+
+    setIdTokenState(token);
+    setUser(nextUser);
+    void setStoredIdToken(token);
+    setError(null);
+    return true;
+  }, []);
+
   useEffect(() => {
     if (response?.type === "success") {
       const token =
         response.authentication?.idToken ?? (response.params as { id_token?: string })?.id_token;
-      if (token) {
-        setIdTokenState(token);
-        setUser(buildUserFromIdToken(token));
-        void setStoredIdToken(token);
-        setError(null);
-      } else {
+      if (!token || !applySession(token)) {
         setError("Google oturumu idToken döndürmedi.");
       }
     } else if (response?.type === "error") {
       setError("Google ile giriş başarısız oldu.");
     }
-  }, [response]);
+  }, [response, applySession]);
 
   const signOut = useCallback(() => {
     setIdTokenState(null);
@@ -87,7 +93,8 @@ export default function useAuthSession() {
       canSignIn: !!request,
       signIn: () => promptAsync(),
       signOut,
+      applySession,
     }),
-    [idToken, user, restoring, error, request, promptAsync, signOut],
+    [idToken, user, restoring, error, request, promptAsync, signOut, applySession],
   );
 }

@@ -41,6 +41,7 @@ model UserProfile {
   email      String
   phone      String?
   picture    String?
+  passwordHash String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   memberships WorkspaceMember[]

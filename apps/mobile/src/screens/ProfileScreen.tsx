@@ -15,6 +15,7 @@ import useProfile from "../hooks/useProfile";
 import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import AppButton from "../components/Button";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 export default function ProfileScreen() {
   const { idToken, signOut } = useAuth();
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [signOutConfirmVisible, setSignOutConfirmVisible] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -35,11 +37,8 @@ export default function ProfileScreen() {
   }, [profile]);
 
   const handleSignOutPress = useCallback(() => {
-    Alert.alert("Çıkış Yap", "Çıkış yapmak istediğinizden emin misiniz?", [
-      { text: "Vazgeç", style: "cancel" },
-      { text: "Çıkış Yap", style: "destructive", onPress: signOut },
-    ]);
-  }, [signOut]);
+    setSignOutConfirmVisible(true);
+  }, []);
 
   const onSave = async () => {
     if (!firstName.trim() || !email.trim()) {
@@ -173,6 +172,19 @@ export default function ProfileScreen() {
           icon={<LogOut color="#fff" size={16} strokeWidth={2} />}
         />
       </View>
+
+      <ConfirmDialog
+        visible={signOutConfirmVisible}
+        title="Çıkış Yap"
+        message="Çıkış yapmak istediğinizden emin misiniz?"
+        confirmLabel="Çıkış Yap"
+        destructive
+        onCancel={() => setSignOutConfirmVisible(false)}
+        onConfirm={() => {
+          setSignOutConfirmVisible(false);
+          signOut();
+        }}
+      />
     </ScrollView>
   );
 }

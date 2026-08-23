@@ -20,7 +20,6 @@ import { ThemeProvider, useTheme } from "./src/theme/ThemeContext";
 import { useAppFonts, fonts } from "./src/theme/fonts";
 import { acceptInvitation, fetchTask, setUnauthorizedHandler } from "./src/lib/api";
 import { extractInviteTokenFromUrl } from "./src/lib/inviteToken";
-import LandingScreen from "./src/screens/LandingScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import TaskListScreen from "./src/screens/TaskListScreen";
 import TaskFormScreen from "./src/screens/TaskFormScreen";
@@ -104,12 +103,11 @@ export default function App() {
 }
 
 function AppContent() {
-  const { idToken, user, restoring, error, canSignIn, signIn, signOut } =
+  const { idToken, user, restoring, error, canSignIn, signIn, signOut, applySession } =
     useAuthSession();
   const { mode, colors } = useTheme();
   const fontsLoaded = useAppFonts();
   const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
-  const [guestView, setGuestView] = useState<"landing" | "login">("landing");
   const sessionExpiredRef = useRef(false);
 
   usePushNotifications(idToken);
@@ -238,14 +236,12 @@ function AppContent() {
             />
           </Stack.Navigator>
         </AuthProvider>
-      ) : guestView === "landing" ? (
-        <LandingScreen onGoToLogin={() => setGuestView("login")} />
       ) : (
         <LoginScreen
           canSignIn={canSignIn}
           error={error}
           onSignIn={signIn}
-          onBack={() => setGuestView("landing")}
+          onEmailAuthSuccess={applySession}
         />
       )}
       <StatusBar style={mode === "dark" ? "light" : "dark"} />
