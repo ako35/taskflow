@@ -12,7 +12,16 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { ChevronDown, Menu, MoreHorizontal, Pencil, Plus, User, Users } from "lucide-react-native";
+import {
+  Archive,
+  ChevronDown,
+  Menu,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  User,
+  Users,
+} from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Task } from "@taskflow/shared";
@@ -22,6 +31,7 @@ import useTasks from "../hooks/useTasks";
 import useNotifications from "../hooks/useNotifications";
 import NotificationBell from "../components/NotificationBell";
 import SideMenu from "../components/SideMenu";
+import Avatar from "../components/Avatar";
 import Badge from "../components/Badge";
 import AppButton from "../components/Button";
 import { renameWorkspace } from "../lib/api";
@@ -76,6 +86,7 @@ export default function TaskListScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsedOverrides, setCollapsedOverrides] = useState<Record<string, boolean>>({});
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState("");
   const [renaming, setRenaming] = useState(false);
@@ -97,37 +108,25 @@ export default function TaskListScreen({ navigation }: Props) {
 
   const onOpenWorkspaceMenu = useCallback(() => {
     if (!activeWorkspace) return;
-    const options: Array<{
-      text: string;
-      style?: "cancel" | "destructive" | "default";
-      onPress?: () => void;
-    }> = [];
+    setWorkspaceMenuOpen(true);
+  }, [activeWorkspace]);
 
-    if (activeWorkspace.role === "OWNER") {
-      options.push({
-        text: "Yeniden Adlandır",
-        onPress: () => {
-          setRenameDraft(activeWorkspace.name);
-          // Android needs the Alert's own dialog to finish tearing down
-          // before a new Modal can reliably mount; opening synchronously
-          // in the same tick silently fails to show it.
-          setTimeout(() => setRenameModalOpen(true), 300);
-        },
-      });
-    }
+  const onPressRenameFromMenu = useCallback(() => {
+    if (!activeWorkspace) return;
+    setWorkspaceMenuOpen(false);
+    setRenameDraft(activeWorkspace.name);
+    // Android needs the workspace-menu Modal to finish tearing down before
+    // the rename Modal can reliably mount; opening synchronously in the
+    // same tick silently fails to show it.
+    setTimeout(() => setRenameModalOpen(true), 300);
+  }, [activeWorkspace]);
 
-    options.push({
-      text: "Arşive Kaldır",
-      onPress: () => {
-        onArchiveActiveWorkspace().catch(() => {
-          Alert.alert("Hata", "Çalışma alanı arşivlenemedi.");
-        });
-      },
+  const onPressArchiveFromMenu = useCallback(() => {
+    setWorkspaceMenuOpen(false);
+    onArchiveActiveWorkspace().catch(() => {
+      Alert.alert("Hata", "Çalışma alanı arşivlenemedi.");
     });
-    options.push({ text: "Vazgeç", style: "cancel" });
-
-    Alert.alert(activeWorkspace.name, undefined, options);
-  }, [activeWorkspace, onArchiveActiveWorkspace]);
+  }, [onArchiveActiveWorkspace]);
 
   const onConfirmRename = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -254,8 +253,12 @@ export default function TaskListScreen({ navigation }: Props) {
               <Users color={colors.text} size={20} strokeWidth={2} />
             </Pressable>
           ) : null}
-          <Pressable hitSlop={14} onPress={() => navigation.navigate("Profile")}>
-            <User color={colors.text} size={20} strokeWidth={2} />
+          <Pressable hitSlop={8} onPress={() => navigation.navigate("Profile")}>
+            {user ? (
+              <Avatar user={user} size={32} />
+            ) : (
+              <User color={colors.text} size={20} strokeWidth={2} />
+            )}
           </Pressable>
           <NotificationBell
             unreadCount={unreadCount}
@@ -447,6 +450,77 @@ export default function TaskListScreen({ navigation }: Props) {
       />
 
       <Modal
+        visible={workspaceMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWorkspaceMenuOpen(false)}
+      >
+        <Pressable
+          style={styles.renameOverlay}
+          onPress={() => setWorkspaceMenuOpen(false)}
+        >
+          <Pressable
+            style={[
+              styles.workspaceMenuCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <Text
+              style={[styles.workspaceMenuTitle, { color: colors.text }]}
+              numberOfLines={1}
+            >
+              {activeWorkspace?.name}
+            </Text>
+
+            <View style={[styles.workspaceMenuDivider, { backgroundColor: colors.border }]} />
+
+            {activeWorkspace?.role === "OWNER" ? (
+              <Pressable
+                onPress={onPressRenameFromMenu}
+                style={({ pressed }) => [
+                  styles.workspaceMenuRow,
+                  pressed && { backgroundColor: colors.surfaceHighlight },
+                ]}
+              >
+                <Pencil color={colors.text} size={18} strokeWidth={2} />
+                <Text style={[styles.workspaceMenuRowText, { color: colors.text }]}>
+                  Yeniden Adlandır
+                </Text>
+              </Pressable>
+            ) : null}
+
+            <Pressable
+              onPress={onPressArchiveFromMenu}
+              style={({ pressed }) => [
+                styles.workspaceMenuRow,
+                pressed && { backgroundColor: colors.surfaceHighlight },
+              ]}
+            >
+              <Archive color={colors.text} size={18} strokeWidth={2} />
+              <Text style={[styles.workspaceMenuRowText, { color: colors.text }]}>
+                Arşive Kaldır
+              </Text>
+            </Pressable>
+
+            <View style={[styles.workspaceMenuDivider, { backgroundColor: colors.border }]} />
+
+            <Pressable
+              onPress={() => setWorkspaceMenuOpen(false)}
+              style={({ pressed }) => [
+                styles.workspaceMenuRow,
+                pressed && { backgroundColor: colors.surfaceHighlight },
+              ]}
+            >
+              <Text style={[styles.workspaceMenuRowText, { color: colors.textMuted }]}>
+                Vazgeç
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
         visible={renameModalOpen}
         transparent
         animationType="fade"
@@ -558,6 +632,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(2, 6, 23, 0.55)",
     padding: 24,
+  },
+  workspaceMenuCard: {
+    width: "100%",
+    maxWidth: 340,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  workspaceMenuTitle: {
+    fontSize: 15,
+    fontFamily: fonts.sansBold,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  workspaceMenuDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 4,
+  },
+  workspaceMenuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    minHeight: 48,
+  },
+  workspaceMenuRowText: {
+    fontSize: 15,
+    fontFamily: fonts.sansSemiBold,
   },
   renameCard: {
     width: "100%",

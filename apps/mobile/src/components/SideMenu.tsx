@@ -23,17 +23,10 @@ import type { User, Workspace } from "@taskflow/shared";
 import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import { WORKSPACE_ICONS } from "../lib/workspaceIcons";
+import Avatar from "./Avatar";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PANEL_WIDTH = Math.min(300, SCREEN_WIDTH * 0.8);
-
-function getInitials(user: User): string {
-  const first = user.firstName?.trim()?.[0];
-  const last = user.lastName?.trim()?.[0];
-  if (first && last) return `${first}${last}`.toUpperCase();
-  const name = (user.name ?? user.email ?? "").trim();
-  return name.slice(0, 2).toUpperCase();
-}
 
 type SideMenuProps = {
   visible: boolean;
@@ -116,9 +109,7 @@ export default function SideMenu({
         <View style={styles.header}>
           {user ? (
             <View style={styles.profileRow}>
-              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                <Text style={styles.avatarText}>{getInitials(user)}</Text>
-              </View>
+              <Avatar user={user} size={40} />
               <View style={styles.profileTextCol}>
                 <Text
                   style={[styles.profileName, { color: colors.text }]}
@@ -259,18 +250,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginRight: 12,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    color: "#fff",
-    fontSize: 15,
-    fontFamily: fonts.sansBold,
   },
   profileTextCol: {
     flex: 1,
