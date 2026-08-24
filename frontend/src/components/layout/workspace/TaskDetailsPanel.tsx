@@ -32,6 +32,7 @@ type TaskDetailsPanelProps = {
     priority: string;
     remindAt: string | null;
   }) => Promise<void>;
+  onDeleteTask: (taskId: number) => void;
 };
 
 function toDateTimeLocal(value?: string | null) {
@@ -102,6 +103,7 @@ export default function TaskDetailsPanel({
   onSubmitComment,
   onDeleteComment,
   onSaveTaskDetails,
+  onDeleteTask,
 }: TaskDetailsPanelProps) {
   const [draftTitle, setDraftTitle] = useState("");
   const [draftStatus, setDraftStatus] = useState("Yapılacak");
@@ -179,6 +181,14 @@ export default function TaskDetailsPanel({
   if (!open || !task) {
     return null;
   }
+
+  const handleDelete = () => {
+    if (!window.confirm(`"${task.title}" görevini silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+    onDeleteTask(task.id);
+    onClose();
+  };
 
   const saveButtonLabel = taskUpdating
     ? "Kaydediliyor..."
@@ -269,14 +279,25 @@ export default function TaskDetailsPanel({
     <aside className="task-details-panel" aria-label="Görev detay paneli">
       <div className="task-details-head">
         <h3>Görev Detayı</h3>
-        <button
-          type="button"
-          className="task-details-close"
-          onClick={onClose}
-          aria-label="Detay panelini kapat"
-        >
-          <UiGlyph icon="close" />
-        </button>
+        <div className="task-details-head-actions">
+          <button
+            type="button"
+            className="task-details-delete"
+            onClick={handleDelete}
+            aria-label="Görevi sil"
+            title="Görevi sil"
+          >
+            <UiGlyph icon="trash" />
+          </button>
+          <button
+            type="button"
+            className="task-details-close"
+            onClick={onClose}
+            aria-label="Detay panelini kapat"
+          >
+            <UiGlyph icon="close" />
+          </button>
+        </div>
       </div>
 
       <div className="task-details-body">

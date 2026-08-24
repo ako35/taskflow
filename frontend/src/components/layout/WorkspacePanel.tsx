@@ -51,6 +51,7 @@ type WorkspacePanelProps = {
     priority: string;
     remindAt: string | null;
   }) => Promise<void>;
+  onDeleteTask: (taskId: number) => void;
 };
 
 export default function WorkspacePanel({
@@ -83,6 +84,7 @@ export default function WorkspacePanel({
   onSubmitComment,
   onDeleteComment,
   onSaveTaskDetails,
+  onDeleteTask,
 }: WorkspacePanelProps) {
   return (
     <main className="workspace">
@@ -163,6 +165,7 @@ export default function WorkspacePanel({
             onSubmitComment={onSubmitComment}
             onDeleteComment={onDeleteComment}
             onSaveTaskDetails={onSaveTaskDetails}
+            onDeleteTask={onDeleteTask}
           />
         ) : null}
       </div>

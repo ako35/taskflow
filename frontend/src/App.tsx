@@ -1441,6 +1441,7 @@ export default function App() {
       onSubmitComment: handleSubmitTaskComment,
       onDeleteComment: handleDeleteComment,
       onSaveTaskDetails: handleSaveTaskDetails,
+      onDeleteTask: handleDeleteTask,
     }),
     [
       archivedWorkspaces,
@@ -1465,6 +1466,7 @@ export default function App() {
       handleUnauthorized,
       handleDeleteComment,
       handleSaveTaskDetails,
+      handleDeleteTask,
       handleSubmitTaskComment,
       tasksTableProps,
       viewMode,

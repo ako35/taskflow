@@ -43,6 +43,7 @@ describe("TaskDetailsPanel", () => {
         onSubmitComment={() => {}}
         onDeleteComment={() => {}}
         onSaveTaskDetails={onSaveTaskDetails}
+        onDeleteTask={() => {}}
       />,
     );
 
@@ -66,6 +67,7 @@ describe("TaskDetailsPanel", () => {
         onSubmitComment={() => {}}
         onDeleteComment={() => {}}
         onSaveTaskDetails={onSaveTaskDetails}
+        onDeleteTask={() => {}}
       />,
     );
 
@@ -94,6 +96,7 @@ describe("TaskDetailsPanel", () => {
         onSubmitComment={() => {}}
         onDeleteComment={() => {}}
         onSaveTaskDetails={onSaveTaskDetails}
+        onDeleteTask={() => {}}
       />,
     );
 
@@ -141,6 +144,7 @@ describe("TaskDetailsPanel", () => {
         onSubmitComment={() => {}}
         onDeleteComment={() => {}}
         onSaveTaskDetails={onSaveTaskDetails}
+        onDeleteTask={() => {}}
       />,
     );
 
@@ -182,6 +186,7 @@ describe("TaskDetailsPanel", () => {
           onSubmitComment={() => {}}
           onDeleteComment={() => {}}
           onSaveTaskDetails={onSaveTaskDetails}
+          onDeleteTask={() => {}}
         />,
       );
     });
@@ -204,6 +209,7 @@ describe("TaskDetailsPanel", () => {
         onSubmitComment={() => {}}
         onDeleteComment={() => {}}
         onSaveTaskDetails={onSaveTaskDetails}
+        onDeleteTask={() => {}}
       />,
     );
 

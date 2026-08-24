@@ -16,7 +16,6 @@ import {
   Archive,
   ChevronDown,
   Menu,
-  MoreHorizontal,
   Pencil,
   Plus,
   User,
@@ -232,10 +231,15 @@ export default function TaskListScreen({ navigation }: Props) {
           <Pressable hitSlop={14} onPress={() => setMenuOpen(true)}>
             <Menu color={colors.text} size={22} strokeWidth={2} />
           </Pressable>
-          <Pressable hitSlop={8} onPress={() => setMenuOpen(true)}>
+          <Pressable
+            hitSlop={8}
+            style={styles.titleRow}
+            onPress={onOpenWorkspaceMenu}
+          >
             <Text style={[styles.greeting, { color: colors.text }]} numberOfLines={1}>
               {activeWorkspace?.name ?? "TaskFlow"}
             </Text>
+            <ChevronDown color={colors.textMuted} size={18} strokeWidth={2.25} />
           </Pressable>
         </View>
         <View style={styles.headerActions}>
@@ -266,29 +270,6 @@ export default function TaskListScreen({ navigation }: Props) {
           </Pressable>
         </View>
       </View>
-
-      {activeWorkspace ? (
-        <View style={styles.activeWorkspaceRow}>
-          <View style={styles.activeWorkspaceInfo}>
-            <View
-              style={[styles.workspaceDot, { backgroundColor: activeWorkspace.color }]}
-            />
-            <Text
-              style={[styles.activeWorkspaceText, { color: colors.text }]}
-              numberOfLines={1}
-            >
-              {activeWorkspace.name}
-            </Text>
-          </View>
-          <Pressable
-            hitSlop={14}
-            onPress={onOpenWorkspaceMenu}
-            disabled={archivingWorkspace}
-          >
-            <MoreHorizontal color={colors.textMuted} size={20} strokeWidth={2} />
-          </Pressable>
-        </View>
-      ) : null}
 
       {archivedWorkspaces.length > 0 ? (
         <Pressable
@@ -608,6 +589,12 @@ const styles = StyleSheet.create({
     gap: 12,
     flexShrink: 1,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    flexShrink: 1,
+  },
   greeting: {
     fontSize: 19,
     fontFamily: fonts.displayBold,
@@ -617,27 +604,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-  },
-  activeWorkspaceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  activeWorkspaceInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flexShrink: 1,
-  },
-  workspaceDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  activeWorkspaceText: {
-    fontSize: 15,
-    fontFamily: fonts.sansBold,
   },
   renameOverlay: {
     flex: 1,

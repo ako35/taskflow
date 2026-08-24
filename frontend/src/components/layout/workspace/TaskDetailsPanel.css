@@ -89,6 +89,40 @@
   color: #dbeafe;
 }
 
+.task-details-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-details-delete {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: transparent;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-details-delete:hover {
+  background: #ef4444;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.task-details-delete svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  stroke-width: 2.25;
+  fill: none;
+}
+
 .task-details-close {
   border: 1px solid #dc2626;
   background: #ef4444;
