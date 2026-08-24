@@ -1,5 +1,6 @@
 import React from "react";
 import type { TaskForm } from "../../types";
+import { UiGlyph } from "../ui/Icons";
 
 type AddTaskPanelProps = {
   form: TaskForm;
@@ -25,73 +26,68 @@ export default function AddTaskPanel({
   onHideForm,
 }: AddTaskPanelProps) {
   return (
-    <section className="add-task-panel" aria-label="Yeni görev ekle">
-      <div className="add-task-field">
-        <label htmlFor="add-task-title">Görev başlığı</label>
-        <input
-          id="add-task-title"
-          type="text"
-          placeholder="Görev başlığı"
-          value={form.title}
-          onChange={onChangeForm("title")}
-          autoFocus
-        />
-      </div>
-
-      <div className="add-task-field">
-        <label htmlFor="add-task-description">Açıklama</label>
-        <textarea
-          id="add-task-description"
-          placeholder="Görev açıklaması (opsiyonel)"
-          value={form.description}
-          onChange={onChangeForm("description")}
-          rows={3}
-        />
-      </div>
-
-      <div className="add-task-row">
-        <div className="add-task-field">
-          <label htmlFor="add-task-priority">Önem</label>
-          <select
-            id="add-task-priority"
-            className="theme-select"
-            value={form.priority}
-            onChange={onChangeForm("priority")}
-          >
-            <option value="Acil">Acil</option>
-            <option value="Yüksek">Yüksek</option>
-            <option value="Orta">Orta</option>
-            <option value="Düşük">Düşük</option>
-          </select>
-        </div>
-
-        <div className="add-task-field">
-          <label htmlFor="add-task-status">Durum</label>
-          <select
-            id="add-task-status"
-            className="theme-select"
-            value={form.status}
-            onChange={onChangeForm("status")}
-          >
-            <option value="Yapılacak">Yapılacak</option>
-            <option value="Tamamlandı">Tamamlandı</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="form-actions">
+    <aside className="task-details-panel add-task-page" aria-label="Yeni görev sayfası">
+      <div className="task-details-head">
+        <h3>Yeni Görev</h3>
         <button
           type="button"
-          className="btn-primary"
-          onClick={onSubmit}
-          disabled={loading || !isFormValid}
+          className="task-details-close"
+          onClick={onHideForm}
+          aria-label="Yeni görev sayfasını kapat"
         >
-          Kaydet
-        </button>
-        <button type="button" className="btn-secondary" onClick={onHideForm}>
-          İptal
+          <UiGlyph icon="close" />
         </button>
       </div>
-    </section>
+
+      <div className="task-details-body">
+        <div className="task-details-card task-details-edit-section">
+          <label className="task-details-field">
+            <span>Görev Başlığı</span>
+            <input
+              type="text"
+              placeholder="Görev başlığı"
+              value={form.title}
+              onChange={onChangeForm("title")}
+              autoFocus
+            />
+          </label>
+
+          <label className="task-details-field">
+            <span>Önem</span>
+            <select
+              value={form.priority}
+              onChange={onChangeForm("priority")}
+            >
+              <option value="Acil">Acil</option>
+              <option value="Yüksek">Yüksek</option>
+              <option value="Orta">Orta</option>
+              <option value="Düşük">Düşük</option>
+            </select>
+          </label>
+
+          <label className="task-details-field">
+            <span>Durum</span>
+            <select value={form.status} onChange={onChangeForm("status")}>
+              <option value="Yapılacak">Yapılacak</option>
+              <option value="Tamamlandı">Tamamlandı</option>
+            </select>
+          </label>
+
+          <div className="form-actions">
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={onSubmit}
+              disabled={loading || !isFormValid}
+            >
+              Kaydet
+            </button>
+            <button type="button" className="btn-secondary" onClick={onHideForm}>
+              İptal
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }

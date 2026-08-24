@@ -17,6 +17,7 @@ import {
   Moon,
   Plus,
   Settings,
+  Sun,
   X,
 } from "lucide-react-native";
 import { BlurView } from "expo-blur";
@@ -192,8 +193,14 @@ export default function SideMenu({
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <View style={[styles.footerRow, styles.themeToggleRow]}>
             <View style={styles.footerRowLeft}>
-              <Moon color={colors.text} size={16} strokeWidth={2} />
-              <Text style={[styles.footerText, { color: colors.text }]}>Koyu Tema</Text>
+              {mode === "dark" ? (
+                <Moon color={colors.text} size={16} strokeWidth={2} />
+              ) : (
+                <Sun color={colors.text} size={16} strokeWidth={2} />
+              )}
+              <Text style={[styles.footerText, { color: colors.text }]}>
+                {mode === "dark" ? "Koyu Tema" : "Açık Tema"}
+              </Text>
             </View>
             <Switch
               value={mode === "dark"}
