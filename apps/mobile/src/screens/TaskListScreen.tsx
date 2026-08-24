@@ -232,9 +232,9 @@ export default function TaskListScreen({ navigation }: Props) {
           <Pressable hitSlop={14} onPress={() => setMenuOpen(true)}>
             <Menu color={colors.text} size={22} strokeWidth={2} />
           </Pressable>
-          <Pressable hitSlop={8} onPress={() => navigation.navigate("Profile")}>
-            <Text style={[styles.greeting, { color: colors.text }]}>
-              {user?.name ?? user?.email ?? "TaskFlow"}
+          <Pressable hitSlop={8} onPress={() => setMenuOpen(true)}>
+            <Text style={[styles.greeting, { color: colors.text }]} numberOfLines={1}>
+              {activeWorkspace?.name ?? "TaskFlow"}
             </Text>
           </Pressable>
         </View>

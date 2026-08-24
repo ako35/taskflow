@@ -1,6 +1,7 @@
 import React from "react";
 import TasksTable from "../tasks/TasksTable";
 import KnowledgeTable from "../tasks/KnowledgeTable";
+import AddTaskPanel from "../tasks/AddTaskPanel";
 import ArchivedWorkspacesSection from "./workspace/ArchivedWorkspacesSection";
 import TaskDetailsPanel from "./workspace/TaskDetailsPanel";
 import WorkspaceContextBar from "./workspace/WorkspaceContextBar";
@@ -124,6 +125,17 @@ export default function WorkspacePanel({
               </button>
             </div>
           )}
+
+          {showForm && selectedWorkspace.type !== "KNOWLEDGE" ? (
+            <AddTaskPanel
+              form={tasksTableProps.form}
+              loading={tasksTableProps.loading}
+              isFormValid={tasksTableProps.isFormValid}
+              onChangeForm={tasksTableProps.onChangeForm}
+              onSubmit={tasksTableProps.onSubmit}
+              onHideForm={tasksTableProps.onHideForm}
+            />
+          ) : null}
 
           {selectedWorkspace.type === "KNOWLEDGE" &&
           viewMode === "workspaces" ? (

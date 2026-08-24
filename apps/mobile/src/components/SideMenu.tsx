@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -16,7 +17,6 @@ import {
   Moon,
   Plus,
   Settings,
-  Sun,
   X,
 } from "lucide-react-native";
 import { BlurView } from "expo-blur";
@@ -190,32 +190,17 @@ export default function SideMenu({
         </ScrollView>
 
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
-          <View style={styles.themeRow}>
-            {(["dark", "light"] as const).map((option) => {
-              const active = mode === option;
-              const Icon = option === "dark" ? Moon : Sun;
-              return (
-                <Pressable
-                  key={option}
-                  onPress={() => setMode(option)}
-                  style={[
-                    styles.themeSegment,
-                    { borderColor: colors.border },
-                    active && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                >
-                  <Icon color={active ? "#fff" : colors.text} size={14} strokeWidth={2} />
-                  <Text
-                    style={[
-                      styles.themeSegmentText,
-                      { color: active ? "#fff" : colors.text },
-                    ]}
-                  >
-                    {option === "dark" ? "Koyu" : "Açık"}
-                  </Text>
-                </Pressable>
-              );
-            })}
+          <View style={[styles.footerRow, styles.themeToggleRow]}>
+            <View style={styles.footerRowLeft}>
+              <Moon color={colors.text} size={16} strokeWidth={2} />
+              <Text style={[styles.footerText, { color: colors.text }]}>Koyu Tema</Text>
+            </View>
+            <Switch
+              value={mode === "dark"}
+              onValueChange={(value) => setMode(value ? "dark" : "light")}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#ffffff"
+            />
           </View>
 
           <Pressable
@@ -342,32 +327,20 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     gap: 4,
   },
-  themeRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-  },
-  themeSegment: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 8,
-  },
-  themeSegmentText: {
-    fontFamily: fonts.sansSemiBold,
-    fontSize: 13,
-  },
   footerRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 8,
+  },
+  themeToggleRow: {
+    justifyContent: "space-between",
+  },
+  footerRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   footerText: {
     fontSize: 14,

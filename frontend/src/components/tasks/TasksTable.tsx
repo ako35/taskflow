@@ -2,7 +2,6 @@ import React from "react";
 import { tableDisplayColumns } from "../../constants";
 import type { Task, TaskForm, ViewMode } from "../../types";
 import TasksTableBody from "./TasksTableBody";
-import TasksTableHead from "./TasksTableHead";
 
 type TasksTableProps = {
   tableWrapperRef: React.RefObject<HTMLDivElement | null>;
@@ -114,16 +113,6 @@ export default function TasksTable({
             />
           ))}
         </colgroup>
-        <TasksTableHead
-          showForm={showForm}
-          form={form}
-          columnWidths={columnWidths}
-          loading={loading}
-          isFormValid={isFormValid}
-          onChangeForm={onChangeForm}
-          onSubmit={onSubmit}
-          onHideForm={onHideForm}
-        />
         <TasksTableBody
           loading={loading}
           tasks={tasks}
