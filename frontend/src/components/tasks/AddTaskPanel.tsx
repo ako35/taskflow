@@ -26,22 +26,26 @@ export default function AddTaskPanel({
   onHideForm,
 }: AddTaskPanelProps) {
   return (
-    <aside className="task-details-panel add-task-page" aria-label="Yeni görev sayfası">
-      <div className="task-details-head">
-        <h3>Yeni Görev</h3>
-        <button
-          type="button"
-          className="task-details-close"
-          onClick={onHideForm}
-          aria-label="Yeni görev sayfasını kapat"
-        >
-          <UiGlyph icon="close" />
-        </button>
-      </div>
+    <div className="add-task-overlay" onClick={onHideForm}>
+      <section
+        className="add-task-page"
+        aria-label="Yeni görev sayfası"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="add-task-head">
+          <h3>Yeni Görev</h3>
+          <button
+            type="button"
+            className="task-details-close"
+            onClick={onHideForm}
+            aria-label="Yeni görev sayfasını kapat"
+          >
+            <UiGlyph icon="close" />
+          </button>
+        </div>
 
-      <div className="task-details-body">
-        <div className="task-details-card task-details-edit-section">
-          <label className="task-details-field">
+        <div className="add-task-body">
+          <label className="add-task-field">
             <span>Görev Başlığı</span>
             <input
               type="text"
@@ -52,12 +56,9 @@ export default function AddTaskPanel({
             />
           </label>
 
-          <label className="task-details-field">
+          <label className="add-task-field">
             <span>Önem</span>
-            <select
-              value={form.priority}
-              onChange={onChangeForm("priority")}
-            >
+            <select value={form.priority} onChange={onChangeForm("priority")}>
               <option value="Acil">Acil</option>
               <option value="Yüksek">Yüksek</option>
               <option value="Orta">Orta</option>
@@ -65,7 +66,7 @@ export default function AddTaskPanel({
             </select>
           </label>
 
-          <label className="task-details-field">
+          <label className="add-task-field">
             <span>Durum</span>
             <select value={form.status} onChange={onChangeForm("status")}>
               <option value="Yapılacak">Yapılacak</option>
@@ -87,7 +88,7 @@ export default function AddTaskPanel({
             </button>
           </div>
         </div>
-      </div>
-    </aside>
+      </section>
+    </div>
   );
 }
