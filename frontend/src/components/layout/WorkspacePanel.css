@@ -55,6 +55,30 @@
   height: 1.1rem;
 }
 
+.toast-success-close {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.toast-success-close:hover,
+.toast-success-close:focus-visible {
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.toast-success-close svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
 @media (max-width: 1024px) {
 
   .workspace {

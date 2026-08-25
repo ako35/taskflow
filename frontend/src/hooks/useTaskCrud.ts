@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -38,6 +39,35 @@ export default function useTaskCrud({
   const [archivedTaskIds, setArchivedTaskIds] = useState<number[]>(() =>
     safeParseJson<number[]>(localStorage.getItem("taskflow_archived_tasks"), []),
   );
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const successMessageTimerRef = useRef<number | null>(null);
+
+  const dismissSuccessMessage = useCallback(() => {
+    if (successMessageTimerRef.current !== null) {
+      window.clearTimeout(successMessageTimerRef.current);
+      successMessageTimerRef.current = null;
+    }
+    setSuccessMessage(null);
+  }, []);
+
+  const announceSuccess = useCallback((message: string) => {
+    setSuccessMessage(message);
+    if (successMessageTimerRef.current !== null) {
+      window.clearTimeout(successMessageTimerRef.current);
+    }
+    successMessageTimerRef.current = window.setTimeout(() => {
+      setSuccessMessage(null);
+      successMessageTimerRef.current = null;
+    }, 2500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (successMessageTimerRef.current !== null) {
+        window.clearTimeout(successMessageTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleChange = useCallback(
     (field: keyof TaskForm) =>
@@ -177,13 +207,14 @@ export default function useTaskCrud({
         setTasks((prev) => prev.filter((task) => task.id !== taskId));
         setArchivedTaskIds((prev) => prev.filter((id) => id !== taskId));
         setError(null);
+        announceSuccess("Görev silindi.");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Görev silinemedi.");
       } finally {
         setLoading(false);
       }
     },
-    [handleUnauthorized, idToken, setError],
+    [announceSuccess, handleUnauthorized, idToken, setError],
   );
 
   useEffect(() => {
@@ -286,6 +317,8 @@ export default function useTaskCrud({
     query,
     setQuery,
     archivedTaskIds,
+    successMessage,
+    dismissSuccessMessage,
     handleChange,
     isFormValid,
     handleSubmit,

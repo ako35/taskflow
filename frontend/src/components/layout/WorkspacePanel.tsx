@@ -24,6 +24,8 @@ type WorkspacePanelProps = {
   archivedWorkspaces: Workspace[];
   error: string | null;
   onDismissError: () => void;
+  successMessage: string | null;
+  onDismissSuccessMessage: () => void;
   showForm: boolean;
   tableDensity: TableDensity;
   onSetTableDensity: (density: TableDensity) => void;
@@ -62,6 +64,8 @@ export default function WorkspacePanel({
   archivedWorkspaces,
   error,
   onDismissError,
+  successMessage,
+  onDismissSuccessMessage,
   showForm,
   tableDensity,
   onSetTableDensity,
@@ -122,6 +126,21 @@ export default function WorkspacePanel({
                 aria-label="Uyarıyı kapat"
                 title="Uyarıyı kapat"
                 onClick={onDismissError}
+              >
+                <UiGlyph icon="close" />
+              </button>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="toast-success" role="status">
+              <span>{successMessage}</span>
+              <button
+                type="button"
+                className="toast-success-close"
+                aria-label="Bildirimi kapat"
+                title="Bildirimi kapat"
+                onClick={onDismissSuccessMessage}
               >
                 <UiGlyph icon="close" />
               </button>

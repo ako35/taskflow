@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -6,6 +7,7 @@ type ConfirmDialogProps = {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  destructive?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -16,37 +18,53 @@ export default function ConfirmDialog({
   message,
   confirmLabel = "Onayla",
   cancelLabel = "Vazgeç",
+  destructive = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  if (!open) {
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onCancel();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onCancel]);
+
+  if (!open || typeof document === "undefined") {
     return null;
   }
 
-  return (
+  return createPortal(
     <div
-      className="workspace-create-overlay"
-      role="dialog"
+      className="confirm-dialog-overlay"
+      role="alertdialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
+      aria-describedby="confirm-dialog-message"
       onClick={onCancel}
     >
-      <div
-        className="workspace-create-modal"
-        onClick={(event) => event.stopPropagation()}
-      >
+      <div className="confirm-dialog" onClick={(event) => event.stopPropagation()}>
         <h2 id="confirm-dialog-title">{title}</h2>
-        <p>{message}</p>
-
-        <div className="workspace-create-modal-actions">
-          <button type="button" className="btn-primary" onClick={onConfirm}>
-            {confirmLabel}
-          </button>
-          <button type="button" className="btn-secondary" onClick={onCancel}>
+        <p id="confirm-dialog-message">{message}</p>
+        <div className="confirm-dialog-actions">
+          <button type="button" className="btn-secondary" onClick={onCancel} autoFocus>
             {cancelLabel}
+          </button>
+          <button
+            type="button"
+            className={`btn-primary ${destructive ? "confirm-dialog-danger" : ""}`}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

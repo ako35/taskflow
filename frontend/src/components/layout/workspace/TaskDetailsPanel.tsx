@@ -9,6 +9,7 @@ import type { Task, TaskComment, User } from "../../../types";
 import { UiGlyph } from "../../ui/Icons";
 import { API_URL, priorityClassNames, statusClassNames } from "../../../constants";
 import InlineSelectMenu from "../../tasks/InlineSelectMenu";
+import ConfirmDialog from "../../ui/ConfirmDialog";
 
 type TaskDetailsPanelProps = {
   open: boolean;
@@ -113,6 +114,7 @@ export default function TaskDetailsPanel({
     "status" | "priority" | null
   >(null);
   const [saveAcknowledged, setSaveAcknowledged] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [aiImproving, setAiImproving] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const saveAckTimerRef = useRef<number | null>(null);
@@ -128,6 +130,7 @@ export default function TaskDetailsPanel({
     setDraftPriority(task.priority || "Orta");
     setDraftRemindAt(toDateTimeLocal(task.remindAt));
     setSaveAcknowledged(false);
+    setDeleteConfirmOpen(false);
     setAiError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-sync drafts when switching tasks; a save updates `task`'s reference too and must not cut off the "Kaydedildi" acknowledgment below
   }, [task?.id]);
@@ -183,9 +186,11 @@ export default function TaskDetailsPanel({
   }
 
   const handleDelete = () => {
-    if (!window.confirm(`"${task.title}" görevini silmek istediğinize emin misiniz?`)) {
-      return;
-    }
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setDeleteConfirmOpen(false);
     onDeleteTask(task.id);
     onClose();
   };
@@ -280,15 +285,6 @@ export default function TaskDetailsPanel({
       <div className="task-details-head">
         <h3>Görev Detayı</h3>
         <div className="task-details-head-actions">
-          <button
-            type="button"
-            className="task-details-delete"
-            onClick={handleDelete}
-            aria-label="Görevi sil"
-            title="Görevi sil"
-          >
-            <UiGlyph icon="trash" />
-          </button>
           <button
             type="button"
             className="task-details-close"
@@ -415,20 +411,30 @@ export default function TaskDetailsPanel({
             )}
           </div>
 
-          <button
-            type="button"
-            className={`btn-primary task-details-save-btn ${
-              saveAcknowledged && !taskUpdating && !canSaveTaskDetails
-                ? "saved"
-                : ""
-            }`}
-            onClick={() => {
-              void handleSaveDetails();
-            }}
-            disabled={!canSaveTaskDetails}
-          >
-            {saveButtonLabel}
-          </button>
+          <div className="task-details-actions-row">
+            <button
+              type="button"
+              className="btn-secondary task-details-delete-inline"
+              onClick={handleDelete}
+            >
+              <UiGlyph icon="trash" />
+              Görevi Sil
+            </button>
+            <button
+              type="button"
+              className={`btn-primary task-details-save-btn ${
+                saveAcknowledged && !taskUpdating && !canSaveTaskDetails
+                  ? "saved"
+                  : ""
+              }`}
+              onClick={() => {
+                void handleSaveDetails();
+              }}
+              disabled={!canSaveTaskDetails}
+            >
+              {saveButtonLabel}
+            </button>
+          </div>
         </div>
 
         <div className="task-comments-section">
@@ -496,6 +502,17 @@ export default function TaskDetailsPanel({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Görevi sil"
+        message={`"${task.title}" görevini silmek istediğinize emin misiniz?`}
+        confirmLabel="Sil"
+        cancelLabel="Vazgeç"
+        destructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
     </aside>
   );
 }

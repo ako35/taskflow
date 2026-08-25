@@ -704,6 +704,19 @@ button,
   gap: 1rem;
 }
 
+.toast-success {
+  margin-bottom: 1.2rem;
+  padding: 1rem 1.2rem;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: #d1fae5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 @media (max-width: 940px) {
   .overview-grid {
     grid-template-columns: 1fr;

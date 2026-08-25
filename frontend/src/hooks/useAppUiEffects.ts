@@ -76,7 +76,14 @@ export default function useAppUiEffects({
         setThemeMenuOpen(false);
       }
 
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target) &&
+        !(
+          event.target instanceof Element &&
+          event.target.closest(".profile-theme-flyout")
+        )
+      ) {
         setProfileMenuOpen(false);
       }
 
