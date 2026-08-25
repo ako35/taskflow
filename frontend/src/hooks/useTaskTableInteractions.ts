@@ -387,13 +387,24 @@ export default function useTaskTableInteractions({
     const minWidth =
       tableColumns.find((column) => column.field === current.field)?.minWidth ?? 80;
     setColumnWidths((prev) => {
-      const nextWidth = Math.max(minWidth, current.startWidth + delta);
-      const requested = {
-        ...prev,
-        [current.field]: nextWidth,
-      };
+      let nextWidth = Math.max(minWidth, current.startWidth + delta);
 
       if (current.field === "title") {
+        const wrapper = tableWrapperRef.current;
+        if (wrapper) {
+          const otherWidthsTotal = tableColumns.reduce((sum, column) => {
+            return column.field === "title"
+              ? sum
+              : sum + (prev[column.field] ?? column.minWidth);
+          }, 0);
+          const maxWidth = Math.max(minWidth, wrapper.clientWidth - 2 - otherWidthsTotal);
+          nextWidth = Math.min(nextWidth, maxWidth);
+        }
+
+        const requested: Record<string, number> = {
+          ...prev,
+          title: nextWidth,
+        };
         tableTotalWidthRef.current = tableColumns.reduce(
           (total, column) => total + requested[column.field],
           0,
@@ -401,9 +412,14 @@ export default function useTaskTableInteractions({
         return requested;
       }
 
+      const requested = {
+        ...prev,
+        [current.field]: nextWidth,
+      };
+
       return keepTableWidthFixed(prev, requested, current.field);
     });
-  }, [keepTableWidthFixed]);
+  }, [keepTableWidthFixed, tableWrapperRef]);
 
   const handleColumnMouseUp = useCallback(() => {
     if (!resizeState.current) return;

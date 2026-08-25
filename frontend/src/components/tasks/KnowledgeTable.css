@@ -51,12 +51,21 @@
   text-transform: uppercase;
 }
 
+.knowledge-table th:not(:last-child) {
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+:root[data-theme="light"] .knowledge-table th:not(:last-child) {
+  border-right-color: rgba(15, 23, 42, 0.18);
+}
+
 .knowledge-table td {
   position: relative;
   padding: 0.78rem 0.85rem;
   background: rgba(21, 31, 51, 0.82);
   border-top: 1px solid rgba(148, 163, 184, 0.14);
   border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  border-right: 1px solid rgba(148, 163, 184, 0.14);
   vertical-align: top;
 }
 
@@ -66,7 +75,6 @@
 }
 
 .knowledge-table td:last-child {
-  border-right: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 0 6px 6px 0;
 }
 

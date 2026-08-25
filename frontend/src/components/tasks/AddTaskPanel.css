@@ -71,6 +71,11 @@
   color-scheme: dark;
 }
 
+.add-task-field select option {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
 .add-task-field input:focus,
 .add-task-field select:focus {
   outline: 2px solid rgba(91, 140, 255, 0.22);
@@ -109,6 +114,11 @@
 
 :root[data-theme="light"] .add-task-field select {
   color-scheme: light;
+}
+
+:root[data-theme="light"] .add-task-field select option {
+  background-color: #ffffff;
+  color: #0f172a;
 }
 
 @media (max-width: 600px) {
