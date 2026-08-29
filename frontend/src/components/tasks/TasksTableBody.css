@@ -574,6 +574,21 @@
   line-height: 1.24;
 }
 
+.task-assignee-line {
+  display: block;
+  margin-top: 2px;
+  font-size: clamp(0.68rem, 0.64rem + 0.12vw, 0.76rem);
+  line-height: 1.2;
+  color: rgba(148, 163, 184, 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-theme="light"] .task-assignee-line {
+  color: #64748b;
+}
+
 .inline-cell-input {
   width: 100%;
   max-width: 100%;

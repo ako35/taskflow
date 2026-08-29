@@ -14,6 +14,7 @@ import type {
   User,
   ViewMode,
   Workspace,
+  WorkspaceMemberInfo,
 } from "../../types";
 
 type WorkspacePanelProps = {
@@ -32,6 +33,7 @@ type WorkspacePanelProps = {
   onToggleShowForm: () => void;
   onRestoreWorkspace: (workspaceId: string) => void;
   tasksTableProps: React.ComponentProps<typeof TasksTable>;
+  assignableMembers: WorkspaceMemberInfo[];
   selectedTask: Task | null;
   taskDetailsOpen: boolean;
   comments: TaskComment[];
@@ -48,10 +50,11 @@ type WorkspacePanelProps = {
   onSubmitComment: () => void;
   onDeleteComment: (commentId: number) => void;
   onSaveTaskDetails: (payload: {
-    title: string;
-    status: string;
-    priority: string;
-    remindAt: string | null;
+    title?: string;
+    status?: string;
+    priority?: string;
+    remindAt?: string | null;
+    assigneeId?: number | null;
   }) => Promise<void>;
   onDeleteTask: (taskId: number) => void;
 };
@@ -72,6 +75,7 @@ export default function WorkspacePanel({
   onToggleShowForm,
   onRestoreWorkspace,
   tasksTableProps,
+  assignableMembers,
   selectedTask,
   taskDetailsOpen,
   comments,
@@ -104,7 +108,10 @@ export default function WorkspacePanel({
           <WorkspacePanelHeader
             query={query}
             showForm={showForm}
-            showAddButton={viewMode === "workspaces"}
+            showAddButton={
+              viewMode === "workspaces" &&
+              (isWorkspaceOwner || selectedWorkspace.type === "KNOWLEDGE")
+            }
             workspaceType={selectedWorkspace.type}
             onToggleShowForm={onToggleShowForm}
             onQueryChange={onQueryChange}
@@ -147,11 +154,14 @@ export default function WorkspacePanel({
             </div>
           )}
 
-          {showForm && selectedWorkspace.type !== "KNOWLEDGE" ? (
+          {showForm &&
+          isWorkspaceOwner &&
+          selectedWorkspace.type !== "KNOWLEDGE" ? (
             <AddTaskPanel
               form={tasksTableProps.form}
               loading={tasksTableProps.loading}
               isFormValid={tasksTableProps.isFormValid}
+              members={assignableMembers}
               onChangeForm={tasksTableProps.onChangeForm}
               onSubmit={tasksTableProps.onSubmit}
               onHideForm={tasksTableProps.onHideForm}
@@ -172,6 +182,7 @@ export default function WorkspacePanel({
             task={selectedTask}
             currentUser={currentUser}
             isWorkspaceOwner={isWorkspaceOwner}
+            members={assignableMembers}
             comments={comments}
             commentsLoading={commentsLoading}
             commentDraft={commentDraft}

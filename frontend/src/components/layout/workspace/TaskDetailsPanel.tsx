@@ -5,7 +5,12 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { Task, TaskComment, User } from "../../../types";
+import type {
+  Task,
+  TaskComment,
+  User,
+  WorkspaceMemberInfo,
+} from "../../../types";
 import { UiGlyph } from "../../ui/Icons";
 import { API_URL, priorityClassNames, statusClassNames } from "../../../constants";
 import InlineSelectMenu from "../../tasks/InlineSelectMenu";
@@ -16,6 +21,7 @@ type TaskDetailsPanelProps = {
   task: Task | null;
   currentUser: User | null;
   isWorkspaceOwner: boolean;
+  members: WorkspaceMemberInfo[];
   comments: TaskComment[];
   commentsLoading: boolean;
   commentDraft: string;
@@ -28,13 +34,26 @@ type TaskDetailsPanelProps = {
   onSubmitComment: () => void;
   onDeleteComment: (commentId: number) => void;
   onSaveTaskDetails: (payload: {
-    title: string;
-    status: string;
-    priority: string;
-    remindAt: string | null;
+    title?: string;
+    status?: string;
+    priority?: string;
+    remindAt?: string | null;
+    assigneeId?: number | null;
   }) => Promise<void>;
   onDeleteTask: (taskId: number) => void;
 };
+
+function memberLabel(member: {
+  firstName: string;
+  lastName?: string | null;
+  email: string;
+}) {
+  const name = [member.firstName, member.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return name || member.email;
+}
 
 function toDateTimeLocal(value?: string | null) {
   if (!value) {
@@ -92,6 +111,7 @@ export default function TaskDetailsPanel({
   task,
   currentUser,
   isWorkspaceOwner,
+  members,
   comments,
   commentsLoading,
   commentDraft,
@@ -110,6 +130,7 @@ export default function TaskDetailsPanel({
   const [draftStatus, setDraftStatus] = useState("Yapılacak");
   const [draftPriority, setDraftPriority] = useState("Orta");
   const [draftRemindAt, setDraftRemindAt] = useState("");
+  const [draftAssigneeId, setDraftAssigneeId] = useState("");
   const [editingField, setEditingField] = useState<
     "status" | "priority" | null
   >(null);
@@ -129,6 +150,7 @@ export default function TaskDetailsPanel({
     setDraftStatus(task.status ?? "Yapılacak");
     setDraftPriority(task.priority || "Orta");
     setDraftRemindAt(toDateTimeLocal(task.remindAt));
+    setDraftAssigneeId(task.assigneeId != null ? String(task.assigneeId) : "");
     setSaveAcknowledged(false);
     setDeleteConfirmOpen(false);
     setAiError(null);
@@ -164,15 +186,18 @@ export default function TaskDetailsPanel({
     const baseStatus = task.status ?? "Yapılacak";
     const basePriority = task.priority || "Orta";
     const baseRemindAt = toDateTimeLocal(task.remindAt);
+    const baseAssigneeId = task.assigneeId != null ? String(task.assigneeId) : "";
 
     const hasChanges =
       nextTitle !== baseTitle ||
       draftStatus !== baseStatus ||
       draftPriority !== basePriority ||
-      draftRemindAt !== baseRemindAt;
+      draftRemindAt !== baseRemindAt ||
+      draftAssigneeId !== baseAssigneeId;
 
     return Boolean(nextTitle) && hasChanges && !taskUpdating;
   }, [
+    draftAssigneeId,
     draftPriority,
     draftRemindAt,
     draftStatus,
@@ -262,12 +287,18 @@ export default function TaskDetailsPanel({
   };
 
   const handleSaveDetails = async () => {
-    await onSaveTaskDetails({
-      title: draftTitle.trim(),
-      status: draftStatus,
-      priority: draftPriority,
-      remindAt: draftRemindAt ? new Date(draftRemindAt).toISOString() : null,
-    });
+    if (isWorkspaceOwner) {
+      await onSaveTaskDetails({
+        title: draftTitle.trim(),
+        status: draftStatus,
+        priority: draftPriority,
+        remindAt: draftRemindAt ? new Date(draftRemindAt).toISOString() : null,
+        assigneeId: draftAssigneeId ? Number(draftAssigneeId) : null,
+      });
+    } else {
+      // Atanan üye yalnızca durumu güncelleyebilir.
+      await onSaveTaskDetails({ status: draftStatus });
+    }
 
     setSaveAcknowledged(true);
     if (saveAckTimerRef.current !== null) {
@@ -298,64 +329,100 @@ export default function TaskDetailsPanel({
 
       <div className="task-details-body">
         <div className="task-details-card task-details-edit-section">
-          <h4>Görevi Düzenle</h4>
+          <h4>{isWorkspaceOwner ? "Görevi Düzenle" : "Görev"}</h4>
 
-          <label className="task-details-field">
-            <span className="task-details-field-label-row">
-              Görev Metni
-              <button
-                type="button"
-                className="task-action-btn task-action-ai-btn task-details-ai-btn"
-                onClick={(event) => {
-                  event.preventDefault();
-                  void handleAiImprove();
-                }}
-                disabled={aiImproving}
-                aria-label="AI ile metni iyilestir"
-                title="AI ile metni iyilestir"
-              >
-                <span aria-hidden="true">
-                  <UiGlyph icon="spark" />
-                </span>
-                {aiImproving ? "AI iyilestiriyor..." : "AI ile iyilestir"}
-              </button>
-            </span>
-            <textarea
-              ref={titleTextareaRef}
-              className="task-details-title-input"
-              value={draftTitle}
-              onChange={(event) => setDraftTitle(event.target.value)}
-              placeholder="Görev adını yazın"
-              aria-label="Görev metni"
-              rows={2}
-            />
-            {aiError ? <p className="task-details-ai-error">{aiError}</p> : null}
-          </label>
+          {isWorkspaceOwner ? (
+            <label className="task-details-field">
+              <span className="task-details-field-label-row">
+                Görev Metni
+                <button
+                  type="button"
+                  className="task-action-btn task-action-ai-btn task-details-ai-btn"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    void handleAiImprove();
+                  }}
+                  disabled={aiImproving}
+                  aria-label="AI ile metni iyilestir"
+                  title="AI ile metni iyilestir"
+                >
+                  <span aria-hidden="true">
+                    <UiGlyph icon="spark" />
+                  </span>
+                  {aiImproving ? "AI iyilestiriyor..." : "AI ile iyilestir"}
+                </button>
+              </span>
+              <textarea
+                ref={titleTextareaRef}
+                className="task-details-title-input"
+                value={draftTitle}
+                onChange={(event) => setDraftTitle(event.target.value)}
+                placeholder="Görev adını yazın"
+                aria-label="Görev metni"
+                rows={2}
+              />
+              {aiError ? (
+                <p className="task-details-ai-error">{aiError}</p>
+              ) : null}
+            </label>
+          ) : (
+            <div className="task-details-field">
+              <span>Görev Metni</span>
+              <p className="task-details-readonly-title">{task.title}</p>
+            </div>
+          )}
 
           <p className="task-details-created-at">
             Oluşturma Tarihi: {formatTaskCreatedAt(task.createdAt)}
           </p>
 
-          <label className="task-details-field">
-            <span>Hatırlatıcı</span>
-            <div className="task-reminder-controls">
-              <input
-                type="datetime-local"
-                value={draftRemindAt}
-                onChange={(event) => setDraftRemindAt(event.target.value)}
-                aria-label="Hatırlatıcı tarihi ve saati"
-              />
-              {draftRemindAt ? (
-                <button
-                  type="button"
-                  className="btn-secondary task-reminder-clear"
-                  onClick={() => setDraftRemindAt("")}
-                >
-                  Kaldır
-                </button>
-              ) : null}
-            </div>
-          </label>
+          {isWorkspaceOwner ? (
+            <label className="task-details-field">
+              <span>Hatırlatıcı</span>
+              <div className="task-reminder-controls">
+                <input
+                  type="datetime-local"
+                  value={draftRemindAt}
+                  onChange={(event) => setDraftRemindAt(event.target.value)}
+                  aria-label="Hatırlatıcı tarihi ve saati"
+                />
+                {draftRemindAt ? (
+                  <button
+                    type="button"
+                    className="btn-secondary task-reminder-clear"
+                    onClick={() => setDraftRemindAt("")}
+                  >
+                    Kaldır
+                  </button>
+                ) : null}
+              </div>
+            </label>
+          ) : null}
+
+          {isWorkspaceOwner ? (
+            <label className="task-details-field">
+              <span>Atanan Kişi</span>
+              <select
+                className="task-details-assignee-select"
+                value={draftAssigneeId}
+                onChange={(event) => setDraftAssigneeId(event.target.value)}
+                aria-label="Atanan kişi"
+              >
+                <option value="">Atanmadı</option>
+                {members.map((member) => (
+                  <option key={member.id} value={String(member.id)}>
+                    {memberLabel(member)}
+                  </option>
+                ))}
+                {task.assignee &&
+                !members.some((member) => member.id === task.assignee?.id) ? (
+                  <option value={String(task.assignee.id)}>
+                    {memberLabel(task.assignee)}
+                  </option>
+                ) : null}
+              </select>
+            </label>
+          ) : null}
 
           <div className="task-details-field">
             <span>Durum</span>
@@ -384,42 +451,55 @@ export default function TaskDetailsPanel({
             )}
           </div>
 
-          <div className="task-details-field">
-            <span>Önem</span>
-            {editingField === "priority" ? (
-              <InlineSelectMenu
-                value={draftPriority}
-                fallbackValue="Orta"
-                options={["Acil", "Yüksek", "Orta", "Düşük"]}
-                getOptionClassName={(opt) => priorityClassNames[opt] ?? ""}
-                badgeClassName="task-priority-badge"
-                horizontalAlign="left"
-                onSelect={(opt) => {
-                  setDraftPriority(opt);
-                  setEditingField(null);
-                }}
-                onCancel={() => setEditingField(null)}
-              />
-            ) : (
-              <button
-                type="button"
+          {isWorkspaceOwner ? (
+            <div className="task-details-field">
+              <span>Önem</span>
+              {editingField === "priority" ? (
+                <InlineSelectMenu
+                  value={draftPriority}
+                  fallbackValue="Orta"
+                  options={["Acil", "Yüksek", "Orta", "Düşük"]}
+                  getOptionClassName={(opt) => priorityClassNames[opt] ?? ""}
+                  badgeClassName="task-priority-badge"
+                  horizontalAlign="left"
+                  onSelect={(opt) => {
+                    setDraftPriority(opt);
+                    setEditingField(null);
+                  }}
+                  onCancel={() => setEditingField(null)}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className={`inline-option-chip task-badge task-priority-badge ${priorityClassNames[draftPriority] ?? ""} active`}
+                  onClick={() => setEditingField("priority")}
+                >
+                  {draftPriority}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="task-details-field">
+              <span>Önem</span>
+              <span
                 className={`inline-option-chip task-badge task-priority-badge ${priorityClassNames[draftPriority] ?? ""} active`}
-                onClick={() => setEditingField("priority")}
               >
                 {draftPriority}
-              </button>
-            )}
-          </div>
+              </span>
+            </div>
+          )}
 
           <div className="task-details-actions-row">
-            <button
-              type="button"
-              className="btn-secondary task-details-delete-inline"
-              onClick={handleDelete}
-            >
-              <UiGlyph icon="trash" />
-              Görevi Sil
-            </button>
+            {isWorkspaceOwner ? (
+              <button
+                type="button"
+                className="btn-secondary task-details-delete-inline"
+                onClick={handleDelete}
+              >
+                <UiGlyph icon="trash" />
+                Görevi Sil
+              </button>
+            ) : null}
             <button
               type="button"
               className={`btn-primary task-details-save-btn ${

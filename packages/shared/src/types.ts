@@ -1,3 +1,10 @@
+export type TaskAssignee = {
+  id: number;
+  firstName: string;
+  lastName?: string | null;
+  email: string;
+};
+
 export type Task = {
   id: number;
   title: string;
@@ -11,6 +18,8 @@ export type Task = {
   createdAt?: string;
   remindAt?: string | null;
   workspaceId: string;
+  assigneeId?: number | null;
+  assignee?: TaskAssignee | null;
 };
 
 export type TaskCommentAuthor = {
@@ -35,6 +44,7 @@ export type TaskForm = {
   description: string;
   priority: string;
   status: string;
+  assigneeId?: string; // "" = atanmadı (web <select> için string tutulur)
 };
 
 export type User = {
@@ -90,7 +100,7 @@ export type WorkspaceInvitationsOverview = {
 export type UserNotification = {
   id: number;
   message: string;
-  type?: "comment" | "reminder";
+  type?: "comment" | "reminder" | "assignment" | "status";
   isRead: boolean;
   createdAt: string;
   workspaceId: string;

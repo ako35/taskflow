@@ -181,6 +181,24 @@
   outline-offset: 0;
 }
 
+.task-details-readonly-title {
+  margin: 0;
+  width: 100%;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.42);
+  color: var(--text);
+  padding: 0.54rem 0.62rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+:root[data-theme="light"] .task-details-readonly-title {
+  background: rgba(15, 23, 42, 0.05);
+  color: #0f172a;
+}
+
 .task-details-edit-section {
   gap: 0.62rem;
 }

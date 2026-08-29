@@ -42,6 +42,7 @@ export const initialForm: TaskForm = {
   description: "",
   priority: "Orta",
   status: "Yapılacak",
+  assigneeId: "",
 };
 
 export const priorityOrder: Record<string, number> = {

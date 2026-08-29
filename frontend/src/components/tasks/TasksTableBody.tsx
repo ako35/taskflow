@@ -16,6 +16,7 @@ type TasksTableBodyProps = {
   tasks: Task[];
   visibleTasks: Task[];
   viewMode: ViewMode;
+  isWorkspaceOwner: boolean;
   columnWidths: Record<string, number>;
   collapsedStatusGroups: Record<string, boolean>;
   statusGroupCounts: Record<string, number>;
@@ -48,6 +49,7 @@ export default function TasksTableBody({
   tasks,
   visibleTasks,
   viewMode,
+  isWorkspaceOwner,
   columnWidths,
   collapsedStatusGroups,
   statusGroupCounts,
@@ -236,16 +238,24 @@ export default function TasksTableBody({
                               return;
                             }
 
-                            if (
-                              column.field === "status" ||
-                              column.field === "priority"
-                            ) {
+                            if (column.field === "status") {
+                              onStartEditingCell(task, column.field);
+                              return;
+                            }
+
+                            if (column.field === "priority" && isWorkspaceOwner) {
                               onStartEditingCell(task, column.field);
                             }
                           }}
-                          onDoubleClick={() =>
-                            onStartEditingCell(task, column.field)
-                          }
+                          onDoubleClick={() => {
+                            if (
+                              column.field === "priority" &&
+                              !isWorkspaceOwner
+                            ) {
+                              return;
+                            }
+                            onStartEditingCell(task, column.field);
+                          }}
                         >
                           {column.field === "__spacer" ? null : column.field ===
                             "index" ? (
@@ -362,6 +372,18 @@ export default function TasksTableBody({
                                 >
                                   {task.title}
                                 </span>
+                                {isWorkspaceOwner && task.assignee ? (
+                                  <span className="task-assignee-line">
+                                    Atanan:{" "}
+                                    {[
+                                      task.assignee.firstName,
+                                      task.assignee.lastName,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" ")
+                                      .trim() || task.assignee.email}
+                                  </span>
+                                ) : null}
                               </div>
                               <div className="cell-preview">
                                 <div className="cell-preview-body">
@@ -464,7 +486,7 @@ export default function TasksTableBody({
                               {task.priority}
                             </span>
                           ) : (
-                            task[column.field as keyof Task]
+                            String(task[column.field as keyof Task] ?? "")
                           )}
                         </td>
                       );

@@ -333,6 +333,7 @@ export default function TaskListScreen({ navigation }: Props) {
               navigation.navigate("TaskForm", {
                 task: item,
                 workspaceId: activeWorkspaceId,
+                isOwner: activeWorkspace?.role === "OWNER",
               });
 
             return (
@@ -382,7 +383,7 @@ export default function TaskListScreen({ navigation }: Props) {
                   >
                     <Pencil color={colors.primary} size={13} strokeWidth={2} />
                     <Text style={[styles.editBtnText, { color: colors.primary }]}>
-                      Düzenle
+                      {activeWorkspace?.role === "OWNER" ? "Düzenle" : "Aç"}
                     </Text>
                   </Pressable>
                 </View>
@@ -392,14 +393,17 @@ export default function TaskListScreen({ navigation }: Props) {
         />
       )}
 
-      {activeWorkspaceId ? (
+      {activeWorkspaceId && activeWorkspace?.role === "OWNER" ? (
         <Pressable
           style={({ pressed }) => [
             styles.fabShadow,
             { bottom: 24 + insets.bottom, opacity: pressed ? 0.9 : 1 },
           ]}
           onPress={() =>
-            navigation.navigate("TaskForm", { workspaceId: activeWorkspaceId })
+            navigation.navigate("TaskForm", {
+              workspaceId: activeWorkspaceId,
+              isOwner: true,
+            })
           }
         >
           <LinearGradient

@@ -110,8 +110,12 @@ export default function useTaskCrud({
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          ...form,
+          title: form.title,
+          description: form.description,
+          priority: form.priority,
+          status: form.status,
           workspaceId: selectedWorkspaceId,
+          assigneeId: form.assigneeId ? Number(form.assigneeId) : null,
         }),
       });
 

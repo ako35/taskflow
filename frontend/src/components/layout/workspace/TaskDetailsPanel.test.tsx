@@ -35,7 +35,8 @@ describe("TaskDetailsPanel", () => {
         commentDraft=""
         commentSubmitting={false}
         taskUpdating={false}
-        isWorkspaceOwner={false}
+        isWorkspaceOwner
+        members={[]}
         idToken={null}
         onClose={() => {}}
         onUnauthorized={() => {}}
@@ -59,7 +60,8 @@ describe("TaskDetailsPanel", () => {
         commentDraft=""
         commentSubmitting={false}
         taskUpdating={false}
-        isWorkspaceOwner={false}
+        isWorkspaceOwner
+        members={[]}
         idToken={null}
         onClose={() => {}}
         onUnauthorized={() => {}}
@@ -88,7 +90,8 @@ describe("TaskDetailsPanel", () => {
         commentDraft=""
         commentSubmitting={false}
         taskUpdating={false}
-        isWorkspaceOwner={false}
+        isWorkspaceOwner
+        members={[]}
         idToken={null}
         onClose={() => {}}
         onUnauthorized={() => {}}
@@ -119,6 +122,7 @@ describe("TaskDetailsPanel", () => {
       status: "Yapılacak",
       priority: "Orta",
       remindAt: null,
+      assigneeId: null,
     });
   });
 
@@ -136,7 +140,8 @@ describe("TaskDetailsPanel", () => {
         commentDraft=""
         commentSubmitting={false}
         taskUpdating={false}
-        isWorkspaceOwner={false}
+        isWorkspaceOwner
+        members={[]}
         idToken={null}
         onClose={() => {}}
         onUnauthorized={() => {}}
@@ -178,7 +183,8 @@ describe("TaskDetailsPanel", () => {
           commentDraft=""
           commentSubmitting={false}
           taskUpdating={false}
-          isWorkspaceOwner={false}
+          isWorkspaceOwner
+          members={[]}
           idToken={null}
           onClose={() => {}}
           onUnauthorized={() => {}}
@@ -201,7 +207,8 @@ describe("TaskDetailsPanel", () => {
         commentDraft=""
         commentSubmitting={false}
         taskUpdating={false}
-        isWorkspaceOwner={false}
+        isWorkspaceOwner
+        members={[]}
         idToken={null}
         onClose={() => {}}
         onUnauthorized={() => {}}

@@ -11,7 +11,9 @@ export type MainTabParamList = {
 
 export type RootStackParamList = {
   Main: undefined;
-  TaskForm: { task: Task; workspaceId: string } | { task?: undefined; workspaceId: string };
+  TaskForm:
+    | { task: Task; workspaceId: string; isOwner?: boolean }
+    | { task?: undefined; workspaceId: string; isOwner?: boolean };
   Members: { workspaceId: string; workspaceName: string; isOwner: boolean };
   WorkspaceCreate: undefined;
   ArchivedWorkspaces: { archivedWorkspaces: Workspace[] };

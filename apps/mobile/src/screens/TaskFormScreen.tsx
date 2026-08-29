@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   Alert,
@@ -11,8 +11,15 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Sparkles, Trash2 } from "lucide-react-native";
+import type { WorkspaceMemberInfo } from "@taskflow/shared";
 import { useAuth } from "../context/AuthContext";
-import { createTask, deleteTask, refineText, updateTask } from "../lib/api";
+import {
+  createTask,
+  deleteTask,
+  fetchWorkspaceMembers,
+  refineText,
+  updateTask,
+} from "../lib/api";
 import { PRIORITIES, STATUSES } from "../constants";
 import { formatReminderInput } from "../lib/format";
 import { useTheme } from "../theme/ThemeContext";
@@ -51,11 +58,16 @@ function combineDateAndTime(datePart: Date, timePart: Date): Date {
 
 export default function TaskFormScreen({ route, navigation }: Props) {
   const { task, workspaceId } = route.params;
+  const isOwner = route.params.isOwner ?? true;
   const { idToken } = useAuth();
   const { colors, mode } = useTheme();
   const [title, setTitle] = useState(task?.title ?? "");
   const [priority, setPriority] = useState(task?.priority ?? PRIORITIES[2]);
   const [status, setStatus] = useState(task?.status ?? STATUSES[0]);
+  const [assigneeId, setAssigneeId] = useState<number | null>(
+    task?.assigneeId ?? null,
+  );
+  const [members, setMembers] = useState<WorkspaceMemberInfo[]>([]);
   const [reminderDate, setReminderDate] = useState<Date | null>(
     task?.remindAt ? new Date(task.remindAt) : null,
   );
@@ -65,6 +77,23 @@ export default function TaskFormScreen({ route, navigation }: Props) {
   const [saveAcknowledged, setSaveAcknowledged] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [aiImproving, setAiImproving] = useState(false);
+
+  useEffect(() => {
+    if (!isOwner) return;
+    let cancelled = false;
+    fetchWorkspaceMembers(idToken, workspaceId)
+      .then((list) => {
+        if (!cancelled) {
+          setMembers(list.filter((member) => member.role !== "OWNER"));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMembers([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [idToken, isOwner, workspaceId]);
 
   const onAiImprove = async () => {
     if (!title.trim()) {
@@ -93,7 +122,13 @@ export default function TaskFormScreen({ route, navigation }: Props) {
     setSaving(true);
     try {
       if (task) {
-        await updateTask(idToken, task.id, { title, priority, status, remindAt });
+        await updateTask(
+          idToken,
+          task.id,
+          isOwner
+            ? { title, priority, status, remindAt, assigneeId }
+            : { status },
+        );
       } else {
         await createTask(idToken, {
           title,
@@ -102,6 +137,7 @@ export default function TaskFormScreen({ route, navigation }: Props) {
           status,
           workspaceId,
           remindAt,
+          assigneeId,
         });
       }
       setSaving(false);
@@ -146,58 +182,125 @@ export default function TaskFormScreen({ route, navigation }: Props) {
       contentContainerStyle={styles.container}
     >
       <Text style={[styles.label, { color: colors.textMuted }]}>Görev Metni</Text>
-      <TextInput
-        style={[inputStyle, styles.multiline]}
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Görev adını yazın"
-        placeholderTextColor={colors.textMuted}
-        selectionColor={colors.primary}
-        cursorColor={colors.primary}
-        underlineColorAndroid="transparent"
-        autoCorrect={false}
-        spellCheck={false}
-        importantForAutofill="no"
-        multiline
-      />
-      <Pressable
-        style={styles.aiLink}
-        onPress={onAiImprove}
-        disabled={aiImproving}
-        hitSlop={16}
-      >
-        <Sparkles color={colors.primary} size={13} strokeWidth={2} />
-        <Text style={[styles.aiLinkText, { color: colors.primary }]}>
-          {aiImproving ? "AI iyileştiriyor..." : "AI ile metni iyileştir"}
-        </Text>
-      </Pressable>
+      {isOwner ? (
+        <>
+          <TextInput
+            style={[inputStyle, styles.multiline]}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Görev adını yazın"
+            placeholderTextColor={colors.textMuted}
+            selectionColor={colors.primary}
+            cursorColor={colors.primary}
+            underlineColorAndroid="transparent"
+            autoCorrect={false}
+            spellCheck={false}
+            importantForAutofill="no"
+            multiline
+          />
+          <Pressable
+            style={styles.aiLink}
+            onPress={onAiImprove}
+            disabled={aiImproving}
+            hitSlop={16}
+          >
+            <Sparkles color={colors.primary} size={13} strokeWidth={2} />
+            <Text style={[styles.aiLinkText, { color: colors.primary }]}>
+              {aiImproving ? "AI iyileştiriyor..." : "AI ile metni iyileştir"}
+            </Text>
+          </Pressable>
+        </>
+      ) : (
+        <Text style={[styles.readonlyText, { color: colors.text }]}>{title}</Text>
+      )}
 
-      <Text style={[styles.label, { color: colors.textMuted }]}>Önem</Text>
-      <View style={styles.segmentRow}>
-        {PRIORITIES.map((option) => {
-          const active = priority === option;
-          return (
+      {isOwner ? (
+        <>
+          <Text style={[styles.label, { color: colors.textMuted }]}>
+            Atanan Kişi
+          </Text>
+          <View style={styles.segmentRow}>
             <Pressable
-              key={option}
-              onPress={() => setPriority(option)}
+              onPress={() => setAssigneeId(null)}
               style={[
                 styles.segment,
                 { borderColor: colors.border },
-                active && { backgroundColor: colors.primary, borderColor: colors.primary },
+                assigneeId === null && {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary,
+                },
               ]}
             >
               <Text
                 style={[
                   styles.segmentText,
-                  { color: active ? "#fff" : colors.text },
+                  { color: assigneeId === null ? "#fff" : colors.text },
                 ]}
               >
-                {option}
+                Atanmadı
               </Text>
             </Pressable>
-          );
-        })}
-      </View>
+            {members.map((member) => {
+              const active = assigneeId === member.id;
+              const name =
+                [member.firstName, member.lastName]
+                  .filter(Boolean)
+                  .join(" ")
+                  .trim() || member.email;
+              return (
+                <Pressable
+                  key={member.id}
+                  onPress={() => setAssigneeId(member.id)}
+                  style={[
+                    styles.segment,
+                    { borderColor: colors.border },
+                    active && {
+                      backgroundColor: colors.primary,
+                      borderColor: colors.primary,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      { color: active ? "#fff" : colors.text },
+                    ]}
+                  >
+                    {name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.label, { color: colors.textMuted }]}>Önem</Text>
+          <View style={styles.segmentRow}>
+            {PRIORITIES.map((option) => {
+              const active = priority === option;
+              return (
+                <Pressable
+                  key={option}
+                  onPress={() => setPriority(option)}
+                  style={[
+                    styles.segment,
+                    { borderColor: colors.border },
+                    active && { backgroundColor: colors.primary, borderColor: colors.primary },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      { color: active ? "#fff" : colors.text },
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      ) : null}
 
       <Text style={[styles.label, { color: colors.textMuted }]}>Durum</Text>
       <View style={styles.segmentRow}>
@@ -226,38 +329,44 @@ export default function TaskFormScreen({ route, navigation }: Props) {
         })}
       </View>
 
-      <Text style={[styles.label, { color: colors.textMuted }]}>Hatırlatıcı</Text>
-      <Text style={[styles.reminderValue, { color: colors.text }]}>
-        {reminderDate ? formatReminderInput(reminderDate) : "Hatırlatıcı yok"}
-      </Text>
-      <View style={styles.segmentRow}>
-        <Pressable
-          style={[styles.segment, { borderColor: colors.border }]}
-          onPress={() => {
-            setPendingDate(reminderDate ?? new Date());
-            setPickerStep("date");
-          }}
-        >
-          <Text style={[styles.segmentText, { color: colors.text }]}>Tarih/Saat Seç</Text>
-        </Pressable>
-        {REMINDER_PRESETS.map((preset) => (
-          <Pressable
-            key={preset.label}
-            style={[styles.segment, { borderColor: colors.border }]}
-            onPress={() => setReminderDate(preset.compute())}
-          >
-            <Text style={[styles.segmentText, { color: colors.text }]}>{preset.label}</Text>
-          </Pressable>
-        ))}
-        {reminderDate ? (
-          <Pressable
-            style={[styles.segment, { borderColor: colors.border }]}
-            onPress={() => setReminderDate(null)}
-          >
-            <Text style={[styles.segmentText, { color: colors.text }]}>Temizle</Text>
-          </Pressable>
-        ) : null}
-      </View>
+      {isOwner ? (
+        <>
+          <Text style={[styles.label, { color: colors.textMuted }]}>
+            Hatırlatıcı
+          </Text>
+          <Text style={[styles.reminderValue, { color: colors.text }]}>
+            {reminderDate ? formatReminderInput(reminderDate) : "Hatırlatıcı yok"}
+          </Text>
+          <View style={styles.segmentRow}>
+            <Pressable
+              style={[styles.segment, { borderColor: colors.border }]}
+              onPress={() => {
+                setPendingDate(reminderDate ?? new Date());
+                setPickerStep("date");
+              }}
+            >
+              <Text style={[styles.segmentText, { color: colors.text }]}>Tarih/Saat Seç</Text>
+            </Pressable>
+            {REMINDER_PRESETS.map((preset) => (
+              <Pressable
+                key={preset.label}
+                style={[styles.segment, { borderColor: colors.border }]}
+                onPress={() => setReminderDate(preset.compute())}
+              >
+                <Text style={[styles.segmentText, { color: colors.text }]}>{preset.label}</Text>
+              </Pressable>
+            ))}
+            {reminderDate ? (
+              <Pressable
+                style={[styles.segment, { borderColor: colors.border }]}
+                onPress={() => setReminderDate(null)}
+              >
+                <Text style={[styles.segmentText, { color: colors.text }]}>Temizle</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </>
+      ) : null}
 
       {pickerStep === "date" ? (
         <DateTimePicker
@@ -298,7 +407,7 @@ export default function TaskFormScreen({ route, navigation }: Props) {
         />
       </View>
 
-      {task ? (
+      {task && isOwner ? (
         <View style={styles.deleteButton}>
           <AppButton
             title="Görevi Sil"
@@ -353,6 +462,11 @@ const styles = StyleSheet.create({
   reminderValue: {
     fontSize: 14,
     marginBottom: 8,
+    fontFamily: fonts.sansRegular,
+  },
+  readonlyText: {
+    fontSize: 15,
+    lineHeight: 22,
     fontFamily: fonts.sansRegular,
   },
   segmentRow: {

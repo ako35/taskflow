@@ -30,6 +30,7 @@ import type {
   UserNotification,
   UserNotificationsResponse,
   WorkspaceInvitationsOverview,
+  WorkspaceMemberInfo,
 } from "./types";
 import { buildUserDisplayName, getUserInitials, safeParseJson } from "./utils";
 
@@ -91,6 +92,9 @@ export default function App() {
     useState<WorkspaceInvitationsOverview>({ pending: [], accepted: [] });
   const [invitationsLoading, setInvitationsLoading] = useState(false);
   const [invitationsError, setInvitationsError] = useState<string | null>(null);
+  const [workspaceMembers, setWorkspaceMembers] = useState<
+    WorkspaceMemberInfo[]
+  >([]);
   const [settingsInviteEmail, setSettingsInviteEmail] = useState("");
   const [settingsInviteSending, setSettingsInviteSending] = useState(false);
   const [settingsInviteStatus, setSettingsInviteStatus] = useState<
@@ -626,10 +630,11 @@ export default function App() {
 
   const handleSaveTaskDetails = useCallback(
     async (payload: {
-      title: string;
-      status: string;
-      priority: string;
-      remindAt: string | null;
+      title?: string;
+      status?: string;
+      priority?: string;
+      remindAt?: string | null;
+      assigneeId?: number | null;
     }) => {
       if (!selectedTaskId || !idToken || !user) {
         return;
@@ -1225,6 +1230,42 @@ export default function App() {
   }, [loadInvitationsOverview, settingsMenuOpen]);
 
   useEffect(() => {
+    if (!idToken || !user || !selectedWorkspace.id) {
+      setWorkspaceMembers([]);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(
+          `${API_URL}/workspaces/${selectedWorkspace.id}/members`,
+          { headers: { Authorization: `Bearer ${idToken}` } },
+        );
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+        const payload = safeParseJson<WorkspaceMemberInfo[] | null>(
+          await response.text(),
+          null,
+        );
+        if (!cancelled && response.ok && Array.isArray(payload)) {
+          setWorkspaceMembers(payload);
+        }
+      } catch {
+        if (!cancelled) {
+          setWorkspaceMembers([]);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [handleUnauthorized, idToken, selectedWorkspace.id, user]);
+
+  useEffect(() => {
     if (!idToken || !user) {
       setNotifications([]);
       setNotificationsUnreadCount(0);
@@ -1276,6 +1317,7 @@ export default function App() {
       activePreviewCell,
       archivedTaskIds,
       isFormValid,
+      isWorkspaceOwner: selectedWorkspace.role === "OWNER",
       aiImprovingCell,
       onAiImproveTaskField: handleAiImproveTaskField,
       onAiImproveEditingCell: handleAiImproveEditingCell,
@@ -1314,6 +1356,7 @@ export default function App() {
       handleRestoreTask,
       handleSubmit,
       isFormValid,
+      selectedWorkspace,
       loading,
       aiImprovingCell,
       saveCellEdit,
@@ -1412,6 +1455,13 @@ export default function App() {
     ],
   );
 
+  const isWorkspaceOwner = selectedWorkspace.role === "OWNER";
+
+  const assignableMembers = useMemo(
+    () => workspaceMembers.filter((member) => member.role !== "OWNER"),
+    [workspaceMembers],
+  );
+
   const workspacePanelProps = useMemo(
     () => ({
       viewMode,
@@ -1429,6 +1479,7 @@ export default function App() {
       onToggleShowForm: handleToggleShowForm,
       onRestoreWorkspace: handleRestoreWorkspace,
       tasksTableProps,
+      assignableMembers,
       selectedTask,
       taskDetailsOpen,
       comments: taskComments,
@@ -1437,7 +1488,7 @@ export default function App() {
       commentSubmitting,
       taskUpdating,
       currentUser: user,
-      isWorkspaceOwner: selectedWorkspace.role === "OWNER",
+      isWorkspaceOwner,
       idToken,
       onCloseTaskDetails: handleCloseTaskDetails,
       onUnauthorized: handleUnauthorized,
@@ -1468,6 +1519,8 @@ export default function App() {
       selectedTask,
       user,
       idToken,
+      isWorkspaceOwner,
+      assignableMembers,
       handleCloseTaskDetails,
       handleUnauthorized,
       handleDeleteComment,

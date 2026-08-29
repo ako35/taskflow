@@ -19,6 +19,7 @@ type TasksTableProps = {
   activePreviewCell: { id: number; field: "title" } | null;
   archivedTaskIds: number[];
   isFormValid: boolean;
+  isWorkspaceOwner: boolean;
   aiImprovingCell: { id: number; field: "title" } | null;
   onAiImproveTaskField: (taskId: number, field: "title") => Promise<void>;
   onAiImproveEditingCell: () => Promise<void>;
@@ -64,6 +65,7 @@ export default function TasksTable({
   activePreviewCell,
   archivedTaskIds,
   isFormValid,
+  isWorkspaceOwner,
   aiImprovingCell,
   onAiImproveTaskField,
   onAiImproveEditingCell,
@@ -118,6 +120,7 @@ export default function TasksTable({
           tasks={tasks}
           visibleTasks={visibleTasks}
           viewMode={viewMode}
+          isWorkspaceOwner={isWorkspaceOwner}
           columnWidths={columnWidths}
           collapsedStatusGroups={collapsedStatusGroups}
           statusGroupCounts={statusGroupCounts}

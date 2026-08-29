@@ -25,12 +25,15 @@ model Task {
   reminderNotifiedAt DateTime?
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assigneeId  Int?
+  assignee    UserProfile? @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   comments    TaskComment[]
   notifications Notification[]
 
   @@index([workspaceId])
   @@index([workspaceId, status, priority, createdAt])
   @@index([remindAt, reminderNotifiedAt])
+  @@index([assigneeId])
 }
 
 model UserProfile {
@@ -51,6 +54,7 @@ model UserProfile {
   taskComments TaskComment[]
   notifications Notification[]
   pushTokens PushToken[]
+  assignedTasks Task[] @relation("TaskAssignee")
 }
 
 model PushToken {

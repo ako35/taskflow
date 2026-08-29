@@ -1,11 +1,12 @@
 import React from "react";
-import type { TaskForm } from "../../types";
+import type { TaskForm, WorkspaceMemberInfo } from "../../types";
 import { UiGlyph } from "../ui/Icons";
 
 type AddTaskPanelProps = {
   form: TaskForm;
   loading: boolean;
   isFormValid: boolean;
+  members: WorkspaceMemberInfo[];
   onChangeForm: (
     field: keyof TaskForm,
   ) => (
@@ -17,10 +18,16 @@ type AddTaskPanelProps = {
   onHideForm: () => void;
 };
 
+function memberLabel(member: WorkspaceMemberInfo) {
+  const name = [member.firstName, member.lastName].filter(Boolean).join(" ").trim();
+  return name || member.email;
+}
+
 export default function AddTaskPanel({
   form,
   loading,
   isFormValid,
+  members,
   onChangeForm,
   onSubmit,
   onHideForm,
@@ -54,6 +61,21 @@ export default function AddTaskPanel({
               onChange={onChangeForm("title")}
               autoFocus
             />
+          </label>
+
+          <label className="add-task-field">
+            <span>Atanan Kişi</span>
+            <select
+              value={form.assigneeId ?? ""}
+              onChange={onChangeForm("assigneeId")}
+            >
+              <option value="">Atanmadı</option>
+              {members.map((member) => (
+                <option key={member.id} value={String(member.id)}>
+                  {memberLabel(member)}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="add-task-field">

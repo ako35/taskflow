@@ -139,6 +139,7 @@ export async function fetchTasks(
 export type CreateTaskPayload = Pick<TaskForm, "title" | "description" | "priority" | "status"> & {
   workspaceId: string;
   remindAt?: string | null;
+  assigneeId?: number | null;
 };
 
 export async function createTask(idToken: string, payload: CreateTaskPayload): Promise<Task> {
@@ -152,6 +153,7 @@ export type UpdateTaskPayload = Partial<
   Pick<TaskForm, "title" | "description" | "priority" | "status">
 > & {
   remindAt?: string | null;
+  assigneeId?: number | null;
 };
 
 export async function updateTask(

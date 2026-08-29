@@ -229,6 +229,26 @@ function parseOptionalReminder(value: unknown, errors: string[]) {
   return remindAt;
 }
 
+function parseOptionalAssigneeId(value: unknown, errors: string[]): number | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    errors.push("assigneeId geçersiz");
+    return null;
+  }
+
+  return parsed;
+}
+
 function validateTaskPayload(body: Record<string, unknown>) {
   const errors: string[] = [];
   const requiredString = (value: unknown, field: string) => {
@@ -251,6 +271,7 @@ function validateTaskPayload(body: Record<string, unknown>) {
       ? body.status
       : "Yapılacak";
   const remindAt = parseOptionalReminder(body.remindAt, errors);
+  const assigneeId = parseOptionalAssigneeId(body.assigneeId, errors);
 
   return {
     title,
@@ -263,6 +284,7 @@ function validateTaskPayload(body: Record<string, unknown>) {
     priority,
     status,
     remindAt,
+    assigneeId,
     errors,
   };
 }
@@ -305,6 +327,10 @@ function validateTaskUpdatePayload(body: Record<string, unknown>) {
 
   if (Object.prototype.hasOwnProperty.call(body, "remindAt")) {
     updateData.remindAt = parseOptionalReminder(body.remindAt, errors);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "assigneeId")) {
+    updateData.assigneeId = parseOptionalAssigneeId(body.assigneeId, errors);
   }
 
   return { updateData, errors };
@@ -461,6 +487,125 @@ async function getWorkspaceMember(userProfileId: number, workspaceId: string) {
         userProfileId,
       },
     },
+  });
+}
+
+// Görev yanıtlarında atanan kişiyi küçük bir şekille döndür.
+const taskInclude = {
+  assignee: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+} as const;
+
+function displayName(profile: {
+  firstName: string;
+  lastName?: string | null;
+  email?: string | null;
+  authEmail?: string | null;
+}) {
+  return (
+    [profile.firstName, profile.lastName].filter(Boolean).join(" ").trim() ||
+    profile.email ||
+    profile.authEmail ||
+    "Bir kullanıcı"
+  );
+}
+
+// Bir kullanıcının görebildiği tek görevi getirir (üyelik + rol bazlı görünürlük).
+async function findVisibleTask(taskId: number, profileId: number) {
+  const found = await prisma.task.findFirst({
+    where: {
+      id: taskId,
+      workspace: { members: { some: { userProfileId: profileId } } },
+    },
+    include: { ...taskInclude, workspace: { select: { type: true } } },
+  });
+
+  if (!found) {
+    return { task: null as null, membership: null as null, workspaceType: null as null };
+  }
+
+  const { workspace, ...task } = found;
+
+  const membership = await getWorkspaceMember(profileId, task.workspaceId);
+  if (!membership) {
+    return { task: null as null, membership: null as null, workspaceType: null as null };
+  }
+
+  if (
+    membership.role !== "OWNER" &&
+    workspace.type === "TASKS" &&
+    task.assigneeId !== profileId
+  ) {
+    return { task: null as null, membership: null as null, workspaceType: null as null };
+  }
+
+  return { task, membership, workspaceType: workspace.type };
+}
+
+// Atama bildirimi: yeni atanan kişiye (kendine atama hariç).
+async function notifyAssignment(
+  task: { id: number; title: string; workspaceId: string },
+  assigneeId: number,
+  actor: { id: number; firstName: string; lastName?: string | null; email?: string | null; authEmail?: string | null },
+) {
+  if (assigneeId === actor.id) {
+    return;
+  }
+
+  const actorName = displayName(actor);
+  await prisma.notification.create({
+    data: {
+      userProfileId: assigneeId,
+      workspaceId: task.workspaceId,
+      taskId: task.id,
+      type: "assignment",
+      message: `${actorName} sana "${task.title}" görevini atadı.`,
+    },
+  });
+  await sendPushNotifications(
+    [assigneeId],
+    "Yeni görev",
+    `${actorName} sana "${task.title}" görevini atadı.`,
+    { type: "assignment", taskId: task.id },
+  );
+}
+
+// Durum bildirimi: üye durum değiştirince çalışma alanı sahiplerine (actor hariç).
+async function notifyStatusChangeToOwners(
+  task: { id: number; title: string; workspaceId: string },
+  nextStatus: string,
+  actor: { id: number; firstName: string; lastName?: string | null; email?: string | null; authEmail?: string | null },
+) {
+  const owners = await prisma.workspaceMember.findMany({
+    where: {
+      workspaceId: task.workspaceId,
+      role: "OWNER",
+      userProfileId: { not: actor.id },
+    },
+    select: { userProfileId: true },
+  });
+
+  if (owners.length === 0) {
+    return;
+  }
+
+  const actorName = displayName(actor);
+  const message = `${actorName} "${task.title}" görevini "${nextStatus}" olarak işaretledi.`;
+  const ownerIds = owners.map((owner) => owner.userProfileId);
+
+  await prisma.notification.createMany({
+    data: ownerIds.map((userProfileId) => ({
+      userProfileId,
+      workspaceId: task.workspaceId,
+      taskId: task.id,
+      type: "status",
+      message,
+    })),
+  });
+  await sendPushNotifications(ownerIds, "Görev durumu güncellendi", message, {
+    type: "status",
+    taskId: task.id,
   });
 }
 
@@ -1454,19 +1599,25 @@ tasksRouter.get("/", async (req, res) => {
     }
   }
 
-  const tasks = await prisma.task.findMany({
-    where: workspaceId
-      ? { workspaceId }
-      : {
-          workspace: {
-            members: {
-              some: {
-                userProfileId: profile.id,
-              },
-            },
-          },
+  // Görünürlük: çalışma alanının üyesi olmak + (o alanın sahibi olmak VEYA alan
+  // Bilgi Alanı tipinde olmak VEYA göreve atanmış olmak).
+  const visibilityWhere = {
+    workspace: { members: { some: { userProfileId: profile.id } } },
+    OR: [
+      {
+        workspace: {
+          members: { some: { userProfileId: profile.id, role: "OWNER" } },
         },
+      },
+      { workspace: { type: { not: "TASKS" } } },
+      { assigneeId: profile.id },
+    ],
+  };
+
+  const tasks = await prisma.task.findMany({
+    where: workspaceId ? { workspaceId, ...visibilityWhere } : visibilityWhere,
     orderBy: [{ status: "asc" }, { priority: "asc" }, { createdAt: "desc" }],
+    include: taskInclude,
   });
 
   res.json(tasks);
@@ -1480,18 +1631,7 @@ tasksRouter.get("/:id", async (req, res) => {
 
   const profile = await upsertUserProfile(req.authUser!);
 
-  const task = await prisma.task.findFirst({
-    where: {
-      id,
-      workspace: {
-        members: {
-          some: {
-            userProfileId: profile.id,
-          },
-        },
-      },
-    },
-  });
+  const { task } = await findVisibleTask(id, profile.id);
 
   if (!task) {
     return res.status(404).json({ error: "Not found" });
@@ -1508,23 +1648,7 @@ tasksRouter.get("/:id/comments", async (req, res) => {
 
   const profile = await upsertUserProfile(req.authUser!);
 
-  const task = await prisma.task.findFirst({
-    where: {
-      id,
-      workspace: {
-        members: {
-          some: {
-            userProfileId: profile.id,
-          },
-        },
-      },
-    },
-    select: {
-      id: true,
-      title: true,
-      workspaceId: true,
-    },
-  });
+  const { task } = await findVisibleTask(id, profile.id);
 
   if (!task) {
     return res.status(404).json({ error: "Not found" });
@@ -1581,23 +1705,7 @@ tasksRouter.post("/:id/comments", async (req, res) => {
 
   const profile = await upsertUserProfile(req.authUser!);
 
-  const task = await prisma.task.findFirst({
-    where: {
-      id,
-      workspace: {
-        members: {
-          some: {
-            userProfileId: profile.id,
-          },
-        },
-      },
-    },
-    select: {
-      id: true,
-      title: true,
-      workspaceId: true,
-    },
-  });
+  const { task } = await findVisibleTask(id, profile.id);
 
   if (!task) {
     return res.status(404).json({ error: "Not found" });
@@ -1622,27 +1730,32 @@ tasksRouter.post("/:id/comments", async (req, res) => {
     },
   });
 
-  const invitedMembers = await prisma.workspaceMember.findMany({
+  // Yorum bildirimi: çalışma alanı sahipleri + göreve atanan kişi (yorumu yazan hariç).
+  const owners = await prisma.workspaceMember.findMany({
     where: {
       workspaceId: task.workspaceId,
-      userProfileId: {
-        not: profile.id,
-      },
+      role: "OWNER",
+      userProfileId: { not: profile.id },
     },
-    select: {
-      userProfileId: true,
-    },
+    select: { userProfileId: true },
   });
+
+  const recipientIds = [...new Set(owners.map((owner) => owner.userProfileId))];
+  if (task.assigneeId && task.assigneeId !== profile.id) {
+    if (!recipientIds.includes(task.assigneeId)) {
+      recipientIds.push(task.assigneeId);
+    }
+  }
 
   const commenterDisplayName = [profile.firstName, profile.lastName]
     .filter(Boolean)
     .join(" ")
     .trim() || profile.email || profile.authEmail;
 
-  if (invitedMembers.length > 0) {
+  if (recipientIds.length > 0) {
     await prisma.notification.createMany({
-      data: invitedMembers.map((member) => ({
-        userProfileId: member.userProfileId,
+      data: recipientIds.map((userProfileId) => ({
+        userProfileId,
         workspaceId: task.workspaceId,
         taskId: task.id,
         commentId: comment.id,
@@ -1650,7 +1763,7 @@ tasksRouter.post("/:id/comments", async (req, res) => {
       })),
     });
     await sendPushNotifications(
-      invitedMembers.map((member) => member.userProfileId),
+      recipientIds,
       "Yeni yorum",
       `${commenterDisplayName} "${task.title}" görevine yorum yaptı.`,
       { type: "comment", taskId: task.id },
@@ -1720,6 +1833,30 @@ tasksRouter.post("/", async (req, res) => {
       .json({ error: "Bu calisma alanina gorev ekleme yetkiniz yok." });
   }
 
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: payload.workspaceId },
+    select: { type: true },
+  });
+
+  // Görev tipindeki çalışma alanlarında görev oluşturmayı yalnızca sahip yapar.
+  if (workspace?.type === "TASKS" && member.role !== "OWNER") {
+    return res
+      .status(403)
+      .json({ error: "Görev oluşturma yetkiniz yok." });
+  }
+
+  if (payload.assigneeId !== null) {
+    const assigneeMember = await getWorkspaceMember(
+      payload.assigneeId,
+      payload.workspaceId,
+    );
+    if (!assigneeMember) {
+      return res
+        .status(400)
+        .json({ error: "Atanan kişi bu çalışma alanının üyesi değil." });
+    }
+  }
+
   const task = await prisma.task.create({
     data: {
       title: payload.title,
@@ -1733,8 +1870,14 @@ tasksRouter.post("/", async (req, res) => {
       remindAt: payload.remindAt,
       ownerEmail: profile.authEmail,
       workspaceId: payload.workspaceId,
+      assigneeId: payload.assigneeId,
     },
+    include: taskInclude,
   });
+
+  if (payload.assigneeId !== null) {
+    await notifyAssignment(task, payload.assigneeId, profile);
+  }
 
   res.status(201).json(task);
 });
@@ -1747,20 +1890,12 @@ tasksRouter.put("/:id", async (req, res) => {
 
   const profile = await upsertUserProfile(req.authUser!);
 
-  const existingTask = await prisma.task.findFirst({
-    where: {
-      id,
-      workspace: {
-        members: {
-          some: {
-            userProfileId: profile.id,
-          },
-        },
-      },
-    },
-  });
+  const { task: existingTask, membership, workspaceType } = await findVisibleTask(
+    id,
+    profile.id,
+  );
 
-  if (!existingTask) {
+  if (!existingTask || !membership) {
     return res.status(404).json({ error: "Not found" });
   }
 
@@ -1773,6 +1908,38 @@ tasksRouter.put("/:id", async (req, res) => {
     return res.status(400).json({ error: "No valid fields provided for update" });
   }
 
+  const isOwner = membership.role === "OWNER";
+  const isTaskWorkspace = workspaceType === "TASKS";
+
+  // Görev tipindeki alanda atanan üye yalnızca görev durumunu değiştirebilir.
+  if (!isOwner && isTaskWorkspace) {
+    const allowedKeys = new Set(["status"]);
+    const hasDisallowed = Object.keys(updateData).some(
+      (key) => !allowedKeys.has(key),
+    );
+    if (hasDisallowed) {
+      return res
+        .status(403)
+        .json({ error: "Bu görevde sadece durumu değiştirebilirsiniz." });
+    }
+  }
+
+  if (
+    isOwner &&
+    Object.prototype.hasOwnProperty.call(updateData, "assigneeId") &&
+    updateData.assigneeId !== null
+  ) {
+    const assigneeMember = await getWorkspaceMember(
+      updateData.assigneeId as number,
+      existingTask.workspaceId,
+    );
+    if (!assigneeMember) {
+      return res
+        .status(400)
+        .json({ error: "Atanan kişi bu çalışma alanının üyesi değil." });
+    }
+  }
+
   if (Object.prototype.hasOwnProperty.call(updateData, "remindAt")) {
     const nextRemindAt = updateData.remindAt as Date | null;
     const currentTime = existingTask.remindAt?.getTime() ?? null;
@@ -1782,7 +1949,26 @@ tasksRouter.put("/:id", async (req, res) => {
     }
   }
 
-  const task = await prisma.task.update({ where: { id }, data: updateData });
+  const task = await prisma.task.update({
+    where: { id },
+    data: updateData,
+    include: taskInclude,
+  });
+
+  const assigneeChanged =
+    Object.prototype.hasOwnProperty.call(updateData, "assigneeId") &&
+    updateData.assigneeId !== existingTask.assigneeId;
+  if (isOwner && assigneeChanged && typeof updateData.assigneeId === "number") {
+    await notifyAssignment(task, updateData.assigneeId, profile);
+  }
+
+  const statusChanged =
+    Object.prototype.hasOwnProperty.call(updateData, "status") &&
+    updateData.status !== existingTask.status;
+  if (!isOwner && isTaskWorkspace && statusChanged) {
+    await notifyStatusChangeToOwners(task, updateData.status as string, profile);
+  }
+
   res.json(task);
 });
 
@@ -1794,24 +1980,19 @@ tasksRouter.delete("/:id", async (req, res) => {
 
   const profile = await upsertUserProfile(req.authUser!);
 
-  const existingTask = await prisma.task.findFirst({
-    where: {
-      id,
-      workspace: {
-        members: {
-          some: {
-            userProfileId: profile.id,
-          },
-        },
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
+  const { task: existingTask, membership, workspaceType } = await findVisibleTask(
+    id,
+    profile.id,
+  );
 
-  if (!existingTask) {
+  if (!existingTask || !membership) {
     return res.status(404).json({ error: "Not found" });
+  }
+
+  if (workspaceType === "TASKS" && membership.role !== "OWNER") {
+    return res
+      .status(403)
+      .json({ error: "Görevi yalnızca çalışma alanı sahibi silebilir." });
   }
 
   await prisma.task.delete({ where: { id } });
