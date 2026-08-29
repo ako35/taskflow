@@ -105,6 +105,9 @@ export default function App() {
   const [removingMemberUserId, setRemovingMemberUserId] = useState<
     number | null
   >(null);
+  const [cancellingInvitationId, setCancellingInvitationId] = useState<
+    string | null
+  >(null);
   const [sidebarOpen, setSidebarOpen] = useState(
     () => !window.matchMedia(SIDEBAR_COLLAPSE_MEDIA_QUERY).matches,
   );
@@ -1083,6 +1086,58 @@ export default function App() {
     ],
   );
 
+  const handleCancelInvitation = useCallback(
+    async (invitationId: string) => {
+      if (!idToken || !user) {
+        handleUnauthorized();
+        return;
+      }
+
+      setCancellingInvitationId(invitationId);
+      setSettingsInviteStatus(null);
+
+      try {
+        const response = await fetch(
+          `${API_URL}/workspaces/${selectedWorkspace.id}/invitations/${invitationId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          },
+        );
+
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        const text = await response.text();
+        const payload = safeParseJson<Record<string, any> | null>(text, null);
+
+        if (!response.ok) {
+          throw new Error(payload?.error || text || "Davet iptal edilemedi.");
+        }
+
+        setSettingsInviteStatus("Davet iptal edildi.");
+        await loadInvitationsOverview();
+      } catch (error) {
+        setSettingsInviteStatus(
+          error instanceof Error ? error.message : "Davet iptal edilemedi.",
+        );
+      } finally {
+        setCancellingInvitationId(null);
+      }
+    },
+    [
+      handleUnauthorized,
+      idToken,
+      loadInvitationsOverview,
+      selectedWorkspace.id,
+      user,
+    ],
+  );
+
   useEffect(() => {
     if (!idToken || !user) {
       return;
@@ -1655,9 +1710,11 @@ export default function App() {
         settingsInviteSending={settingsInviteSending}
         settingsInviteStatus={settingsInviteStatus}
         removingMemberUserId={removingMemberUserId}
+        cancellingInvitationId={cancellingInvitationId}
         onInviteEmailChange={setSettingsInviteEmail}
         onSendInvite={handleSendSettingsInvite}
         onRemoveWorkspaceMember={handleRemoveWorkspaceMember}
+        onCancelInvitation={handleCancelInvitation}
         onClose={handleCloseMembersPanel}
       />
     </div>

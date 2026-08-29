@@ -14,9 +14,11 @@ type MembersPanelModalProps = {
   settingsInviteSending: boolean;
   settingsInviteStatus: string | null;
   removingMemberUserId: number | null;
+  cancellingInvitationId: string | null;
   onInviteEmailChange: (value: string) => void;
   onSendInvite: () => void;
   onRemoveWorkspaceMember: (memberUserId: number) => void;
+  onCancelInvitation: (invitationId: string) => void;
   onClose: () => void;
 };
 
@@ -31,13 +33,19 @@ export default function MembersPanelModal({
   settingsInviteSending,
   settingsInviteStatus,
   removingMemberUserId,
+  cancellingInvitationId,
   onInviteEmailChange,
   onSendInvite,
   onRemoveWorkspaceMember,
+  onCancelInvitation,
   onClose,
 }: MembersPanelModalProps) {
   const [confirmRemoveTarget, setConfirmRemoveTarget] = useState<{
     userProfileId: number;
+    name: string;
+  } | null>(null);
+  const [confirmCancelTarget, setConfirmCancelTarget] = useState<{
+    invitationId: string;
     name: string;
   } | null>(null);
 
@@ -142,7 +150,26 @@ export default function MembersPanelModal({
                     <div className="settings-members-list">
                       {invitationsOverview.pending.map((invite) => (
                         <div key={invite.id} className="settings-member-item">
-                          <strong>{renderInviteName(invite)}</strong>
+                          <div className="settings-member-head">
+                            <div className="settings-member-identity">
+                              <strong>{renderInviteName(invite)}</strong>
+                            </div>
+                            <button
+                              type="button"
+                              className="settings-member-remove-btn"
+                              onClick={() =>
+                                setConfirmCancelTarget({
+                                  invitationId: invite.id,
+                                  name: renderInviteName(invite),
+                                })
+                              }
+                              disabled={cancellingInvitationId === invite.id}
+                            >
+                              {cancellingInvitationId === invite.id
+                                ? "İptal ediliyor..."
+                                : "Daveti İptal Et"}
+                            </button>
+                          </div>
                           <span>{invite.email}</span>
                         </div>
                       ))}
@@ -221,6 +248,21 @@ export default function MembersPanelModal({
         setConfirmRemoveTarget(null);
       }}
       onCancel={() => setConfirmRemoveTarget(null)}
+    />
+
+    <ConfirmDialog
+      open={confirmCancelTarget !== null}
+      title="Daveti İptal Et"
+      message={`${confirmCancelTarget?.name ?? ""} adresine gönderilen daveti iptal etmek istediğinizden emin misiniz?`}
+      confirmLabel="Daveti İptal Et"
+      cancelLabel="Vazgeç"
+      onConfirm={() => {
+        if (confirmCancelTarget) {
+          onCancelInvitation(confirmCancelTarget.invitationId);
+        }
+        setConfirmCancelTarget(null);
+      }}
+      onCancel={() => setConfirmCancelTarget(null)}
     />
     </>
   );

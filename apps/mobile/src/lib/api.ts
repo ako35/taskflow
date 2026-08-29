@@ -269,6 +269,18 @@ export async function removeWorkspaceMember(
   });
 }
 
+export async function cancelWorkspaceInvitation(
+  idToken: string,
+  workspaceId: string,
+  invitationId: string,
+): Promise<void> {
+  await authRequest<void>(
+    idToken,
+    `/workspaces/${workspaceId}/invitations/${invitationId}`,
+    { method: "DELETE" },
+  );
+}
+
 export type SendInvitationPayload = {
   inviteeEmail: string;
   workspaceId: string;

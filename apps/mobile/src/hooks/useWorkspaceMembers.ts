@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { WorkspaceInvitationsOverview, WorkspaceMemberInfo } from "@taskflow/shared";
 import {
   ApiError,
+  cancelWorkspaceInvitation,
   fetchWorkspaceInvitations,
   fetchWorkspaceMembers,
   removeWorkspaceMember,
@@ -18,6 +19,9 @@ export default function useWorkspaceMembers(idToken: string, workspaceId: string
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [removingId, setRemovingId] = useState<number | null>(null);
+  const [cancellingInvitationId, setCancellingInvitationId] = useState<
+    string | null
+  >(null);
 
   const load = useCallback(async () => {
     try {
@@ -68,6 +72,19 @@ export default function useWorkspaceMembers(idToken: string, workspaceId: string
     [idToken, workspaceId, load],
   );
 
+  const cancelInvitation = useCallback(
+    async (invitationId: string) => {
+      setCancellingInvitationId(invitationId);
+      try {
+        await cancelWorkspaceInvitation(idToken, workspaceId, invitationId);
+        await load();
+      } finally {
+        setCancellingInvitationId(null);
+      }
+    },
+    [idToken, workspaceId, load],
+  );
+
   return {
     members,
     invitations,
@@ -75,8 +92,10 @@ export default function useWorkspaceMembers(idToken: string, workspaceId: string
     error,
     sending,
     removingId,
+    cancellingInvitationId,
     invite,
     removeMember,
+    cancelInvitation,
     reload: load,
   };
 }

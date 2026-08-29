@@ -1483,6 +1483,60 @@ workspacesRouter.get("/:id/invitations", async (req, res) => {
   });
 });
 
+workspacesRouter.delete("/:id/invitations/:invitationId", async (req, res) => {
+  const workspaceId = sanitizeLine(req.params.id);
+  const invitationId = sanitizeLine(req.params.invitationId);
+  if (!workspaceId || !invitationId) {
+    return res
+      .status(400)
+      .json({ error: "workspace id ve davet id gerekli" });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const membership = await getWorkspaceMember(profile.id, workspaceId);
+  if (!membership) {
+    return res.status(403).json({ error: "Bu calisma alanina erisiminiz yok." });
+  }
+
+  if (membership.role !== "OWNER") {
+    return res
+      .status(403)
+      .json({ error: "Daveti sadece calisma alani sahibi iptal edebilir." });
+  }
+
+  const invitation = await prisma.invitation.findFirst({
+    where: { id: invitationId, workspaceId },
+    select: { id: true, invitedEmail: true, status: true },
+  });
+
+  if (!invitation) {
+    return res.status(404).json({ error: "Davet bulunamadi." });
+  }
+
+  if (invitation.status !== "PENDING") {
+    return res
+      .status(400)
+      .json({ error: "Yalnizca bekleyen davetler iptal edilebilir." });
+  }
+
+  // Bekleyen davet listesi kanonik e-postaya gore tekillestirildiginden, ayni
+  // kisiye ait tum bekleyen davetleri kaldirmak gerekiyor.
+  const emailKey = canonicalizeEmailForInvite(invitation.invitedEmail);
+  const pendingInvites = await prisma.invitation.findMany({
+    where: { workspaceId, status: "PENDING" },
+    select: { id: true, invitedEmail: true },
+  });
+  const idsToDelete = pendingInvites
+    .filter(
+      (invite) => canonicalizeEmailForInvite(invite.invitedEmail) === emailKey,
+    )
+    .map((invite) => invite.id);
+
+  await prisma.invitation.deleteMany({ where: { id: { in: idsToDelete } } });
+
+  res.status(204).end();
+});
+
 workspacesRouter.post("/", async (req, res) => {
   const { payload, errors } = validateWorkspacePayload(req.body || {});
   if (errors.length > 0) {

@@ -36,8 +36,18 @@ export default function MembersScreen({ route, navigation }: Props) {
   const { workspaceId, workspaceName, isOwner } = route.params;
   const { idToken, user } = useAuth();
   const { colors } = useTheme();
-  const { members, invitations, loading, error, sending, removingId, invite, removeMember } =
-    useWorkspaceMembers(idToken, workspaceId);
+  const {
+    members,
+    invitations,
+    loading,
+    error,
+    sending,
+    removingId,
+    cancellingInvitationId,
+    invite,
+    removeMember,
+    cancelInvitation,
+  } = useWorkspaceMembers(idToken, workspaceId);
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
@@ -129,6 +139,21 @@ export default function MembersScreen({ route, navigation }: Props) {
         onPress: () => {
           removeMember(memberUserId).catch(() => {
             Alert.alert("Hata", "Üye çıkarılamadı.");
+          });
+        },
+      },
+    ]);
+  };
+
+  const onCancelInvite = (invitationId: string, name: string) => {
+    Alert.alert("Daveti iptal et", `${name} adresine gönderilen davet iptal edilsin mi?`, [
+      { text: "Vazgeç", style: "cancel" },
+      {
+        text: "Daveti İptal Et",
+        style: "destructive",
+        onPress: () => {
+          cancelInvitation(invitationId).catch(() => {
+            Alert.alert("Hata", "Davet iptal edilemedi.");
           });
         },
       },
@@ -290,8 +315,22 @@ export default function MembersScreen({ route, navigation }: Props) {
           ) : (
             invitations.pending.map((item) => (
               <View key={item.id} style={[styles.row, { borderColor: colors.border }]}>
-                <Text style={[styles.rowName, { color: colors.text }]}>{inviteName(item)}</Text>
-                <Text style={[styles.rowMeta, { color: colors.textMuted }]}>{item.email}</Text>
+                <View style={styles.rowContent}>
+                  <Text style={[styles.rowName, { color: colors.text }]}>{inviteName(item)}</Text>
+                  <Text style={[styles.rowMeta, { color: colors.textMuted }]}>{item.email}</Text>
+                </View>
+                {isOwner ? (
+                  <Pressable
+                    onPress={() => onCancelInvite(item.id, inviteName(item))}
+                    hitSlop={16}
+                    style={styles.removeLink}
+                  >
+                    <X color={colors.danger} size={14} strokeWidth={2} />
+                    <Text style={[styles.removeLinkText, { color: colors.danger }]}>
+                      {cancellingInvitationId === item.id ? "..." : "İptal"}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
             ))
           )}
