@@ -2287,54 +2287,39 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
       },
     });
 
-    const token = crypto.randomBytes(24).toString("hex");
-    const appUrl = resolveAppBaseUrl(req.header("origin") || undefined);
-    const inviteLink = buildInviteLink(appUrl, token);
-    let expiresAt: Date | null = null;
-
+    // Zaten üye olan biri tekrar davet edilemez.
     if (existingInviteeProfile) {
       const alreadyMember = await getWorkspaceMember(
         existingInviteeProfile.id,
         payload.workspaceId,
       );
-
-      if (!alreadyMember) {
-        await prisma.workspaceMember.create({
-          data: {
-            workspaceId: workspace.id,
-            userProfileId: existingInviteeProfile.id,
-            role: "MEMBER",
-          },
-        });
+      if (alreadyMember) {
+        return res
+          .status(409)
+          .json({ error: "Bu kişi zaten çalışma alanının üyesi." });
       }
-
-      await prisma.invitation.create({
-        data: {
-          token,
-          workspaceId: workspace.id,
-          invitedEmail: inviteeEmail,
-          message: payload.message || null,
-          invitedByUserId: inviterProfile.id,
-          expiresAt: new Date(Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
-          status: "ACCEPTED",
-          acceptedAt: new Date(),
-          acceptedByUserId: existingInviteeProfile.id,
-        },
-      });
-    } else {
-      expiresAt = new Date(Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-
-      await prisma.invitation.create({
-        data: {
-          token,
-          workspaceId: workspace.id,
-          invitedEmail: inviteeEmail,
-          message: payload.message || null,
-          invitedByUserId: inviterProfile.id,
-          expiresAt,
-        },
-      });
     }
+
+    const token = crypto.randomBytes(24).toString("hex");
+    const appUrl = resolveAppBaseUrl(req.header("origin") || undefined);
+    const inviteLink = buildInviteLink(appUrl, token);
+
+    // Davet edilen kişi -hesabı olsun olmasın- yalnızca daveti kabul ettiğinde
+    // üye listesine eklenir. Davet burada sadece PENDING olarak oluşturulur.
+    const expiresAt = new Date(
+      Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+    );
+
+    await prisma.invitation.create({
+      data: {
+        token,
+        workspaceId: workspace.id,
+        invitedEmail: inviteeEmail,
+        message: payload.message || null,
+        invitedByUserId: inviterProfile.id,
+        expiresAt,
+      },
+    });
 
     const inviterName = [inviterProfile.firstName, inviterProfile.lastName]
       .filter(Boolean)
@@ -2362,12 +2347,10 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
       inviteText,
       "",
       `Daveti ac: ${inviteLink}`,
-      existingInviteeProfile
-        ? "Bu hesap sistemde kayitli oldugu icin erisim tanimlandi. Linkten giris yaptiginda gorevleri gorebilirsin."
-        : "Linkten giris yaptiktan sonra daveti kabul edip gorevlere ulasabilirsin.",
+      "Linkten giris yaptiktan sonra daveti kabul edince calisma alanina eklenirsin.",
       "",
       `Davet eden e-posta: ${inviterProfile.email}`,
-      expiresAt ? `Davet bitis tarihi: ${expiresAt.toISOString()}` : "",
+      `Davet bitis tarihi: ${expiresAt.toISOString()}`,
     ].join("\n");
 
     await transporter.sendMail({
@@ -2380,7 +2363,7 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
 
     res.status(202).json({
       success: true,
-      immediateAccessGranted: Boolean(existingInviteeProfile),
+      immediateAccessGranted: false,
     });
   } catch (error) {
     console.error("Invitation email failed", error);

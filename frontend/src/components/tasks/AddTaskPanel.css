@@ -67,13 +67,30 @@
   font-size: 0.95rem;
 }
 
-.add-task-field select {
+.add-task-field select,
+.add-task-field input[type="datetime-local"] {
   color-scheme: dark;
 }
 
 .add-task-field select option {
   background-color: #0f172a;
   color: #f8fafc;
+}
+
+.add-task-reminder-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.add-task-reminder-controls input {
+  width: 100%;
+}
+
+.add-task-reminder-clear {
+  white-space: nowrap;
+  padding: 0.55rem 0.9rem;
 }
 
 .add-task-field input:focus,
@@ -112,7 +129,8 @@
   color: #0f172a;
 }
 
-:root[data-theme="light"] .add-task-field select {
+:root[data-theme="light"] .add-task-field select,
+:root[data-theme="light"] .add-task-field input[type="datetime-local"] {
   color-scheme: light;
 }
 

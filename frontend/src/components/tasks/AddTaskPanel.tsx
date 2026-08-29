@@ -14,6 +14,7 @@ type AddTaskPanelProps = {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => void;
+  onClearReminder: () => void;
   onSubmit: () => void;
   onHideForm: () => void;
 };
@@ -29,6 +30,7 @@ export default function AddTaskPanel({
   isFormValid,
   members,
   onChangeForm,
+  onClearReminder,
   onSubmit,
   onHideForm,
 }: AddTaskPanelProps) {
@@ -76,6 +78,27 @@ export default function AddTaskPanel({
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="add-task-field">
+            <span>Hatırlatıcı</span>
+            <div className="add-task-reminder-controls">
+              <input
+                type="datetime-local"
+                value={form.remindAt ?? ""}
+                onChange={onChangeForm("remindAt")}
+                aria-label="Hatırlatıcı tarihi ve saati"
+              />
+              {form.remindAt ? (
+                <button
+                  type="button"
+                  className="btn-secondary add-task-reminder-clear"
+                  onClick={onClearReminder}
+                >
+                  Kaldır
+                </button>
+              ) : null}
+            </div>
           </label>
 
           <label className="add-task-field">

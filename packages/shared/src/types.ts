@@ -45,6 +45,7 @@ export type TaskForm = {
   priority: string;
   status: string;
   assigneeId?: string; // "" = atanmadı (web <select> için string tutulur)
+  remindAt?: string; // datetime-local metni; "" = hatırlatıcı yok
 };
 
 export type User = {

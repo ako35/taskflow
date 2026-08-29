@@ -116,6 +116,9 @@ export default function useTaskCrud({
           status: form.status,
           workspaceId: selectedWorkspaceId,
           assigneeId: form.assigneeId ? Number(form.assigneeId) : null,
+          remindAt: form.remindAt
+            ? new Date(form.remindAt).toISOString()
+            : null,
         }),
       });
 
@@ -162,6 +165,10 @@ export default function useTaskCrud({
     selectedWorkspaceId,
     setError,
   ]);
+
+  const handleClearReminder = useCallback(() => {
+    setForm((current) => ({ ...current, remindAt: "" }));
+  }, []);
 
   const handleArchiveTask = useCallback(
     (taskId: number) => {
@@ -324,6 +331,7 @@ export default function useTaskCrud({
     successMessage,
     dismissSuccessMessage,
     handleChange,
+    handleClearReminder,
     isFormValid,
     handleSubmit,
     handleArchiveTask,

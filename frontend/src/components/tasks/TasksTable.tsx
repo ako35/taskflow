@@ -30,6 +30,7 @@ type TasksTableProps = {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => void;
+  onClearReminder: () => void;
   onSubmit: () => void;
   onHideForm: () => void;
   onToggleStatusGroup: (status: string) => void;

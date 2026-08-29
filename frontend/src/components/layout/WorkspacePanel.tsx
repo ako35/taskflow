@@ -163,6 +163,7 @@ export default function WorkspacePanel({
               isFormValid={tasksTableProps.isFormValid}
               members={assignableMembers}
               onChangeForm={tasksTableProps.onChangeForm}
+              onClearReminder={tasksTableProps.onClearReminder}
               onSubmit={tasksTableProps.onSubmit}
               onHideForm={tasksTableProps.onHideForm}
             />
