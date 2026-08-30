@@ -1,0 +1,149 @@
+/* Styles owned by components/onboarding/DownloadPage. */
+.download-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.download-card {
+  width: min(460px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 2rem 1.75rem;
+  text-align: center;
+}
+
+.download-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+}
+
+.download-logo {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+}
+
+.download-logo-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  opacity: 0.7;
+}
+
+.download-logo-core {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.download-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.download-subtitle {
+  margin: 0 0 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.download-apk-btn {
+  display: block;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.download-apk-btn:hover {
+  background: var(--primary-strong);
+}
+
+.download-steps {
+  margin: 1.5rem 0 0;
+  padding-left: 1.15rem;
+  text-align: left;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.download-steps li {
+  margin-bottom: 0.5rem;
+}
+
+.download-steps strong {
+  color: var(--text);
+}
+
+.download-token-box {
+  margin-top: 1.25rem;
+  padding: 0.85rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--surface-alt);
+  display: grid;
+  gap: 0.4rem;
+}
+
+.download-token-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.download-token-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.download-token-copy {
+  justify-self: center;
+  margin-top: 0.2rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.download-browser-link {
+  display: inline-block;
+  margin-top: 1.5rem;
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.download-browser-link:hover {
+  text-decoration: underline;
+}
+
+.download-note {
+  margin: 1rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

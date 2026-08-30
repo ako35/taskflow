@@ -9,6 +9,12 @@ export const isClientIdPlaceholder =
   !GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes("your-google-client-id");
 export const DEFAULT_WORKSPACE_ID = "workspace-inbox";
 
+// Android APK GitHub Release'in "latest" varlığından servis edilir; her yeni
+// mobil sürümde release'e taskflow.apk yüklemek yeterli (URL sabit kalır).
+export const MOBILE_APK_URL =
+  import.meta.env.VITE_MOBILE_APK_URL ||
+  "https://github.com/ako35/taskflow/releases/latest/download/taskflow.apk";
+
 export const DEFAULT_WORKSPACES: Workspace[] = [
   {
     id: DEFAULT_WORKSPACE_ID,

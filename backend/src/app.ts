@@ -715,7 +715,9 @@ function resolveAppBaseUrl(originHeader?: string) {
 }
 
 function buildInviteLink(baseUrl: string, token: string) {
-  return `${baseUrl}/?inviteToken=${encodeURIComponent(token)}`;
+  // Davet linki "/indir" karşılama sayfasına gider: mobil uygulama indirme +
+  // kurulum adımları + "tarayıcıda kabul et" seçeneği hepsi orada.
+  return `${baseUrl}/indir?inviteToken=${encodeURIComponent(token)}`;
 }
 
 function validateContactPayload(body: Record<string, unknown>) {
@@ -2347,7 +2349,11 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
       inviteText,
       "",
       `Daveti ac: ${inviteLink}`,
-      "Linkten giris yaptiktan sonra daveti kabul edince calisma alanina eklenirsin.",
+      "",
+      "Bu linki actiginda:",
+      "- Android uygulamasini indirip kurabilir,",
+      "- ya da tarayicidan giris yapip daveti kabul edebilirsin.",
+      "Daveti kabul ettiginde calisma alanina eklenirsin.",
       "",
       `Davet eden e-posta: ${inviterProfile.email}`,
       `Davet bitis tarihi: ${expiresAt.toISOString()}`,
