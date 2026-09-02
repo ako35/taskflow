@@ -21,6 +21,7 @@ model Task {
   updatedAt   DateTime @updatedAt
   ownerEmail  String?
   status      String   @default("Yapılacak")
+  assigneeDone Boolean @default(false)
   remindAt    DateTime?
   reminderNotifiedAt DateTime?
   workspaceId String

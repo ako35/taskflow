@@ -55,6 +55,7 @@ type WorkspacePanelProps = {
     priority?: string;
     remindAt?: string | null;
     assigneeId?: number | null;
+    assigneeDone?: boolean;
   }) => Promise<void>;
   onDeleteTask: (taskId: number) => void;
 };

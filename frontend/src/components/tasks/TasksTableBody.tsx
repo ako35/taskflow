@@ -5,7 +5,7 @@ import {
   tableDisplayColumns,
 } from "../../constants";
 import type { Task, ViewMode } from "../../types";
-import { isCompletedStatus } from "../../utils";
+import { isAssigneeDonePending, isCompletedStatus } from "../../utils";
 import { UiGlyph } from "../ui/Icons";
 import InlineSelectMenu from "./InlineSelectMenu";
 
@@ -193,7 +193,7 @@ export default function TasksTableBody({
 
                 {isCollapsed ? null : (
                   <tr
-                    className={`task-row ${editingCell?.id === task.id ? "task-row-editing" : ""}`}
+                    className={`task-row ${editingCell?.id === task.id ? "task-row-editing" : ""} ${isAssigneeDonePending(task) ? "assignee-done" : ""}`}
                   >
                     {tableDisplayColumns.map((column) => {
                       const isEditing =
@@ -238,7 +238,7 @@ export default function TasksTableBody({
                               return;
                             }
 
-                            if (column.field === "status") {
+                            if (column.field === "status" && isWorkspaceOwner) {
                               onStartEditingCell(task, column.field);
                               return;
                             }
@@ -249,7 +249,8 @@ export default function TasksTableBody({
                           }}
                           onDoubleClick={() => {
                             if (
-                              column.field === "priority" &&
+                              (column.field === "priority" ||
+                                column.field === "status") &&
                               !isWorkspaceOwner
                             ) {
                               return;

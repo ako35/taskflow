@@ -39,6 +39,7 @@ type TaskDetailsPanelProps = {
     priority?: string;
     remindAt?: string | null;
     assigneeId?: number | null;
+    assigneeDone?: boolean;
   }) => Promise<void>;
   onDeleteTask: (taskId: number) => void;
 };
@@ -131,6 +132,7 @@ export default function TaskDetailsPanel({
   const [draftPriority, setDraftPriority] = useState("Orta");
   const [draftRemindAt, setDraftRemindAt] = useState("");
   const [draftAssigneeId, setDraftAssigneeId] = useState("");
+  const [draftAssigneeDone, setDraftAssigneeDone] = useState(false);
   const [editingField, setEditingField] = useState<
     "status" | "priority" | null
   >(null);
@@ -151,6 +153,7 @@ export default function TaskDetailsPanel({
     setDraftPriority(task.priority || "Orta");
     setDraftRemindAt(toDateTimeLocal(task.remindAt));
     setDraftAssigneeId(task.assigneeId != null ? String(task.assigneeId) : "");
+    setDraftAssigneeDone(task.assigneeDone ?? false);
     setSaveAcknowledged(false);
     setDeleteConfirmOpen(false);
     setAiError(null);
@@ -187,16 +190,19 @@ export default function TaskDetailsPanel({
     const basePriority = task.priority || "Orta";
     const baseRemindAt = toDateTimeLocal(task.remindAt);
     const baseAssigneeId = task.assigneeId != null ? String(task.assigneeId) : "";
+    const baseAssigneeDone = task.assigneeDone ?? false;
 
     const hasChanges =
       nextTitle !== baseTitle ||
       draftStatus !== baseStatus ||
       draftPriority !== basePriority ||
       draftRemindAt !== baseRemindAt ||
-      draftAssigneeId !== baseAssigneeId;
+      draftAssigneeId !== baseAssigneeId ||
+      draftAssigneeDone !== baseAssigneeDone;
 
     return Boolean(nextTitle) && hasChanges && !taskUpdating;
   }, [
+    draftAssigneeDone,
     draftAssigneeId,
     draftPriority,
     draftRemindAt,
@@ -296,8 +302,8 @@ export default function TaskDetailsPanel({
         assigneeId: draftAssigneeId ? Number(draftAssigneeId) : null,
       });
     } else {
-      // Atanan üye yalnızca durumu güncelleyebilir.
-      await onSaveTaskDetails({ status: draftStatus });
+      // Atanan üye yalnızca "Bitirdim" işaretini güncelleyebilir.
+      await onSaveTaskDetails({ assigneeDone: draftAssigneeDone });
     }
 
     setSaveAcknowledged(true);
@@ -426,7 +432,7 @@ export default function TaskDetailsPanel({
 
           <div className="task-details-field">
             <span>Durum</span>
-            {editingField === "status" ? (
+            {isWorkspaceOwner && editingField === "status" ? (
               <InlineSelectMenu
                 value={draftStatus}
                 fallbackValue="Yapılacak"
@@ -440,7 +446,7 @@ export default function TaskDetailsPanel({
                 }}
                 onCancel={() => setEditingField(null)}
               />
-            ) : (
+            ) : isWorkspaceOwner ? (
               <button
                 type="button"
                 className={`inline-option-chip task-badge task-status-badge ${statusClassNames[draftStatus] ?? ""} active`}
@@ -448,8 +454,31 @@ export default function TaskDetailsPanel({
               >
                 {draftStatus}
               </button>
+            ) : (
+              <span
+                className={`inline-option-chip task-badge task-status-badge ${statusClassNames[draftStatus] ?? ""} active`}
+              >
+                {draftStatus}
+              </span>
             )}
           </div>
+
+          {!isWorkspaceOwner ? (
+            <label className="task-details-field task-details-done-field">
+              <span>Bitirdim</span>
+              <input
+                type="checkbox"
+                checked={draftAssigneeDone}
+                onChange={(event) =>
+                  setDraftAssigneeDone(event.target.checked)
+                }
+              />
+              <small>
+                İşi bitirince işaretle. Görevi "Tamamlandı" yapma yetkisi
+                yöneticide.
+              </small>
+            </label>
+          ) : null}
 
           {isWorkspaceOwner ? (
             <div className="task-details-field">

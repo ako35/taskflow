@@ -126,6 +126,50 @@ describe("TaskDetailsPanel", () => {
     });
   });
 
+  it("lets an assigned member only toggle the 'Bitirdim' flag", async () => {
+    const user = userEvent.setup();
+    const onSaveTaskDetails = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <TaskDetailsPanel
+        open
+        task={buildTask()}
+        currentUser={null}
+        comments={[]}
+        commentsLoading={false}
+        commentDraft=""
+        commentSubmitting={false}
+        taskUpdating={false}
+        isWorkspaceOwner={false}
+        members={[]}
+        idToken={null}
+        onClose={() => {}}
+        onUnauthorized={() => {}}
+        onCommentDraftChange={() => {}}
+        onSubmitComment={() => {}}
+        onDeleteComment={() => {}}
+        onSaveTaskDetails={onSaveTaskDetails}
+        onDeleteTask={() => {}}
+      />,
+    );
+
+    // Üye durum rozetini düzenleyemez (buton değil, düz metin).
+    expect(
+      screen.queryByRole("button", { name: "Yapılacak" }),
+    ).not.toBeInTheDocument();
+
+    const saveButton = screen.getByRole("button", {
+      name: "Degisiklikleri Kaydet",
+    });
+    expect(saveButton).toBeDisabled();
+
+    await user.click(screen.getByRole("checkbox"));
+    expect(saveButton).toBeEnabled();
+
+    await user.click(saveButton);
+    expect(onSaveTaskDetails).toHaveBeenCalledWith({ assigneeDone: true });
+  });
+
   it("saves a reminder as an ISO timestamp", async () => {
     const user = userEvent.setup();
     const onSaveTaskDetails = vi.fn().mockResolvedValue(undefined);

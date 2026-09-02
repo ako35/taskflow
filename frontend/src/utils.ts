@@ -213,6 +213,14 @@ export function isCompletedStatus(status?: string) {
   return getStatusRank(status) === 1;
 }
 
+/** Atanan üye "Bitirdim" işaretledi ama görev henüz "Tamamlandı" yapılmadıysa true. */
+export function isAssigneeDonePending(task: {
+  assigneeDone?: boolean;
+  status?: string;
+}) {
+  return !!task.assigneeDone && !isCompletedStatus(task.status);
+}
+
 export function getPriorityRank(priority?: string) {
   const normalized = (priority ?? "Orta").trim().toLocaleLowerCase("tr-TR");
   if (normalized === "acil") return 0;

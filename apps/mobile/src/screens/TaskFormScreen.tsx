@@ -64,6 +64,7 @@ export default function TaskFormScreen({ route, navigation }: Props) {
   const [title, setTitle] = useState(task?.title ?? "");
   const [priority, setPriority] = useState(task?.priority ?? PRIORITIES[2]);
   const [status, setStatus] = useState(task?.status ?? STATUSES[0]);
+  const [assigneeDone, setAssigneeDone] = useState(task?.assigneeDone ?? false);
   const [assigneeId, setAssigneeId] = useState<number | null>(
     task?.assigneeId ?? null,
   );
@@ -127,7 +128,7 @@ export default function TaskFormScreen({ route, navigation }: Props) {
           task.id,
           isOwner
             ? { title, priority, status, remindAt, assigneeId }
-            : { status },
+            : { assigneeDone },
         );
       } else {
         await createTask(idToken, {
@@ -302,32 +303,65 @@ export default function TaskFormScreen({ route, navigation }: Props) {
         </>
       ) : null}
 
-      <Text style={[styles.label, { color: colors.textMuted }]}>Durum</Text>
-      <View style={styles.segmentRow}>
-        {STATUSES.map((option) => {
-          const active = status === option;
-          return (
-            <Pressable
-              key={option}
-              onPress={() => setStatus(option)}
+      {isOwner ? (
+        <>
+          <Text style={[styles.label, { color: colors.textMuted }]}>Durum</Text>
+          <View style={styles.segmentRow}>
+            {STATUSES.map((option) => {
+              const active = status === option;
+              return (
+                <Pressable
+                  key={option}
+                  onPress={() => setStatus(option)}
+                  style={[
+                    styles.segment,
+                    { borderColor: colors.border },
+                    active && { backgroundColor: colors.primary, borderColor: colors.primary },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      { color: active ? "#fff" : colors.text },
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={[styles.label, { color: colors.textMuted }]}>
+            Görev durumu
+          </Text>
+          <Pressable
+            onPress={() => setAssigneeDone((current) => !current)}
+            style={[
+              styles.doneToggle,
+              { borderColor: colors.border },
+              assigneeDone && {
+                backgroundColor: colors.primary,
+                borderColor: colors.primary,
+              },
+            ]}
+          >
+            <Text
               style={[
-                styles.segment,
-                { borderColor: colors.border },
-                active && { backgroundColor: colors.primary, borderColor: colors.primary },
+                styles.doneToggleText,
+                { color: assigneeDone ? "#fff" : colors.text },
               ]}
             >
-              <Text
-                style={[
-                  styles.segmentText,
-                  { color: active ? "#fff" : colors.text },
-                ]}
-              >
-                {option}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+              {assigneeDone ? "✓ Bitirdim olarak işaretlendi" : "Bitirdim"}
+            </Text>
+          </Pressable>
+          <Text style={[styles.doneHint, { color: colors.textMuted }]}>
+            İşi bitirince işaretle. Görevi "Tamamlandı" yapma yetkisi yöneticide.
+          </Text>
+        </>
+      )}
 
       {isOwner ? (
         <>
@@ -483,6 +517,23 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13,
     fontFamily: fonts.sansSemiBold,
+  },
+  doneToggle: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  doneToggleText: {
+    fontSize: 14,
+    fontFamily: fonts.sansSemiBold,
+  },
+  doneHint: {
+    marginTop: 8,
+    fontSize: 12,
+    fontFamily: fonts.sansRegular,
+    lineHeight: 17,
   },
   saveButton: {
     marginTop: 28,

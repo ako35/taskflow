@@ -639,6 +639,7 @@ export default function App() {
       priority?: string;
       remindAt?: string | null;
       assigneeId?: number | null;
+      assigneeDone?: boolean;
     }) => {
       if (!selectedTaskId || !idToken || !user) {
         return;

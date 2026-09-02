@@ -20,10 +20,23 @@ export function getPriorityRank(priority?: string): number {
   return 999;
 }
 
+/** Üye "Bitirdim" işaretledi ama görev henüz "Tamamlandı" yapılmadıysa true. */
+export function isAssigneeDonePending(task: {
+  assigneeDone?: boolean;
+  status?: string;
+}): boolean {
+  return !!task.assigneeDone && !isCompletedStatus(task.status);
+}
+
 export function sortTasksForTable(tasks: Task[]): Task[] {
   return [...tasks].sort((a, b) => {
     const statusDiff = getStatusRank(a.status) - getStatusRank(b.status);
     if (statusDiff !== 0) return statusDiff;
+
+    // "Bitirdim" işaretli görevler kendi durum grubunun en altına iner.
+    const doneDiff =
+      (isAssigneeDonePending(a) ? 1 : 0) - (isAssigneeDonePending(b) ? 1 : 0);
+    if (doneDiff !== 0) return doneDiff;
 
     const priorityDiff = getPriorityRank(a.priority) - getPriorityRank(b.priority);
     if (priorityDiff !== 0) return priorityDiff;

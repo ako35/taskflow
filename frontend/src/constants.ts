@@ -72,7 +72,7 @@ export const priorityClassNames: Record<string, string> = {
 };
 
 export const statusClassNames: Record<string, string> = {
-  Yapılacak: "badge-status-blue",
+  Yapılacak: "badge-status-red",
   Tamamlandı: "badge-status-green",
 };
 

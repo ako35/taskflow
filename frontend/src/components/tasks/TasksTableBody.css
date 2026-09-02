@@ -157,6 +157,21 @@
   border-color: rgba(5, 150, 105, 0.32);
 }
 
+:root[data-theme="light"] .badge-status-red,
+:root[data-theme="light"] .inline-option-chip.badge-status-red {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+  border-color: rgba(220, 38, 38, 0.32);
+}
+
+:root[data-theme="light"] .tasks-table tbody .task-row.assignee-done td {
+  background: rgba(5, 150, 105, 0.09);
+}
+
+:root[data-theme="light"] .tasks-table tbody .task-row.assignee-done:hover td {
+  background: rgba(5, 150, 105, 0.14);
+}
+
 :root[data-theme="light"] .status-group-meta {
   color: #0f172a;
 }
@@ -722,6 +737,21 @@
   background: rgba(52, 211, 153, 0.16);
   color: #34d399;
   border-color: rgba(52, 211, 153, 0.28);
+}
+
+.badge-status-red {
+  background: rgba(251, 113, 133, 0.16);
+  color: #fb7185;
+  border-color: rgba(251, 113, 133, 0.28);
+}
+
+/* Atanan üye "Bitirdim" işaretledi ama görev henüz "Tamamlandı" değil. */
+.tasks-table tbody .task-row.assignee-done td {
+  background: rgba(52, 211, 153, 0.1);
+}
+
+.tasks-table tbody .task-row.assignee-done:hover td {
+  background: rgba(52, 211, 153, 0.16);
 }
 
 @media (max-width: 740px) {

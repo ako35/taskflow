@@ -325,6 +325,14 @@ function validateTaskUpdatePayload(body: Record<string, unknown>) {
     }
   }
 
+  if (Object.prototype.hasOwnProperty.call(body, "assigneeDone")) {
+    if (typeof body.assigneeDone === "boolean") {
+      updateData.assigneeDone = body.assigneeDone;
+    } else {
+      errors.push("assigneeDone must be a boolean");
+    }
+  }
+
   if (Object.prototype.hasOwnProperty.call(body, "remindAt")) {
     updateData.remindAt = parseOptionalReminder(body.remindAt, errors);
   }
@@ -571,10 +579,10 @@ async function notifyAssignment(
   );
 }
 
-// Durum bildirimi: üye durum değiştirince çalışma alanı sahiplerine (actor hariç).
-async function notifyStatusChangeToOwners(
+// Tamamlama bildirimi: atanan üye görevi "Bitirdim" işaretleyince çalışma alanı
+// sahiplerine (actor hariç).
+async function notifyAssigneeDoneToOwners(
   task: { id: number; title: string; workspaceId: string },
-  nextStatus: string,
   actor: { id: number; firstName: string; lastName?: string | null; email?: string | null; authEmail?: string | null },
 ) {
   const owners = await prisma.workspaceMember.findMany({
@@ -591,7 +599,7 @@ async function notifyStatusChangeToOwners(
   }
 
   const actorName = displayName(actor);
-  const message = `${actorName} "${task.title}" görevini "${nextStatus}" olarak işaretledi.`;
+  const message = `${actorName} "${task.title}" görevini bitirdi olarak işaretledi.`;
   const ownerIds = owners.map((owner) => owner.userProfileId);
 
   await prisma.notification.createMany({
@@ -603,7 +611,7 @@ async function notifyStatusChangeToOwners(
       message,
     })),
   });
-  await sendPushNotifications(ownerIds, "Görev durumu güncellendi", message, {
+  await sendPushNotifications(ownerIds, "Görev tamamlandı işaretlendi", message, {
     type: "status",
     taskId: task.id,
   });
@@ -1967,17 +1975,29 @@ tasksRouter.put("/:id", async (req, res) => {
   const isOwner = membership.role === "OWNER";
   const isTaskWorkspace = workspaceType === "TASKS";
 
-  // Görev tipindeki alanda atanan üye yalnızca görev durumunu değiştirebilir.
+  // Görev tipindeki alanda atanan üye yalnızca "Bitirdim" işaretini değiştirebilir;
+  // görev durumu (status) yalnızca çalışma alanı sahibine aittir.
   if (!isOwner && isTaskWorkspace) {
-    const allowedKeys = new Set(["status"]);
+    const allowedKeys = new Set(["assigneeDone"]);
     const hasDisallowed = Object.keys(updateData).some(
       (key) => !allowedKeys.has(key),
     );
     if (hasDisallowed) {
       return res
         .status(403)
-        .json({ error: "Bu görevde sadece durumu değiştirebilirsiniz." });
+        .json({ error: "Bu görevde yalnızca 'Bitirdim' işaretini değiştirebilirsiniz." });
     }
+  }
+
+  // Sahip görev durumunu gerçekten değiştirdiğinde üyenin "Bitirdim" işareti
+  // sıfırlanır (yeniden açılan görev temiz başlar).
+  if (
+    isOwner &&
+    Object.prototype.hasOwnProperty.call(updateData, "status") &&
+    updateData.status !== existingTask.status &&
+    !Object.prototype.hasOwnProperty.call(updateData, "assigneeDone")
+  ) {
+    updateData.assigneeDone = false;
   }
 
   if (
@@ -2018,11 +2038,12 @@ tasksRouter.put("/:id", async (req, res) => {
     await notifyAssignment(task, updateData.assigneeId, profile);
   }
 
-  const statusChanged =
-    Object.prototype.hasOwnProperty.call(updateData, "status") &&
-    updateData.status !== existingTask.status;
-  if (!isOwner && isTaskWorkspace && statusChanged) {
-    await notifyStatusChangeToOwners(task, updateData.status as string, profile);
+  const assigneeDoneTurnedOn =
+    Object.prototype.hasOwnProperty.call(updateData, "assigneeDone") &&
+    updateData.assigneeDone === true &&
+    existingTask.assigneeDone !== true;
+  if (!isOwner && isTaskWorkspace && assigneeDoneTurnedOn) {
+    await notifyAssigneeDoneToOwners(task, profile);
   }
 
   res.json(task);

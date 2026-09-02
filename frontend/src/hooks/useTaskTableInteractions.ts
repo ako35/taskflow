@@ -20,6 +20,7 @@ import {
   getPriorityRank,
   getStatusRank,
   fitColumnWidthsToContainer,
+  isAssigneeDonePending,
   isCompletedStatus,
   matchesSearch,
   safeParseJson,
@@ -189,6 +190,11 @@ export default function useTaskTableInteractions({
         const statusDiff = getStatusRank(a.status) - getStatusRank(b.status);
         if (statusDiff !== 0) return statusDiff;
 
+        // "Bitirdim" işaretli görevler kendi durum grubunun en altına iner.
+        const doneDiff =
+          (isAssigneeDonePending(a) ? 1 : 0) - (isAssigneeDonePending(b) ? 1 : 0);
+        if (doneDiff !== 0) return doneDiff;
+
         const priorityDiff = getPriorityRank(a.priority) - getPriorityRank(b.priority);
         if (priorityDiff !== 0) return priorityDiff;
 
@@ -212,6 +218,11 @@ export default function useTaskTableInteractions({
       [...archivedFilteredTasks].sort((a, b) => {
         const statusDiff = getStatusRank(a.status) - getStatusRank(b.status);
         if (statusDiff !== 0) return statusDiff;
+
+        // "Bitirdim" işaretli görevler kendi durum grubunun en altına iner.
+        const doneDiff =
+          (isAssigneeDonePending(a) ? 1 : 0) - (isAssigneeDonePending(b) ? 1 : 0);
+        if (doneDiff !== 0) return doneDiff;
 
         const priorityDiff = getPriorityRank(a.priority) - getPriorityRank(b.priority);
         if (priorityDiff !== 0) return priorityDiff;

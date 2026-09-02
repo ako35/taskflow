@@ -15,6 +15,7 @@ export type Task = {
   description: string;
   priority: string;
   status?: string;
+  assigneeDone?: boolean;
   createdAt?: string;
   remindAt?: string | null;
   workspaceId: string;

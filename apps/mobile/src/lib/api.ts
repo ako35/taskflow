@@ -154,6 +154,7 @@ export type UpdateTaskPayload = Partial<
 > & {
   remindAt?: string | null;
   assigneeId?: number | null;
+  assigneeDone?: boolean;
 };
 
 export async function updateTask(

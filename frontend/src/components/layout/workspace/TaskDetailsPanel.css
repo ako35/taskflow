@@ -252,6 +252,38 @@
   border-color: rgba(91, 140, 255, 0.45);
 }
 
+.task-details-done-field {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  cursor: pointer;
+}
+
+.task-details-done-field span {
+  order: 2;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.86rem;
+  color: var(--text);
+}
+
+.task-details-done-field input[type="checkbox"] {
+  order: 1;
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  accent-color: #34d399;
+  cursor: pointer;
+}
+
+.task-details-done-field small {
+  order: 3;
+  grid-column: 1 / -1;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
 .task-reminder-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

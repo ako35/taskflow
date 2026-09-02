@@ -40,10 +40,19 @@ import {
   getStoredArchivedWorkspaceIds,
   setStoredArchivedWorkspaceIds,
 } from "../lib/secureStorage";
-import { groupTasksByStatus, isCompletedStatus } from "../lib/taskSort";
+import {
+  groupTasksByStatus,
+  isAssigneeDonePending,
+  isCompletedStatus,
+} from "../lib/taskSort";
 import { useTheme } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
-import { priorityToBadgeTone, statusToBadgeTone } from "../theme/badgeColors";
+import {
+  getBadgePalette,
+  priorityToBadgeTone,
+  statusToBadgeTone,
+  taskToneFor,
+} from "../theme/badgeColors";
 import { STATUSES } from "../constants";
 import type { MainTabScreenProps } from "../navigation/types";
 
@@ -51,7 +60,7 @@ type Props = MainTabScreenProps<"TaskList">;
 
 export default function TaskListScreen({ navigation }: Props) {
   const { idToken, user, signOut } = useAuth();
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [signOutConfirmVisible, setSignOutConfirmVisible] = useState(false);
@@ -81,6 +90,7 @@ export default function TaskListScreen({ navigation }: Props) {
   const activeWorkspace = activeWorkspaces.find(
     (workspace) => workspace.id === activeWorkspaceId,
   );
+  const isOwner = activeWorkspace?.role === "OWNER";
 
   const [refreshing, setRefreshing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -216,6 +226,15 @@ export default function TaskListScreen({ navigation }: Props) {
     [updateTask],
   );
 
+  const toggleAssigneeDone = useCallback(
+    (task: Task) => {
+      updateTask(task.id, { assigneeDone: !task.assigneeDone }).catch(() => {
+        Alert.alert("Hata", "Görev işareti güncellenemedi.");
+      });
+    },
+    [updateTask],
+  );
+
   const loading = workspacesLoading || tasksLoading;
   const error = workspacesError || tasksError;
 
@@ -333,8 +352,11 @@ export default function TaskListScreen({ navigation }: Props) {
               navigation.navigate("TaskForm", {
                 task: item,
                 workspaceId: activeWorkspaceId,
-                isOwner: activeWorkspace?.role === "OWNER",
+                isOwner,
               });
+
+            const accent = getBadgePalette(mode, taskToneFor(item));
+            const donePending = isAssigneeDonePending(item);
 
             return (
               <Pressable
@@ -344,6 +366,8 @@ export default function TaskListScreen({ navigation }: Props) {
                   {
                     backgroundColor: pressed ? colors.surfaceHighlight : colors.surfaceAlt,
                     borderColor: colors.border,
+                    borderLeftWidth: 3,
+                    borderLeftColor: accent.text,
                   },
                 ]}
               >
@@ -367,12 +391,29 @@ export default function TaskListScreen({ navigation }: Props) {
 
                 <View style={styles.rowBottomLine}>
                   <View style={styles.badgesGroup}>
-                    <Pressable onPress={() => toggleStatus(item)} hitSlop={13}>
-                      <Badge
-                        label={item.status ?? "Yapılacak"}
-                        tone={statusToBadgeTone(item.status ?? "Yapılacak")}
-                      />
-                    </Pressable>
+                    {isOwner ? (
+                      <>
+                        <Pressable onPress={() => toggleStatus(item)} hitSlop={13}>
+                          <Badge
+                            label={item.status ?? "Yapılacak"}
+                            tone={statusToBadgeTone(item.status ?? "Yapılacak")}
+                          />
+                        </Pressable>
+                        {donePending ? (
+                          <Badge label="✓ üye bitirdi" tone="status-green" />
+                        ) : null}
+                      </>
+                    ) : (
+                      <Pressable
+                        onPress={() => toggleAssigneeDone(item)}
+                        hitSlop={13}
+                      >
+                        <Badge
+                          label={item.assigneeDone ? "✓ Bitirdim" : "Bitir"}
+                          tone={item.assigneeDone ? "status-green" : "status-red"}
+                        />
+                      </Pressable>
+                    )}
                     <Badge label={item.priority} tone={priorityToBadgeTone(item.priority)} />
                   </View>
 
@@ -383,7 +424,7 @@ export default function TaskListScreen({ navigation }: Props) {
                   >
                     <Pencil color={colors.primary} size={13} strokeWidth={2} />
                     <Text style={[styles.editBtnText, { color: colors.primary }]}>
-                      {activeWorkspace?.role === "OWNER" ? "Düzenle" : "Aç"}
+                      {isOwner ? "Düzenle" : "Aç"}
                     </Text>
                   </Pressable>
                 </View>
