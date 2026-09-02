@@ -14,7 +14,7 @@ import { Archive, Mail, Trash2, UserPlus, X } from "lucide-react-native";
 import type { WorkspaceInvitePerson } from "@taskflow/shared";
 import { useAuth } from "../context/AuthContext";
 import useWorkspaceMembers from "../hooks/useWorkspaceMembers";
-import { acceptInvitation, deleteWorkspace, renameWorkspace } from "../lib/api";
+import { ApiError, acceptInvitation, deleteWorkspace, renameWorkspace } from "../lib/api";
 import { extractInviteTokenFromInput } from "../lib/inviteToken";
 import {
   getStoredArchivedWorkspaceIds,
@@ -176,8 +176,12 @@ export default function MembersScreen({ route, navigation }: Props) {
           ? `"${result.workspace.name}" çalışma alanına zaten üyesiniz.`
           : `"${result.workspace.name}" çalışma alanına katıldınız.`,
       );
-    } catch {
-      Alert.alert("Hata", "Davet kabul edilemedi. Kod veya link geçersiz olabilir.");
+    } catch (err) {
+      const message =
+        err instanceof ApiError && err.message
+          ? err.message
+          : "Davet kabul edilemedi. Kod veya link geçersiz olabilir.";
+      Alert.alert("Hata", message);
     } finally {
       setJoining(false);
     }
