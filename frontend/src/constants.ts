@@ -15,6 +15,12 @@ export const MOBILE_APK_URL =
   import.meta.env.VITE_MOBILE_APK_URL ||
   "https://github.com/ako35/taskflow/releases/latest/download/taskflow.apk";
 
+// iOS için TestFlight herkese açık davet linki. Boşsa /indir sayfası iOS
+// butonunu gizler ve "hazırlanıyor" notunu gösterir. Link, App Store Connect >
+// TestFlight > herkese açık link bölümünden alınıp VITE_MOBILE_IOS_URL olarak
+// set edilir (bkz. apps/mobile/DEPLOY_IOS.md).
+export const MOBILE_IOS_URL = import.meta.env.VITE_MOBILE_IOS_URL || "";
+
 export const DEFAULT_WORKSPACES: Workspace[] = [
   {
     id: DEFAULT_WORKSPACE_ID,

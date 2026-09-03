@@ -78,6 +78,20 @@
   background: var(--primary-strong);
 }
 
+.download-apk-btn + .download-apk-btn {
+  margin-top: 0.6rem;
+}
+
+.download-ios-btn {
+  background: var(--surface-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.download-ios-btn:hover {
+  background: var(--border);
+}
+
 .download-steps {
   margin: 1.5rem 0 0;
   padding-left: 1.15rem;

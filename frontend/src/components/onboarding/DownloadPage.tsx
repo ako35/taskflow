@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MOBILE_APK_URL } from "../../constants";
+import { MOBILE_APK_URL, MOBILE_IOS_URL } from "../../constants";
 
 function getInviteToken(): string {
   if (typeof window === "undefined") {
@@ -12,6 +12,7 @@ function getInviteToken(): string {
 export default function DownloadPage() {
   const inviteToken = useMemo(getInviteToken, []);
   const [copied, setCopied] = useState(false);
+  const hasIosBuild = Boolean(MOBILE_IOS_URL);
 
   const browserUrl = inviteToken
     ? `/?inviteToken=${encodeURIComponent(inviteToken)}`
@@ -48,16 +49,37 @@ export default function DownloadPage() {
         </h1>
         <p className="download-subtitle">
           {inviteToken
-            ? "Android uygulamasını kur, giriş yap ve davetini kabul et. İstersen tarayıcıdan da devam edebilirsin."
-            : "Android cihazına TaskFlow uygulamasını kur."}
+            ? "Mobil uygulamayı kur, giriş yap ve davetini kabul et. İstersen tarayıcıdan da devam edebilirsin."
+            : "Telefonuna TaskFlow uygulamasını kur."}
         </p>
 
         <a className="download-apk-btn" href={MOBILE_APK_URL} download>
           Android uygulamasını indir (.apk)
         </a>
 
+        {hasIosBuild ? (
+          <a
+            className="download-apk-btn download-ios-btn"
+            href={MOBILE_IOS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            iPhone için TestFlight’tan kur
+          </a>
+        ) : null}
+
         <ol className="download-steps">
-          <li>APK dosyasını indir ve aç. Android “bilinmeyen kaynak” uyarısı verirse bu uygulamaya izin ver.</li>
+          <li>
+            <strong>Android:</strong> APK dosyasını indir ve aç. Android
+            “bilinmeyen kaynak” uyarısı verirse bu uygulamaya izin ver.
+          </li>
+          {hasIosBuild ? (
+            <li>
+              <strong>iPhone:</strong> Önce App Store’dan{" "}
+              <strong>TestFlight</strong> uygulamasını kur, sonra yukarıdaki
+              butona dönüp TaskFlow’u yükle.
+            </li>
+          ) : null}
           <li>Kurulum bittikten sonra uygulamayı aç ve Google ile giriş yap.</li>
           {inviteToken ? (
             <li>
@@ -87,9 +109,12 @@ export default function DownloadPage() {
           {inviteToken ? "Tarayıcıda devam et" : "Web uygulamasını aç"}
         </a>
 
-        <p className="download-note">
-          iPhone kullanıyorsan şimdilik tarayıcıdan devam et. iOS uygulaması hazırlanıyor.
-        </p>
+        {!hasIosBuild ? (
+          <p className="download-note">
+            iPhone kullanıyorsan şimdilik tarayıcıdan devam et. iOS uygulaması
+            hazırlanıyor.
+          </p>
+        ) : null}
       </main>
     </div>
   );

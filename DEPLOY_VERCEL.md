@@ -37,6 +37,7 @@ Optional:
 
 - `VITE_API_URL`: keep empty for same-domain deploy (`/api` default is already configured)
 - `VITE_MOBILE_APK_URL`: Android APK download URL shown on the `/indir` invite landing page. Defaults to `https://github.com/ako35/taskflow/releases/latest/download/taskflow.apk`, so only set this to override. To publish a new APK: run `eas build -p android --profile preview` in `apps/mobile/`, download the artifact, and upload it as `taskflow.apk` to a GitHub Release (the `latest` release is served automatically).
+- `VITE_MOBILE_IOS_URL`: iOS TestFlight public invite link shown on the `/indir` page. Empty by default — while empty the page hides the iPhone button and shows an "iOS hazırlanıyor" note. Set it to the public link from App Store Connect → TestFlight once the first build is live. Full setup: `apps/mobile/DEPLOY_IOS.md`.
 
 ## 3) Routing and Build
 
