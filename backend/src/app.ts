@@ -1014,6 +1014,7 @@ async function createDueReminderNotifications() {
         id: true,
         title: true,
         workspaceId: true,
+        assigneeId: true,
       },
     });
 
@@ -1032,15 +1033,22 @@ async function createDueReminderNotifications() {
         continue;
       }
 
-      const members = await transaction.workspaceMember.findMany({
-        where: { workspaceId: task.workspaceId },
+      // Hatırlatıcı yalnızca çalışma alanı sahiplerine ve göreve atanan üyeye
+      // gider; atanmamış üyeler başkasının görevi için bildirim almaz.
+      const owners = await transaction.workspaceMember.findMany({
+        where: { workspaceId: task.workspaceId, role: "OWNER" },
         select: { userProfileId: true },
       });
 
-      if (members.length > 0) {
+      const recipientIds = [...new Set(owners.map((owner) => owner.userProfileId))];
+      if (task.assigneeId && !recipientIds.includes(task.assigneeId)) {
+        recipientIds.push(task.assigneeId);
+      }
+
+      if (recipientIds.length > 0) {
         await transaction.notification.createMany({
-          data: members.map((member) => ({
-            userProfileId: member.userProfileId,
+          data: recipientIds.map((userProfileId) => ({
+            userProfileId,
             workspaceId: task.workspaceId,
             taskId: task.id,
             commentId: null,
@@ -1051,7 +1059,7 @@ async function createDueReminderNotifications() {
         remindersToPush.push({
           taskId: task.id,
           title: task.title,
-          memberIds: members.map((member) => member.userProfileId),
+          memberIds: recipientIds,
         });
       }
     }
