@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
@@ -46,6 +46,25 @@ const SMTP_SECURE = process.env.SMTP_SECURE === "true";
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER || "no-reply@taskflow.local";
+
+// nodemailer ~1.5MB'lık bir bağımlılık ve yalnızca iletişim formu + davet
+// mailinde kullanılıyor. Cold start'ı hafifletmek için modülü ve transporter'ı
+// ilk mail atılana kadar yükleme; sonra memoize et.
+let mailTransportPromise: Promise<Transporter> | null = null;
+function getMailTransport(): Promise<Transporter> {
+  if (!mailTransportPromise) {
+    mailTransportPromise = import("nodemailer").then((nm) =>
+      nm.default.createTransport({
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        secure: SMTP_SECURE,
+        auth: { user: SMTP_USER as string, pass: SMTP_PASS as string },
+      }),
+    );
+  }
+  return mailTransportPromise;
+}
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL;
 // Vercel Cron istekleri bu değeri "Authorization: Bearer <CRON_SECRET>" olarak
@@ -2281,15 +2300,7 @@ app.post(["/contact-requests", "/api/contact-requests"], async (req, res) => {
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE,
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-      },
-    });
+    const transporter = await getMailTransport();
 
     const requestTypeLabel = mapRequestTypeLabel(payload.requestType);
     const subject = `TaskFlow talep formu - ${requestTypeLabel} - ${payload.fullName}`;
@@ -2420,15 +2431,7 @@ app.post(["/invitations", "/api/invitations"], authenticate, async (req, res) =>
       ? payload.message
       : `${workspace.name} calisma alanina katilip gorevleri birlikte yonetebilirsin.`;
 
-    const transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE,
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-      },
-    });
+    const transporter = await getMailTransport();
 
     const text = [
       `${displayName} sizi TaskFlow'da \"${workspace.name}\" calisma alanina davet etti.`,
