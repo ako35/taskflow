@@ -4,14 +4,30 @@ import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { registerPushToken } from "../lib/api";
 
+export const ANDROID_CHANNEL_ID = "default";
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    shouldSetBadge: true,
   }),
 });
+
+// Sesli + öne çıkan bildirim ve app ikonu rozeti için kanal ayarı.
+export async function ensureAndroidNotificationChannel() {
+  if (Platform.OS !== "android") return;
+  await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+    name: "Genel bildirimler",
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: "default",
+    enableVibrate: true,
+    vibrationPattern: [0, 250, 250, 250],
+    showBadge: true,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+  });
+}
 
 export default function usePushNotifications(idToken: string | null) {
   const registeredForToken = useRef<string | null>(null);
@@ -22,12 +38,7 @@ export default function usePushNotifications(idToken: string | null) {
     registeredForToken.current = idToken;
 
     (async () => {
-      if (Platform.OS === "android") {
-        await Notifications.setNotificationChannelAsync("default", {
-          name: "default",
-          importance: Notifications.AndroidImportance.DEFAULT,
-        });
-      }
+      await ensureAndroidNotificationChannel();
 
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
+import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import type { User } from "@taskflow/shared";
 import {
@@ -82,6 +83,7 @@ export default function useAuthSession() {
     setIdTokenState(null);
     setUser(null);
     void clearStoredIdToken();
+    Notifications.setBadgeCountAsync(0).catch(() => undefined);
   }, []);
 
   return useMemo(

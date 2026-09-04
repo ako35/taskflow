@@ -926,17 +926,33 @@ async function sendPushNotifications(
 
   const tokens = await prisma.pushToken.findMany({
     where: { userProfileId: { in: userProfileIds } },
-    select: { token: true },
+    select: { token: true, userProfileId: true },
   });
 
   if (tokens.length === 0) {
     return;
   }
 
+  // App ikonu üzerindeki rozet, her kullanıcının kendi okunmamış bildirim
+  // sayısını gösterir (iOS bunu payload'dan otomatik uygular; Android tarafında
+  // uygulama açılışında setBadgeCountAsync ile senkronlanır).
+  const unreadGroups = await prisma.notification.groupBy({
+    by: ["userProfileId"],
+    where: { userProfileId: { in: userProfileIds }, isRead: false },
+    _count: true,
+  });
+  const unreadByUser = new Map(
+    unreadGroups.map((group) => [group.userProfileId, group._count]),
+  );
+
   const messages = tokens.map((item) => ({
     to: item.token,
     title,
     body,
+    sound: "default",
+    priority: "high",
+    channelId: "default",
+    badge: unreadByUser.get(item.userProfileId) ?? 1,
     data,
   }));
 
