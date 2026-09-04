@@ -4,8 +4,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Runtime (PrismaClient): pooled bağlantı — Neon'da host'ta "-pooler" olan string.
+  url       = env("DATABASE_URL")
+  // Prisma CLI (migrate deploy / db push): pooler'sız direct bağlantı.
+  // Neon pooler PgBouncer transaction mode'da advisory lock desteklemez.
+  directUrl = env("DIRECT_URL")
 }
 
 model Task {

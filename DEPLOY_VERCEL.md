@@ -23,7 +23,8 @@ Add these variables in Vercel:
 - `VITE_GOOGLE_CLIENT_ID`: Google OAuth client id for frontend
 - `GOOGLE_CLIENT_ID`: same client id for backend token verification
 - `FRONTEND_URL`: your Vercel production URL (for CORS), e.g. `https://your-project.vercel.app`
-- `DATABASE_URL`: production database connection string
+- `DATABASE_URL`: production database connection string. On Neon, use the **pooled** connection (hostname contains `-pooler`) — `PrismaClient` opens many short-lived connections from serverless.
+- `DIRECT_URL`: the **non-pooled** Neon connection (same string without `-pooler`). Used by Prisma CLI; `backend/scripts/postinstall.cjs` runs `prisma migrate deploy` on every build and it must not go through the PgBouncer pooler. Required (schema.prisma references it).
 - `SMTP_HOST`: SMTP host, e.g. `smtp.gmail.com`
 - `SMTP_PORT`: SMTP port, e.g. `587`
 - `SMTP_SECURE`: `true` for SSL (typically port 465), otherwise `false`
