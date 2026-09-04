@@ -32,7 +32,7 @@ Add these variables in Vercel:
 - `SMTP_FROM`: sender email shown in contact request mails
 - `GEMINI_API_KEY`: Gemini API key for AI text improvement endpoint
 - `GEMINI_MODEL`: optional, recommended `gemini-2.5-flash`
-- `CRON_SECRET`: optional. A random string (e.g. `openssl rand -hex 32`) that guards the `GET/POST /api/cron/reminders` endpoint, which runs the due-reminder sweep independently of user traffic. Call it from an external scheduler (cron-job.org, GitHub Actions, Uptime cron, …) every minute with header `Authorization: Bearer <CRON_SECRET>`. Without this endpoint, reminders still fire via the throttled sweep inside `GET /notifications` (at most once per 60s per warm instance) whenever anyone loads their notifications — fine for an app with active users, just not punctual when nobody is online.
+- `CRON_SECRET`: optional. A random string (e.g. `openssl rand -hex 32`) that guards the `GET/POST /api/cron/reminders` endpoint, which runs the due-reminder sweep independently of user traffic. Point an external scheduler (cron-job.org, an uptime monitor's cron, …) at it every minute with header `Authorization: Bearer <CRON_SECRET>`. Currently **not wired** — reminders fire via the throttled sweep inside `GET /notifications` (at most once per 60s per warm instance) whenever anyone loads their notifications, which is fine for an app with active users but not punctual when nobody is online.
 
 Optional:
 
@@ -47,7 +47,8 @@ This repository already includes `vercel.json` at root:
 - Routes `/api/*` to `backend/api/index.ts`
 - Serves frontend static files
 - Falls back to `/index.html` for SPA routes
-- Defines a cron job hitting `/api/cron/reminders` every minute (`crons` in `vercel.json`). On the Hobby plan Vercel throttles crons to roughly once per day — the `GET /notifications` fallback still covers reminders in between, so it works on any plan, just less punctually. Requires `CRON_SECRET` (see env vars above).
+
+Vercel's native `crons` key is **not** used here — it is incompatible with this repo's legacy `builds` config and breaks the deployment. Reminder sweeps run via the throttled fallback in `GET /notifications`, and optionally an external scheduler hitting `/api/cron/reminders` (see `CRON_SECRET` above).
 
 ## 4) Deploy from Dashboard (recommended)
 
