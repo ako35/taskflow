@@ -32,6 +32,7 @@ Add these variables in Vercel:
 - `SMTP_FROM`: sender email shown in contact request mails
 - `GEMINI_API_KEY`: Gemini API key for AI text improvement endpoint
 - `GEMINI_MODEL`: optional, recommended `gemini-2.5-flash`
+- `CRON_SECRET`: random string (e.g. `openssl rand -hex 32`). Vercel Cron sends it as `Authorization: Bearer <CRON_SECRET>` to `/api/cron/reminders`, which creates due reminder notifications. Without it that endpoint returns 503 and reminders only fire via the throttled fallback inside `GET /notifications`. Set the **same value** in Vercel Project Settings and it is auto-injected into cron requests.
 
 Optional:
 
@@ -46,6 +47,7 @@ This repository already includes `vercel.json` at root:
 - Routes `/api/*` to `backend/api/index.ts`
 - Serves frontend static files
 - Falls back to `/index.html` for SPA routes
+- Defines a cron job hitting `/api/cron/reminders` every minute (`crons` in `vercel.json`). On the Hobby plan Vercel throttles crons to roughly once per day — the `GET /notifications` fallback still covers reminders in between, so it works on any plan, just less punctually. Requires `CRON_SECRET` (see env vars above).
 
 ## 4) Deploy from Dashboard (recommended)
 

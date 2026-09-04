@@ -1329,14 +1329,42 @@ export default function App() {
       return;
     }
 
-    void loadNotifications();
+    // Sekme görünürken 60 sn'de bir yokla; arka plandayken hiç yoklama, öne
+    // geçince hemen bir kez yenile. (Eskiden 15 sn sabitti ve her istek
+    // sunucuda hatırlatıcı taramasını tetikliyordu.)
+    let intervalId: number | undefined;
 
-    const intervalId = window.setInterval(() => {
-      void loadNotifications();
-    }, 15000);
+    const stopPolling = () => {
+      if (intervalId !== undefined) {
+        window.clearInterval(intervalId);
+        intervalId = undefined;
+      }
+    };
+
+    const startPolling = () => {
+      if (intervalId === undefined) {
+        intervalId = window.setInterval(() => {
+          void loadNotifications();
+        }, 60000);
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadNotifications();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    void loadNotifications();
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
-      window.clearInterval(intervalId);
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [idToken, loadNotifications, user]);
 

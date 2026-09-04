@@ -48,6 +48,9 @@ const SMTP_PASS = process.env.SMTP_PASS;
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER || "no-reply@taskflow.local";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL;
+// Vercel Cron istekleri bu değeri "Authorization: Bearer <CRON_SECRET>" olarak
+// gönderir. Ayarlı değilse cron endpoint'i 503 döner (kazara açık kalmasın).
+const CRON_SECRET = process.env.CRON_SECRET;
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com";
 
 const GEMINI_API_VERSIONS = ["v1beta", "v1"] as const;
@@ -1014,9 +1017,18 @@ pushTokensRouter.delete("/", async (req, res) => {
   res.status(204).end();
 });
 
+// Hatırlatıcı taraması artık öncelikli olarak Vercel Cron ile (dakikada bir)
+// çalışıyor; GET /notifications içindeki çağrı yalnızca cron kaçarsa devreye
+// giren bir yedek ve bu zaman damgasıyla en fazla REMINDER_SWEEP_MIN_INTERVAL_MS
+// aralıkla tetikleniyor.
+const REMINDER_SWEEP_MIN_INTERVAL_MS = 90_000;
+let lastReminderSweepAt = 0;
+
 async function createDueReminderNotifications() {
+  lastReminderSweepAt = Date.now();
   const now = new Date();
   const remindersToPush: { taskId: number; title: string; memberIds: number[] }[] = [];
+  let createdCount = 0;
 
   await prisma.$transaction(async (transaction) => {
     const dueTasks = await transaction.task.findMany({
@@ -1062,7 +1074,7 @@ async function createDueReminderNotifications() {
       }
 
       if (recipientIds.length > 0) {
-        await transaction.notification.createMany({
+        const created = await transaction.notification.createMany({
           data: recipientIds.map((userProfileId) => ({
             userProfileId,
             workspaceId: task.workspaceId,
@@ -1072,6 +1084,7 @@ async function createDueReminderNotifications() {
             message: `Hatırlatıcı: "${task.title}" görevinin zamanı geldi.`,
           })),
         });
+        createdCount += created.count;
         remindersToPush.push({
           taskId: task.id,
           title: task.title,
@@ -1089,6 +1102,8 @@ async function createDueReminderNotifications() {
       { type: "reminder", taskId: reminder.taskId },
     );
   }
+
+  return createdCount;
 }
 
 function toSafeProfile<T extends { passwordHash: string | null }>(profile: T) {
@@ -1121,7 +1136,12 @@ profileRouter.put("/", async (req, res) => {
 
 notificationsRouter.get("/", async (req, res) => {
   const profile = await upsertUserProfile(req.authUser!);
-  await createDueReminderNotifications();
+  // Yedek tarama: cron kaçmışsa ve son taramadan bu yana yeterince zaman
+  // geçmişse çalıştır. Normalde bu adım atlanır ve endpoint sadece iki
+  // indeksli sorgu yapar.
+  if (Date.now() - lastReminderSweepAt > REMINDER_SWEEP_MIN_INTERVAL_MS) {
+    await createDueReminderNotifications();
+  }
   const rawLimit = Number(req.query.limit);
   const limit = Number.isFinite(rawLimit)
     ? Math.max(1, Math.min(50, Math.floor(rawLimit)))
@@ -2196,6 +2216,27 @@ app.use("/notifications", authenticate, notificationsRouter);
 app.use("/api/notifications", authenticate, notificationsRouter);
 app.use("/push-tokens", authenticate, pushTokensRouter);
 app.use("/api/push-tokens", authenticate, pushTokensRouter);
+
+// Vercel Cron: vadesi gelen hatırlatıcı bildirimlerini oluşturur. Kullanıcı
+// isteklerinden bağımsız çalışır, bu yüzden `authenticate` yerine CRON_SECRET
+// ile korunur. vercel.json içindeki "crons" tanımı dakikada bir çağırır.
+app.all(["/cron/reminders", "/api/cron/reminders"], async (req, res) => {
+  if (!CRON_SECRET) {
+    return res.status(503).json({ error: "CRON_SECRET tanımlı değil." });
+  }
+  const authHeader = req.header("authorization") || req.header("Authorization");
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const created = await createDueReminderNotifications();
+    res.json({ ok: true, created });
+  } catch (error) {
+    console.error("Cron reminder sweep failed", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 app.post(["/ai/refine-text", "/api/ai/refine-text"], authenticate, async (req, res) => {
   const rawText = typeof req.body?.text === "string" ? req.body.text.trim() : "";
