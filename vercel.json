@@ -24,12 +24,6 @@
             "use": "@vercel/node"
         }
     ],
-    "crons": [
-        {
-            "path": "/api/cron/reminders",
-            "schedule": "* * * * *"
-        }
-    ],
     "routes": [
         {
             "src": "/api/(.*)",

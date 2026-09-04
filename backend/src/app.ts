@@ -1017,11 +1017,12 @@ pushTokensRouter.delete("/", async (req, res) => {
   res.status(204).end();
 });
 
-// Hatırlatıcı taraması artık öncelikli olarak Vercel Cron ile (dakikada bir)
-// çalışıyor; GET /notifications içindeki çağrı yalnızca cron kaçarsa devreye
-// giren bir yedek ve bu zaman damgasıyla en fazla REMINDER_SWEEP_MIN_INTERVAL_MS
-// aralıkla tetikleniyor.
-const REMINDER_SWEEP_MIN_INTERVAL_MS = 90_000;
+// Hatırlatıcı taraması GET /notifications içinden tetikleniyor ama bu zaman
+// damgasıyla throttle'lanıyor: warm instance başına en fazla
+// REMINDER_SWEEP_MIN_INTERVAL_MS aralıkla. Böylece her istek ağır bir
+// $transaction çalıştırmıyor. Harici bir cron /api/cron/reminders'ı çağırarak
+// bunu kullanıcıdan bağımsız da tetikleyebilir (CRON_SECRET ile).
+const REMINDER_SWEEP_MIN_INTERVAL_MS = 60_000;
 let lastReminderSweepAt = 0;
 
 async function createDueReminderNotifications() {
@@ -2217,9 +2218,10 @@ app.use("/api/notifications", authenticate, notificationsRouter);
 app.use("/push-tokens", authenticate, pushTokensRouter);
 app.use("/api/push-tokens", authenticate, pushTokensRouter);
 
-// Vercel Cron: vadesi gelen hatırlatıcı bildirimlerini oluşturur. Kullanıcı
-// isteklerinden bağımsız çalışır, bu yüzden `authenticate` yerine CRON_SECRET
-// ile korunur. vercel.json içindeki "crons" tanımı dakikada bir çağırır.
+// Vadesi gelen hatırlatıcı bildirimlerini oluşturur. Kullanıcı isteklerinden
+// bağımsız çalışır, bu yüzden `authenticate` yerine CRON_SECRET ile korunur.
+// Harici bir zamanlayıcı (cron-job.org, GitHub Actions vb.) dakikada bir
+// "Authorization: Bearer <CRON_SECRET>" ile çağırabilir.
 app.all(["/cron/reminders", "/api/cron/reminders"], async (req, res) => {
   if (!CRON_SECRET) {
     return res.status(503).json({ error: "CRON_SECRET tanımlı değil." });

@@ -32,7 +32,7 @@ Add these variables in Vercel:
 - `SMTP_FROM`: sender email shown in contact request mails
 - `GEMINI_API_KEY`: Gemini API key for AI text improvement endpoint
 - `GEMINI_MODEL`: optional, recommended `gemini-2.5-flash`
-- `CRON_SECRET`: random string (e.g. `openssl rand -hex 32`). Vercel Cron sends it as `Authorization: Bearer <CRON_SECRET>` to `/api/cron/reminders`, which creates due reminder notifications. Without it that endpoint returns 503 and reminders only fire via the throttled fallback inside `GET /notifications`. Set the **same value** in Vercel Project Settings and it is auto-injected into cron requests.
+- `CRON_SECRET`: optional. A random string (e.g. `openssl rand -hex 32`) that guards the `GET/POST /api/cron/reminders` endpoint, which runs the due-reminder sweep independently of user traffic. Call it from an external scheduler (cron-job.org, GitHub Actions, Uptime cron, …) every minute with header `Authorization: Bearer <CRON_SECRET>`. Without this endpoint, reminders still fire via the throttled sweep inside `GET /notifications` (at most once per 60s per warm instance) whenever anyone loads their notifications — fine for an app with active users, just not punctual when nobody is online.
 
 Optional:
 
