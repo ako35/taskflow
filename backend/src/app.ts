@@ -2336,6 +2336,29 @@ tasksRouter.delete("/:id", async (req, res) => {
   res.status(204).end();
 });
 
+// Google idToken ~1 saat sonra expire oluyor ve frontend bunu yenilemiyor;
+// bu yuzden girişte bir kerelik Google idToken'ini kendi 30 gunluk app JWT'imizle
+// degistiriyoruz, boylece oturum Google token'inin omrune bagli kalmiyor.
+app.post(["/auth/google", "/api/auth/google"], async (req, res) => {
+  const googleIdToken = typeof req.body?.idToken === "string" ? req.body.idToken : "";
+
+  if (!googleIdToken) {
+    return res.status(400).json({ error: "idToken is required" });
+  }
+
+  try {
+    const authUser = await verifyGoogleToken(googleIdToken);
+    const profile = await upsertUserProfile(authUser);
+    await ensureDefaultWorkspaceForUser(profile.id);
+
+    const token = signAppToken(profile);
+    res.status(200).json({ token });
+  } catch (error) {
+    console.error("Google exchange failed", error);
+    res.status(401).json({ error: "Google oturumu dogrulanamadi." });
+  }
+});
+
 app.post(["/auth/register", "/api/auth/register"], async (req, res) => {
   const email = normalizeEmail(sanitizeLine(req.body?.email));
   const password = typeof req.body?.password === "string" ? req.body.password : "";

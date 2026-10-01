@@ -157,9 +157,33 @@ export default function useAuthSession(): UseAuthSessionResult {
         return;
       }
 
-      if (!applySession(response.credential)) {
-        setGoogleError("Google hesabından kullanıcı bilgisi alınamadı.");
-      }
+      // Google idToken'i ~1 saat sonra expire oluyor; oturumun bu sureyle
+      // sinirli kalmamasi icin backend'den kendi 30 gunluk app JWT'imizi
+      // alip onu kullaniyoruz.
+      fetch(`${API_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: response.credential }),
+      })
+        .then(async (res) => {
+          const data = (await res.json().catch(() => null)) as
+            | { token?: string; error?: string }
+            | null;
+
+          if (!res.ok || !data?.token) {
+            throw new Error(data?.error || "Google oturumu doğrulanamadı.");
+          }
+
+          if (!applySession(data.token)) {
+            setGoogleError("Google hesabından kullanıcı bilgisi alınamadı.");
+          }
+        })
+        .catch((error) => {
+          console.error("Google oturum degisimi basarisiz", error);
+          setGoogleError(
+            error instanceof Error ? error.message : "Google oturumu doğrulanamadı.",
+          );
+        });
     },
     [applySession],
   );
