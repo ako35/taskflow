@@ -10,6 +10,7 @@ import {
   Layers3,
   LogOut,
   Orbit,
+  Pencil,
   Plus,
   RotateCcw,
   Search,
@@ -81,7 +82,8 @@ export function UiGlyph({
     | "moon"
     | "mail"
     | "bell"
-    | "close";
+    | "close"
+    | "edit";
 }) {
   const iconMap: Record<
     | "chevron-down"
@@ -101,7 +103,8 @@ export function UiGlyph({
     | "moon"
     | "mail"
     | "bell"
-    | "close",
+    | "close"
+    | "edit",
     LucideIcon
   > = {
     "chevron-down": ChevronDown,
@@ -122,6 +125,7 @@ export function UiGlyph({
     mail: Mail,
     bell: Bell,
     close: X,
+    edit: Pencil,
   };
 
   return <Glyph icon={iconMap[icon]} />;

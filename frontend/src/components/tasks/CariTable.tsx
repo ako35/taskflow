@@ -2,6 +2,12 @@ import React from "react";
 import type { CariEntry, CariEntryForm } from "../../types";
 import { UiGlyph } from "../ui/Icons";
 
+type CariFormChangeHandler = (
+  field: keyof CariEntryForm,
+) => (
+  event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+) => void;
+
 type CariTableProps = {
   showForm: boolean;
   isWorkspaceOwner: boolean;
@@ -10,14 +16,18 @@ type CariTableProps = {
   entries: CariEntry[];
   balance: number;
   form: CariEntryForm;
-  onChangeForm: (
-    field: keyof CariEntryForm,
-  ) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
-  ) => void;
+  onChangeForm: CariFormChangeHandler;
   onSubmit: () => void;
   onHideForm: () => void;
   onDeleteEntry: (entryId: number) => void;
+  editingEntryId: number | null;
+  editForm: CariEntryForm;
+  editSubmitting: boolean;
+  isEditFormValid: boolean;
+  onStartEdit: (entry: CariEntry) => void;
+  onCancelEdit: () => void;
+  onEditChange: CariFormChangeHandler;
+  onSaveEdit: () => void;
 };
 
 function formatAmount(amount: number) {
@@ -45,6 +55,14 @@ export default function CariTable({
   onSubmit,
   onHideForm,
   onDeleteEntry,
+  editingEntryId,
+  editForm,
+  editSubmitting,
+  isEditFormValid,
+  onStartEdit,
+  onCancelEdit,
+  onEditChange,
+  onSaveEdit,
 }: CariTableProps) {
   return (
     <div className="cari-table-wrapper">
@@ -141,48 +159,127 @@ export default function CariTable({
               </td>
             </tr>
           ) : (
-            entries.map((entry) => (
-              <tr key={entry.id}>
-                <td className="cari-date-cell">{formatDate(entry.date)}</td>
-                <td className="cari-description-cell">
-                  {entry.description || "-"}
-                </td>
-                <td>
-                  <span
-                    className={
-                      entry.type === "BORC"
-                        ? "cari-type-badge cari-type-borc"
-                        : "cari-type-badge cari-type-alacak"
-                    }
-                  >
-                    {entry.type === "BORC" ? "Borç" : "Alacak"}
-                  </span>
-                </td>
-                <td
-                  className={
-                    entry.type === "BORC"
-                      ? "cari-amount-cell cari-amount-negative"
-                      : "cari-amount-cell cari-amount-positive"
-                  }
-                >
-                  {entry.type === "BORC" ? "-" : "+"}
-                  {formatAmount(entry.amount)}
-                </td>
-                {isWorkspaceOwner ? (
-                  <td className="cari-row-actions">
+            entries.map((entry) =>
+              isWorkspaceOwner && editingEntryId === entry.id ? (
+                <tr key={entry.id} className="cari-create-row">
+                  <td>
+                    <input
+                      type="date"
+                      aria-label="Tarih"
+                      value={editForm.date}
+                      onChange={onEditChange("date")}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      aria-label="Açıklama"
+                      value={editForm.description}
+                      placeholder="Açıklama"
+                      onChange={onEditChange("description")}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") onSaveEdit();
+                        if (event.key === "Escape") onCancelEdit();
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      aria-label="Borç mu alacak mı"
+                      value={editForm.type}
+                      onChange={onEditChange("type")}
+                    >
+                      <option value="BORC">Borç</option>
+                      <option value="ALACAK">Alacak</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      aria-label="Tutar"
+                      value={editForm.amount}
+                      placeholder="0,00"
+                      onChange={onEditChange("amount")}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") onSaveEdit();
+                        if (event.key === "Escape") onCancelEdit();
+                      }}
+                    />
+                  </td>
+                  <td className="cari-create-actions">
                     <button
                       type="button"
-                      className="icon-button cari-delete-button"
-                      aria-label="Kaydı sil"
-                      title="Kaydı sil"
-                      onClick={() => onDeleteEntry(entry.id)}
+                      className="btn-primary"
+                      onClick={onSaveEdit}
+                      disabled={editSubmitting || !isEditFormValid}
                     >
-                      <UiGlyph icon="trash" />
+                      {editSubmitting ? "Kaydediliyor..." : "Kaydet"}
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label="Düzenlemeyi iptal et"
+                      title="Düzenlemeyi iptal et"
+                      onClick={onCancelEdit}
+                    >
+                      <UiGlyph icon="close" />
                     </button>
                   </td>
-                ) : null}
-              </tr>
-            ))
+                </tr>
+              ) : (
+                <tr key={entry.id}>
+                  <td className="cari-date-cell">{formatDate(entry.date)}</td>
+                  <td className="cari-description-cell">
+                    {entry.description || "-"}
+                  </td>
+                  <td>
+                    <span
+                      className={
+                        entry.type === "BORC"
+                          ? "cari-type-badge cari-type-borc"
+                          : "cari-type-badge cari-type-alacak"
+                      }
+                    >
+                      {entry.type === "BORC" ? "Borç" : "Alacak"}
+                    </span>
+                  </td>
+                  <td
+                    className={
+                      entry.type === "BORC"
+                        ? "cari-amount-cell cari-amount-negative"
+                        : "cari-amount-cell cari-amount-positive"
+                    }
+                  >
+                    {entry.type === "BORC" ? "-" : "+"}
+                    {formatAmount(entry.amount)}
+                  </td>
+                  {isWorkspaceOwner ? (
+                    <td className="cari-row-actions">
+                      <button
+                        type="button"
+                        className="icon-button cari-edit-button"
+                        aria-label="Kaydı düzenle"
+                        title="Kaydı düzenle"
+                        onClick={() => onStartEdit(entry)}
+                      >
+                        <UiGlyph icon="edit" />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button cari-delete-button"
+                        aria-label="Kaydı sil"
+                        title="Kaydı sil"
+                        onClick={() => onDeleteEntry(entry.id)}
+                      >
+                        <UiGlyph icon="trash" />
+                      </button>
+                    </td>
+                  ) : null}
+                </tr>
+              ),
+            )
           )}
         </tbody>
         <tfoot>

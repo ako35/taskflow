@@ -87,7 +87,10 @@
 }
 
 .cari-row-actions {
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
 }
 
 .cari-table .icon-button {
@@ -126,6 +129,12 @@
   background: rgba(251, 113, 133, 0.14);
   color: #fb7185;
   border-color: rgba(251, 113, 133, 0.35);
+}
+
+.cari-edit-button:hover:not(:disabled) {
+  background: rgba(91, 140, 255, 0.14);
+  color: #5b8cff;
+  border-color: rgba(91, 140, 255, 0.35);
 }
 
 .cari-create-row input,

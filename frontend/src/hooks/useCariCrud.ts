@@ -32,6 +32,9 @@ export default function useCariCrud({
   const [entries, setEntries] = useState<CariEntry[]>([]);
   const [form, setForm] = useState<CariEntryForm>(initialCariForm);
   const [loading, setLoading] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<CariEntryForm>(initialCariForm);
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   const handleChange = useCallback(
     (field: keyof CariEntryForm) =>
@@ -120,6 +123,97 @@ export default function useCariCrud({
     selectedWorkspaceId,
     setError,
   ]);
+
+  const handleStartEdit = useCallback((entry: CariEntry) => {
+    setEditingEntryId(entry.id);
+    setEditForm({
+      date: entry.date.slice(0, 10),
+      description: entry.description,
+      type: entry.type,
+      amount: String(entry.amount),
+    });
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingEntryId(null);
+  }, []);
+
+  const handleEditChange = useCallback(
+    (field: keyof CariEntryForm) =>
+      (
+        event: React.ChangeEvent<
+          HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >,
+      ) => {
+        setEditForm((current) => ({ ...current, [field]: event.target.value }));
+      },
+    [],
+  );
+
+  const isEditFormValid = useMemo(
+    () => editForm.date.trim().length > 0 && Number(editForm.amount) > 0,
+    [editForm.date, editForm.amount],
+  );
+
+  const handleSaveEdit = useCallback(async () => {
+    if (editingEntryId === null) return;
+
+    if (!isEditFormValid) {
+      setError("Lütfen tarih ve tutarı doğru girin.");
+      return;
+    }
+
+    if (!idToken) {
+      setError("Oturumunuzun süresi dolmuş olabilir. Lütfen tekrar giriş yapın.");
+      return;
+    }
+
+    setEditSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/cari-entries/${editingEntryId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          date: new Date(editForm.date).toISOString(),
+          description: editForm.description,
+          type: editForm.type,
+          amount: Number(editForm.amount),
+        }),
+      });
+
+      const text = await response.text();
+      const responseBody = safeParseJson<any>(text, null);
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          responseBody?.error || text || `Hata ${response.status}: ${response.statusText}`,
+        );
+      }
+
+      const updatedEntry = responseBody as CariEntry;
+      setEntries((prev) =>
+        prev
+          .map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry))
+          .sort((a, b) => a.date.localeCompare(b.date)),
+      );
+      setEditingEntryId(null);
+    } catch (err) {
+      console.error("Cari kaydı güncelleme hatası", err);
+      setError(err instanceof Error ? err.message : "Bilinmeyen hata");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }, [editForm, editingEntryId, handleUnauthorized, idToken, isEditFormValid, setError]);
 
   const handleDeleteEntry = useCallback(
     async (entryId: number) => {
@@ -234,5 +328,13 @@ export default function useCariCrud({
     isFormValid,
     handleSubmit,
     handleDeleteEntry,
+    editingEntryId,
+    editForm,
+    editSubmitting,
+    isEditFormValid,
+    handleStartEdit,
+    handleCancelEdit,
+    handleEditChange,
+    handleSaveEdit,
   };
 }
