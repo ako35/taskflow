@@ -1,4 +1,4 @@
-import type { TaskForm, Workspace, WorkspaceIcon } from "./types";
+import type { CariEntryForm, TaskForm, Workspace, WorkspaceIcon } from "./types";
 
 export const API_URL = import.meta.env.VITE_API_URL || "/api";
 const DEFAULT_GOOGLE_CLIENT_ID =
@@ -56,6 +56,13 @@ export const initialForm: TaskForm = {
   status: "Yapılacak",
   assigneeId: "",
   remindAt: "",
+};
+
+export const initialCariForm: CariEntryForm = {
+  date: new Date().toISOString().slice(0, 10),
+  description: "",
+  type: "BORC",
+  amount: "",
 };
 
 export const priorityOrder: Record<string, number> = {

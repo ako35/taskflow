@@ -19,6 +19,7 @@
 @import "./components/layout/workspace/WorkspacePanelHeader.css";
 @import "./components/onboarding/DownloadPage.css";
 @import "./components/tasks/AddTaskPanel.css";
+@import "./components/tasks/CariTable.css";
 @import "./components/tasks/InlineSelectMenu.css";
 @import "./components/tasks/KnowledgeTable.css";
 @import "./components/tasks/TasksTable.css";

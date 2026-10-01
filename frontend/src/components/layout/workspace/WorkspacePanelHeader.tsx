@@ -32,12 +32,20 @@ export default function WorkspacePanelHeader({
               ? "Formu Gizle"
               : workspaceType === "KNOWLEDGE"
                 ? "Bilgi Ekle"
-                : "Görev Ekle"}
+                : workspaceType === "CARI"
+                  ? "Kayıt Ekle"
+                  : "Görev Ekle"}
           </button>
         ) : null}
         <label
           className="search-shell"
-          aria-label={workspaceType === "KNOWLEDGE" ? "Bilgi ara" : "Görev ara"}
+          aria-label={
+            workspaceType === "KNOWLEDGE"
+              ? "Bilgi ara"
+              : workspaceType === "CARI"
+                ? "Cari ara"
+                : "Görev ara"
+          }
         >
           <span className="search-icon" aria-hidden="true">
             <UiGlyph icon="search" />
@@ -47,7 +55,9 @@ export default function WorkspacePanelHeader({
             placeholder={
               workspaceType === "KNOWLEDGE"
                 ? "Bul: konu veya açıklama..."
-                : "Bul: görev başlığı..."
+                : workspaceType === "CARI"
+                  ? "Bul: açıklama..."
+                  : "Bul: görev başlığı..."
             }
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}

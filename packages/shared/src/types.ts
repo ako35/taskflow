@@ -70,10 +70,28 @@ export type WorkspaceIcon =
 export type Workspace = {
   id: string;
   name: string;
-  type: "TASKS" | "KNOWLEDGE";
+  type: "TASKS" | "KNOWLEDGE" | "CARI";
   color: string;
   icon: WorkspaceIcon;
   role?: "OWNER" | "MEMBER";
+};
+
+export type CariEntry = {
+  id: number;
+  workspaceId: string;
+  date: string;
+  description: string;
+  type: "BORC" | "ALACAK";
+  amount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CariEntryForm = {
+  date: string;
+  description: string;
+  type: "BORC" | "ALACAK";
+  amount: string;
 };
 
 export type WorkspaceMemberInfo = {

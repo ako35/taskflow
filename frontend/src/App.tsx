@@ -19,6 +19,7 @@ import { UiGlyph } from "./components/ui/Icons";
 import { API_URL } from "./constants";
 import useAppUiEffects from "./hooks/useAppUiEffects";
 import useAuthSession from "./hooks/useAuthSession";
+import useCariCrud from "./hooks/useCariCrud";
 import useTaskCrud from "./hooks/useTaskCrud";
 import useTaskTableInteractions from "./hooks/useTaskTableInteractions";
 import useWorkspaceManager from "./hooks/useWorkspaceManager";
@@ -292,6 +293,25 @@ export default function App() {
     viewMode,
     handleUnauthorized,
     setError,
+  });
+
+  const {
+    entries: cariEntries,
+    form: cariForm,
+    loading: cariLoading,
+    balance: cariBalance,
+    handleChange: handleCariChange,
+    isFormValid: isCariFormValid,
+    handleSubmit: handleCariSubmit,
+    handleDeleteEntry: handleDeleteCariEntry,
+  } = useCariCrud({
+    idToken,
+    user,
+    selectedWorkspaceId: selectedWorkspace.id,
+    isCariWorkspace: selectedWorkspace.type === "CARI",
+    handleUnauthorized,
+    setError,
+    onEntryAdded: () => setShowForm(false),
   });
 
   const archivedTasks = useMemo(() => {
@@ -1461,6 +1481,35 @@ export default function App() {
     ],
   );
 
+  const cariTableProps = useMemo(
+    () => ({
+      showForm,
+      isWorkspaceOwner: selectedWorkspace.role === "OWNER",
+      loading: cariLoading,
+      isFormValid: isCariFormValid,
+      entries: cariEntries,
+      balance: cariBalance,
+      form: cariForm,
+      onChangeForm: handleCariChange,
+      onSubmit: handleCariSubmit,
+      onHideForm: handleHideForm,
+      onDeleteEntry: handleDeleteCariEntry,
+    }),
+    [
+      cariBalance,
+      cariEntries,
+      cariForm,
+      cariLoading,
+      handleCariChange,
+      handleCariSubmit,
+      handleDeleteCariEntry,
+      handleHideForm,
+      isCariFormValid,
+      selectedWorkspace,
+      showForm,
+    ],
+  );
+
   const sidebarProps = useMemo(
     () => ({
       sidebarOpen,
@@ -1566,6 +1615,7 @@ export default function App() {
       onToggleShowForm: handleToggleShowForm,
       onRestoreWorkspace: handleRestoreWorkspace,
       tasksTableProps,
+      cariTableProps,
       assignableMembers,
       selectedTask,
       taskDetailsOpen,
@@ -1615,6 +1665,7 @@ export default function App() {
       handleDeleteTask,
       handleSubmitTaskComment,
       tasksTableProps,
+      cariTableProps,
       viewMode,
     ],
   );

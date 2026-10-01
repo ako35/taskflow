@@ -1,6 +1,7 @@
 import React from "react";
 import TasksTable from "../tasks/TasksTable";
 import KnowledgeTable from "../tasks/KnowledgeTable";
+import CariTable from "../tasks/CariTable";
 import AddTaskPanel from "../tasks/AddTaskPanel";
 import ArchivedWorkspacesSection from "./workspace/ArchivedWorkspacesSection";
 import TaskDetailsPanel from "./workspace/TaskDetailsPanel";
@@ -33,6 +34,7 @@ type WorkspacePanelProps = {
   onToggleShowForm: () => void;
   onRestoreWorkspace: (workspaceId: string) => void;
   tasksTableProps: React.ComponentProps<typeof TasksTable>;
+  cariTableProps: React.ComponentProps<typeof CariTable>;
   assignableMembers: WorkspaceMemberInfo[];
   selectedTask: Task | null;
   taskDetailsOpen: boolean;
@@ -76,6 +78,7 @@ export default function WorkspacePanel({
   onToggleShowForm,
   onRestoreWorkspace,
   tasksTableProps,
+  cariTableProps,
   assignableMembers,
   selectedTask,
   taskDetailsOpen,
@@ -157,7 +160,8 @@ export default function WorkspacePanel({
 
           {showForm &&
           isWorkspaceOwner &&
-          selectedWorkspace.type !== "KNOWLEDGE" ? (
+          selectedWorkspace.type !== "KNOWLEDGE" &&
+          selectedWorkspace.type !== "CARI" ? (
             <AddTaskPanel
               form={tasksTableProps.form}
               loading={tasksTableProps.loading}
@@ -173,6 +177,8 @@ export default function WorkspacePanel({
           {selectedWorkspace.type === "KNOWLEDGE" &&
           viewMode === "workspaces" ? (
             <KnowledgeTable {...tasksTableProps} />
+          ) : selectedWorkspace.type === "CARI" && viewMode === "workspaces" ? (
+            <CariTable {...cariTableProps} />
           ) : (
             <TasksTable {...tasksTableProps} />
           )}

@@ -101,6 +101,22 @@ model Workspace {
   tasks       Task[]
   invitations Invitation[]
   notifications Notification[]
+  cariEntries CariEntry[]
+}
+
+model CariEntry {
+  id          Int      @id @default(autoincrement())
+  workspaceId String
+  date        DateTime
+  description String
+  type        String   // "BORC" | "ALACAK"
+  amount      Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, date])
 }
 
 model Notification {

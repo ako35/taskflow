@@ -193,7 +193,12 @@ export function normalizeWorkspaces(
     .map((item) => ({
       id: item.id as string,
       name: item.name as string,
-      type: item.type === "KNOWLEDGE" ? "KNOWLEDGE" as const : "TASKS" as const,
+      type:
+        item.type === "KNOWLEDGE"
+          ? ("KNOWLEDGE" as const)
+          : item.type === "CARI"
+            ? ("CARI" as const)
+            : ("TASKS" as const),
       color: item.color || "#5b8cff",
       icon: WORKSPACE_ICONS.includes(item.icon as WorkspaceIcon)
         ? (item.icon as WorkspaceIcon)

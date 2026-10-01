@@ -64,6 +64,16 @@ export default function WorkspaceCreateModal({
             <strong>Bilgi Alanı</strong>
             <span>No, Konu ve Açıklama sütunlarında bilgi saklayın.</span>
           </button>
+          <button
+            type="button"
+            className={type === "CARI" ? "active" : ""}
+            role="radio"
+            aria-checked={type === "CARI"}
+            onClick={() => onTypeChange("CARI")}
+          >
+            <strong>Cari Takip</strong>
+            <span>Borç/alacak kayıtlarını tutun, bakiyeyi görün.</span>
+          </button>
         </div>
 
         <input

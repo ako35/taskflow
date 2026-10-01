@@ -677,8 +677,8 @@ function validateWorkspacePayload(body: Record<string, unknown>) {
     errors.push("name is required");
   }
 
-  if (type !== "TASKS" && type !== "KNOWLEDGE") {
-    errors.push("type must be TASKS or KNOWLEDGE");
+  if (type !== "TASKS" && type !== "KNOWLEDGE" && type !== "CARI") {
+    errors.push("type must be TASKS, KNOWLEDGE or CARI");
   }
 
   return {
@@ -690,6 +690,89 @@ function validateWorkspacePayload(body: Record<string, unknown>) {
     },
     errors,
   };
+}
+
+const allowedCariEntryTypes = ["BORC", "ALACAK"];
+
+function parseCariDate(value: unknown, errors: string[]): Date | null {
+  if (typeof value !== "string" || !value) {
+    errors.push("date is required");
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    errors.push("Invalid date");
+    return null;
+  }
+
+  return date;
+}
+
+function parseCariAmount(value: unknown, errors: string[]): number {
+  const amount = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    errors.push("amount must be a positive number");
+    return 0;
+  }
+
+  return amount;
+}
+
+function validateCariEntryPayload(body: Record<string, unknown>) {
+  const errors: string[] = [];
+  const workspaceId = sanitizeLine(body.workspaceId);
+  if (!workspaceId) {
+    errors.push("workspaceId is required");
+  }
+
+  const date = parseCariDate(body.date, errors);
+  const description = sanitizeMultiline(body.description);
+  const type = sanitizeLine(body.type);
+  if (!allowedCariEntryTypes.includes(type)) {
+    errors.push("type must be BORC or ALACAK");
+  }
+  const amount = parseCariAmount(body.amount, errors);
+
+  return {
+    workspaceId,
+    date: date ?? new Date(),
+    description,
+    type,
+    amount,
+    errors,
+  };
+}
+
+function validateCariEntryUpdatePayload(body: Record<string, unknown>) {
+  const errors: string[] = [];
+  const updateData: Record<string, unknown> = {};
+
+  if (Object.prototype.hasOwnProperty.call(body, "date")) {
+    const date = parseCariDate(body.date, errors);
+    if (date) {
+      updateData.date = date;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "description")) {
+    updateData.description = sanitizeMultiline(body.description);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "type")) {
+    const type = sanitizeLine(body.type);
+    if (allowedCariEntryTypes.includes(type)) {
+      updateData.type = type;
+    } else {
+      errors.push("type must be BORC or ALACAK");
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "amount")) {
+    updateData.amount = parseCariAmount(body.amount, errors);
+  }
+
+  return { updateData, errors };
 }
 
 function validateInvitationPayload(body: Record<string, unknown>) {
@@ -931,6 +1014,7 @@ async function refineTextWithGemini(text: string, field: AiRefineField) {
 const tasksRouter = express.Router();
 const profileRouter = express.Router();
 const workspacesRouter = express.Router();
+const cariEntriesRouter = express.Router();
 const pushTokensRouter = express.Router();
 
 const EXPO_PUSH_API_URL = "https://exp.host/--/api/v2/push/send";
@@ -1715,6 +1799,118 @@ workspacesRouter.delete("/:id", async (req, res) => {
   res.status(204).end();
 });
 
+cariEntriesRouter.get("/", async (req, res) => {
+  const profile = await upsertUserProfile(req.authUser!);
+  const workspaceId = sanitizeLine(String(req.query.workspaceId ?? ""));
+  if (!workspaceId) {
+    return res.status(400).json({ error: "workspaceId is required" });
+  }
+
+  const membership = await getWorkspaceMember(profile.id, workspaceId);
+  if (!membership) {
+    return res.status(403).json({ error: "Bu calisma alanina erisiminiz yok." });
+  }
+
+  const entries = await prisma.cariEntry.findMany({
+    where: { workspaceId },
+    orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+  });
+
+  res.json(entries);
+});
+
+cariEntriesRouter.post("/", async (req, res) => {
+  const payload = validateCariEntryPayload(req.body || {});
+  if (payload.errors.length > 0) {
+    return res.status(400).json({ error: payload.errors.join(", ") });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const membership = await getWorkspaceMember(profile.id, payload.workspaceId);
+  if (!membership) {
+    return res
+      .status(403)
+      .json({ error: "Bu calisma alanina kayit ekleme yetkiniz yok." });
+  }
+
+  if (membership.role !== "OWNER") {
+    return res
+      .status(403)
+      .json({ error: "Cari kaydi sadece calisma alani sahibi ekleyebilir." });
+  }
+
+  const entry = await prisma.cariEntry.create({
+    data: {
+      workspaceId: payload.workspaceId,
+      date: payload.date,
+      description: payload.description,
+      type: payload.type,
+      amount: payload.amount,
+    },
+  });
+
+  res.status(201).json(entry);
+});
+
+cariEntriesRouter.put("/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: "Invalid cari entry id" });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const existingEntry = await prisma.cariEntry.findUnique({ where: { id } });
+  if (!existingEntry) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
+  const membership = await getWorkspaceMember(profile.id, existingEntry.workspaceId);
+  if (!membership || membership.role !== "OWNER") {
+    return res
+      .status(403)
+      .json({ error: "Cari kaydi sadece calisma alani sahibi duzenleyebilir." });
+  }
+
+  const { updateData, errors } = validateCariEntryUpdatePayload(req.body || {});
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join(", ") });
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: "No valid fields provided for update" });
+  }
+
+  const entry = await prisma.cariEntry.update({
+    where: { id },
+    data: updateData,
+  });
+
+  res.json(entry);
+});
+
+cariEntriesRouter.delete("/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: "Invalid cari entry id" });
+  }
+
+  const profile = await upsertUserProfile(req.authUser!);
+  const existingEntry = await prisma.cariEntry.findUnique({ where: { id } });
+  if (!existingEntry) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
+  const membership = await getWorkspaceMember(profile.id, existingEntry.workspaceId);
+  if (!membership || membership.role !== "OWNER") {
+    return res
+      .status(403)
+      .json({ error: "Cari kaydi sadece calisma alani sahibi silebilir." });
+  }
+
+  await prisma.cariEntry.delete({ where: { id } });
+  res.status(204).end();
+});
+
 tasksRouter.get("/", async (req, res) => {
   const profile = await upsertUserProfile(req.authUser!);
   await ensureDefaultWorkspaceForUser(profile.id);
@@ -2232,6 +2428,8 @@ app.use("/profile", authenticate, profileRouter);
 app.use("/api/profile", authenticate, profileRouter);
 app.use("/workspaces", authenticate, workspacesRouter);
 app.use("/api/workspaces", authenticate, workspacesRouter);
+app.use("/cari-entries", authenticate, cariEntriesRouter);
+app.use("/api/cari-entries", authenticate, cariEntriesRouter);
 app.use("/notifications", authenticate, notificationsRouter);
 app.use("/api/notifications", authenticate, notificationsRouter);
 app.use("/push-tokens", authenticate, pushTokensRouter);
