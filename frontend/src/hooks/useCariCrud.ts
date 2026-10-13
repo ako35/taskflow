@@ -10,6 +10,28 @@ import { API_URL, initialCariForm } from "../constants";
 import type { CariEntry, CariEntryForm, User } from "../types";
 import { safeParseJson } from "../utils";
 
+function monthKeyOf(isoDate: string) {
+  return isoDate.slice(0, 7);
+}
+
+function currentMonthKey() {
+  return monthKeyOf(new Date().toISOString());
+}
+
+function shiftMonthKey(monthKey: string, delta: number) {
+  const [year, month] = monthKey.split("-").map(Number);
+  const shifted = new Date(year, month - 1 + delta, 1);
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthKeyLabel(monthKey: string) {
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString("tr-TR", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
 type UseCariCrudArgs = {
   idToken: string | null;
   user: User | null;
@@ -35,6 +57,23 @@ export default function useCariCrud({
   const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<CariEntryForm>(initialCariForm);
   const [editSubmitting, setEditSubmitting] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
+
+  useEffect(() => {
+    setSelectedMonth(currentMonthKey());
+  }, [selectedWorkspaceId]);
+
+  const handlePrevMonth = useCallback(() => {
+    setSelectedMonth((current) => shiftMonthKey(current, -1));
+  }, []);
+
+  const handleNextMonth = useCallback(() => {
+    setSelectedMonth((current) => shiftMonthKey(current, 1));
+  }, []);
+
+  const handleGoToCurrentMonth = useCallback(() => {
+    setSelectedMonth(currentMonthKey());
+  }, []);
 
   const handleChange = useCallback(
     (field: keyof CariEntryForm) =>
@@ -107,6 +146,7 @@ export default function useCariCrud({
         [...prev, newEntry].sort((a, b) => a.date.localeCompare(b.date)),
       );
       setForm({ ...initialCariForm, date: form.date });
+      setSelectedMonth(monthKeyOf(newEntry.date));
       onEntryAdded();
     } catch (err) {
       console.error("Cari kaydı kaydetme hatası", err);
@@ -206,6 +246,7 @@ export default function useCariCrud({
           .map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry))
           .sort((a, b) => a.date.localeCompare(b.date)),
       );
+      setSelectedMonth(monthKeyOf(updatedEntry.date));
       setEditingEntryId(null);
     } catch (err) {
       console.error("Cari kaydı güncelleme hatası", err);
@@ -309,18 +350,26 @@ export default function useCariCrud({
     return () => controller.abort();
   }, [handleUnauthorized, idToken, isCariWorkspace, selectedWorkspaceId, setError, user]);
 
+  const visibleEntries = useMemo(
+    () => entries.filter((entry) => monthKeyOf(entry.date) === selectedMonth),
+    [entries, selectedMonth],
+  );
+
   const balance = useMemo(
     () =>
-      entries.reduce(
+      visibleEntries.reduce(
         (total, entry) =>
           entry.type === "ALACAK" ? total + entry.amount : total - entry.amount,
         0,
       ),
-    [entries],
+    [visibleEntries],
   );
 
+  const isCurrentMonth = selectedMonth === currentMonthKey();
+  const monthLabel = useMemo(() => monthKeyLabel(selectedMonth), [selectedMonth]);
+
   return {
-    entries,
+    entries: visibleEntries,
     form,
     loading,
     balance,
@@ -336,5 +385,10 @@ export default function useCariCrud({
     handleCancelEdit,
     handleEditChange,
     handleSaveEdit,
+    monthLabel,
+    isCurrentMonth,
+    onPrevMonth: handlePrevMonth,
+    onNextMonth: handleNextMonth,
+    onGoToCurrentMonth: handleGoToCurrentMonth,
   };
 }

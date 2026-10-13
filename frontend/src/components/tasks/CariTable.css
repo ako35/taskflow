@@ -3,6 +3,44 @@
   overflow-x: auto;
 }
 
+.cari-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.cari-month-label {
+  min-width: 11ch;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.cari-month-nav-arrow {
+  flex: 0 0 auto;
+}
+
+.cari-month-today-btn {
+  border: 1px solid rgba(91, 140, 255, 0.4);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  background: rgba(91, 140, 255, 0.1);
+  color: #5b8cff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+
+.cari-month-today-btn:hover {
+  background: rgba(91, 140, 255, 0.18);
+  border-color: rgba(91, 140, 255, 0.6);
+}
+
 .cari-table {
   width: 100%;
   min-width: 640px;
@@ -93,7 +131,7 @@
   gap: 0.35rem;
 }
 
-.cari-table .icon-button {
+.cari-table-wrapper .icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -112,14 +150,14 @@
     border-color 0.18s;
 }
 
-.cari-table .icon-button svg {
+.cari-table-wrapper .icon-button svg {
   width: 1rem;
   height: 1rem;
   stroke: currentColor;
   fill: none;
 }
 
-.cari-table .icon-button:hover:not(:disabled) {
+.cari-table-wrapper .icon-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
   border-color: var(--border);

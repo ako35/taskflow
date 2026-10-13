@@ -28,6 +28,11 @@ type CariTableProps = {
   onCancelEdit: () => void;
   onEditChange: CariFormChangeHandler;
   onSaveEdit: () => void;
+  monthLabel: string;
+  isCurrentMonth: boolean;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onGoToCurrentMonth: () => void;
 };
 
 function formatAmount(amount: number) {
@@ -63,9 +68,44 @@ export default function CariTable({
   onCancelEdit,
   onEditChange,
   onSaveEdit,
+  monthLabel,
+  isCurrentMonth,
+  onPrevMonth,
+  onNextMonth,
+  onGoToCurrentMonth,
 }: CariTableProps) {
   return (
     <div className="cari-table-wrapper">
+      <div className="cari-month-nav">
+        <button
+          type="button"
+          className="icon-button cari-month-nav-arrow"
+          aria-label="Önceki ay"
+          title="Önceki ay"
+          onClick={onPrevMonth}
+        >
+          <UiGlyph icon="chevron-left" />
+        </button>
+        <span className="cari-month-label">{monthLabel}</span>
+        <button
+          type="button"
+          className="icon-button cari-month-nav-arrow"
+          aria-label="Sonraki ay"
+          title="Sonraki ay"
+          onClick={onNextMonth}
+        >
+          <UiGlyph icon="chevron-right" />
+        </button>
+        {!isCurrentMonth ? (
+          <button
+            type="button"
+            className="cari-month-today-btn"
+            onClick={onGoToCurrentMonth}
+          >
+            Bu Ay
+          </button>
+        ) : null}
+      </div>
       <table className="cari-table">
         <thead>
           <tr>
@@ -155,7 +195,7 @@ export default function CariTable({
           ) : entries.length === 0 ? (
             <tr>
               <td colSpan={isWorkspaceOwner ? 5 : 4} className="no-data">
-                Bu alanda kayıtlı cari hareketi bulunmuyor.
+                Bu ayda kayıtlı cari hareketi bulunmuyor.
               </td>
             </tr>
           ) : (
