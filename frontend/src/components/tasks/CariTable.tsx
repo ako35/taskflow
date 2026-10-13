@@ -28,6 +28,7 @@ type CariTableProps = {
   onCancelEdit: () => void;
   onEditChange: CariFormChangeHandler;
   onSaveEdit: () => void;
+  showMonthNav: boolean;
   monthLabel: string;
   isCurrentMonth: boolean;
   onPrevMonth: () => void;
@@ -68,6 +69,7 @@ export default function CariTable({
   onCancelEdit,
   onEditChange,
   onSaveEdit,
+  showMonthNav,
   monthLabel,
   isCurrentMonth,
   onPrevMonth,
@@ -76,36 +78,38 @@ export default function CariTable({
 }: CariTableProps) {
   return (
     <div className="cari-table-wrapper">
-      <div className="cari-month-nav">
-        <button
-          type="button"
-          className="icon-button cari-month-nav-arrow"
-          aria-label="Önceki ay"
-          title="Önceki ay"
-          onClick={onPrevMonth}
-        >
-          <UiGlyph icon="chevron-left" />
-        </button>
-        <span className="cari-month-label">{monthLabel}</span>
-        <button
-          type="button"
-          className="icon-button cari-month-nav-arrow"
-          aria-label="Sonraki ay"
-          title="Sonraki ay"
-          onClick={onNextMonth}
-        >
-          <UiGlyph icon="chevron-right" />
-        </button>
-        {!isCurrentMonth ? (
+      {showMonthNav ? (
+        <div className="cari-month-nav">
           <button
             type="button"
-            className="cari-month-today-btn"
-            onClick={onGoToCurrentMonth}
+            className="icon-button cari-month-nav-arrow"
+            aria-label="Önceki ay"
+            title="Önceki ay"
+            onClick={onPrevMonth}
           >
-            Bu Ay
+            <UiGlyph icon="chevron-left" />
           </button>
-        ) : null}
-      </div>
+          <span className="cari-month-label">{monthLabel}</span>
+          <button
+            type="button"
+            className="icon-button cari-month-nav-arrow"
+            aria-label="Sonraki ay"
+            title="Sonraki ay"
+            onClick={onNextMonth}
+          >
+            <UiGlyph icon="chevron-right" />
+          </button>
+          {!isCurrentMonth ? (
+            <button
+              type="button"
+              className="cari-month-today-btn"
+              onClick={onGoToCurrentMonth}
+            >
+              Bu Ay
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <table className="cari-table">
         <thead>
           <tr>
@@ -195,7 +199,9 @@ export default function CariTable({
           ) : entries.length === 0 ? (
             <tr>
               <td colSpan={isWorkspaceOwner ? 5 : 4} className="no-data">
-                Bu ayda kayıtlı cari hareketi bulunmuyor.
+                {showMonthNav
+                  ? "Bu ayda kayıtlı cari hareketi bulunmuyor."
+                  : "Bu alanda kayıtlı cari hareketi bulunmuyor."}
               </td>
             </tr>
           ) : (

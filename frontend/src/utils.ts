@@ -198,7 +198,9 @@ export function normalizeWorkspaces(
           ? ("KNOWLEDGE" as const)
           : item.type === "CARI"
             ? ("CARI" as const)
-            : ("TASKS" as const),
+            : item.type === "PUANTAJ"
+              ? ("PUANTAJ" as const)
+              : ("TASKS" as const),
       color: item.color || "#5b8cff",
       icon: WORKSPACE_ICONS.includes(item.icon as WorkspaceIcon)
         ? (item.icon as WorkspaceIcon)

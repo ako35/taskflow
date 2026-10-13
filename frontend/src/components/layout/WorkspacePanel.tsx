@@ -161,7 +161,8 @@ export default function WorkspacePanel({
           {showForm &&
           isWorkspaceOwner &&
           selectedWorkspace.type !== "KNOWLEDGE" &&
-          selectedWorkspace.type !== "CARI" ? (
+          selectedWorkspace.type !== "CARI" &&
+          selectedWorkspace.type !== "PUANTAJ" ? (
             <AddTaskPanel
               form={tasksTableProps.form}
               loading={tasksTableProps.loading}
@@ -177,7 +178,9 @@ export default function WorkspacePanel({
           {selectedWorkspace.type === "KNOWLEDGE" &&
           viewMode === "workspaces" ? (
             <KnowledgeTable {...tasksTableProps} />
-          ) : selectedWorkspace.type === "CARI" && viewMode === "workspaces" ? (
+          ) : (selectedWorkspace.type === "CARI" ||
+              selectedWorkspace.type === "PUANTAJ") &&
+            viewMode === "workspaces" ? (
             <CariTable {...cariTableProps} />
           ) : (
             <TasksTable {...tasksTableProps} />

@@ -72,7 +72,17 @@ export default function WorkspaceCreateModal({
             onClick={() => onTypeChange("CARI")}
           >
             <strong>Cari Takip</strong>
-            <span>Borç/alacak kayıtlarını tutun, bakiyeyi görün.</span>
+            <span>Borç/alacak kayıtlarını tutun, toplam bakiyeyi görün.</span>
+          </button>
+          <button
+            type="button"
+            className={type === "PUANTAJ" ? "active" : ""}
+            role="radio"
+            aria-checked={type === "PUANTAJ"}
+            onClick={() => onTypeChange("PUANTAJ")}
+          >
+            <strong>Puantaj</strong>
+            <span>Mesai/ödeme kayıtlarını ay ay takip edin.</span>
           </button>
         </div>
 

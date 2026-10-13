@@ -32,7 +32,7 @@ export default function WorkspacePanelHeader({
               ? "Formu Gizle"
               : workspaceType === "KNOWLEDGE"
                 ? "Bilgi Ekle"
-                : workspaceType === "CARI"
+                : workspaceType === "CARI" || workspaceType === "PUANTAJ"
                   ? "Kayıt Ekle"
                   : "Görev Ekle"}
           </button>
@@ -44,7 +44,9 @@ export default function WorkspacePanelHeader({
               ? "Bilgi ara"
               : workspaceType === "CARI"
                 ? "Cari ara"
-                : "Görev ara"
+                : workspaceType === "PUANTAJ"
+                  ? "Puantaj ara"
+                  : "Görev ara"
           }
         >
           <span className="search-icon" aria-hidden="true">
@@ -55,7 +57,7 @@ export default function WorkspacePanelHeader({
             placeholder={
               workspaceType === "KNOWLEDGE"
                 ? "Bul: konu veya açıklama..."
-                : workspaceType === "CARI"
+                : workspaceType === "CARI" || workspaceType === "PUANTAJ"
                   ? "Bul: açıklama..."
                   : "Bul: görev başlığı..."
             }

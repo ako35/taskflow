@@ -70,7 +70,7 @@ export type WorkspaceIcon =
 export type Workspace = {
   id: string;
   name: string;
-  type: "TASKS" | "KNOWLEDGE" | "CARI";
+  type: "TASKS" | "KNOWLEDGE" | "CARI" | "PUANTAJ";
   color: string;
   icon: WorkspaceIcon;
   role?: "OWNER" | "MEMBER";

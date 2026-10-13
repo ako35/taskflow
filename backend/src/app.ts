@@ -677,8 +677,13 @@ function validateWorkspacePayload(body: Record<string, unknown>) {
     errors.push("name is required");
   }
 
-  if (type !== "TASKS" && type !== "KNOWLEDGE" && type !== "CARI") {
-    errors.push("type must be TASKS, KNOWLEDGE or CARI");
+  if (
+    type !== "TASKS" &&
+    type !== "KNOWLEDGE" &&
+    type !== "CARI" &&
+    type !== "PUANTAJ"
+  ) {
+    errors.push("type must be TASKS, KNOWLEDGE, CARI or PUANTAJ");
   }
 
   return {

@@ -36,7 +36,8 @@ type UseCariCrudArgs = {
   idToken: string | null;
   user: User | null;
   selectedWorkspaceId: string;
-  isCariWorkspace: boolean;
+  isLedgerWorkspace: boolean;
+  enableMonthFilter: boolean;
   handleUnauthorized: () => void;
   setError: Dispatch<SetStateAction<string | null>>;
   onEntryAdded: () => void;
@@ -46,7 +47,8 @@ export default function useCariCrud({
   idToken,
   user,
   selectedWorkspaceId,
-  isCariWorkspace,
+  isLedgerWorkspace,
+  enableMonthFilter,
   handleUnauthorized,
   setError,
   onEntryAdded,
@@ -146,7 +148,9 @@ export default function useCariCrud({
         [...prev, newEntry].sort((a, b) => a.date.localeCompare(b.date)),
       );
       setForm({ ...initialCariForm, date: form.date });
-      setSelectedMonth(monthKeyOf(newEntry.date));
+      if (enableMonthFilter) {
+        setSelectedMonth(monthKeyOf(newEntry.date));
+      }
       onEntryAdded();
     } catch (err) {
       console.error("Cari kaydı kaydetme hatası", err);
@@ -155,6 +159,7 @@ export default function useCariCrud({
       setLoading(false);
     }
   }, [
+    enableMonthFilter,
     form,
     handleUnauthorized,
     idToken,
@@ -246,7 +251,9 @@ export default function useCariCrud({
           .map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry))
           .sort((a, b) => a.date.localeCompare(b.date)),
       );
-      setSelectedMonth(monthKeyOf(updatedEntry.date));
+      if (enableMonthFilter) {
+        setSelectedMonth(monthKeyOf(updatedEntry.date));
+      }
       setEditingEntryId(null);
     } catch (err) {
       console.error("Cari kaydı güncelleme hatası", err);
@@ -254,7 +261,15 @@ export default function useCariCrud({
     } finally {
       setEditSubmitting(false);
     }
-  }, [editForm, editingEntryId, handleUnauthorized, idToken, isEditFormValid, setError]);
+  }, [
+    editForm,
+    editingEntryId,
+    enableMonthFilter,
+    handleUnauthorized,
+    idToken,
+    isEditFormValid,
+    setError,
+  ]);
 
   const handleDeleteEntry = useCallback(
     async (entryId: number) => {
@@ -341,18 +356,21 @@ export default function useCariCrud({
       }
     }
 
-    if (user && idToken && isCariWorkspace) {
+    if (user && idToken && isLedgerWorkspace) {
       loadEntries();
     } else {
       setEntries([]);
     }
 
     return () => controller.abort();
-  }, [handleUnauthorized, idToken, isCariWorkspace, selectedWorkspaceId, setError, user]);
+  }, [handleUnauthorized, idToken, isLedgerWorkspace, selectedWorkspaceId, setError, user]);
 
   const visibleEntries = useMemo(
-    () => entries.filter((entry) => monthKeyOf(entry.date) === selectedMonth),
-    [entries, selectedMonth],
+    () =>
+      enableMonthFilter
+        ? entries.filter((entry) => monthKeyOf(entry.date) === selectedMonth)
+        : entries,
+    [enableMonthFilter, entries, selectedMonth],
   );
 
   const balance = useMemo(
@@ -385,6 +403,7 @@ export default function useCariCrud({
     handleCancelEdit,
     handleEditChange,
     handleSaveEdit,
+    showMonthNav: enableMonthFilter,
     monthLabel,
     isCurrentMonth,
     onPrevMonth: handlePrevMonth,
